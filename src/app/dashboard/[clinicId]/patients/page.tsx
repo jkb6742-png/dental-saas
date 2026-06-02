@@ -91,8 +91,57 @@ export default async function PatientsPage({
   }
 
   // 환자 관리 고도화를 위한 추가 데이터
-  // 접수 기록 데이터 (요일별/시간대별 분석용)
+  // 접수 기록 데이터 (연간 전체 데이터 - 월별 분석용)
   const receptionRecords = await prisma.receptionRecord.findMany({
+    where: {
+      clinicId,
+      year, // 선택된 연도 전체 데이터
+      // month 필터 제거하여 연간 데이터 확보
+    },
+    select: {
+      receptionTime: true,
+      patientName: true,
+      chartNumber: true,
+      patientType: true,
+      totalRevenue: true,
+      createdAt: true
+    },
+    orderBy: { receptionTime: "asc" }
+  })
+
+  console.log(`[PATIENTS DEBUG] receptionRecords 결과: ${receptionRecords.length}개`)
+  if (receptionRecords.length > 0) {
+    console.log(`[PATIENTS DEBUG] 첫 번째 접수기록:`, JSON.stringify(receptionRecords[0], null, 2))
+
+    // patientType 값들 확인
+    const patientTypes = [...new Set(receptionRecords.map(r => r.patientType).filter(Boolean))]
+    console.log(`[PATIENTS DEBUG] patientType 값들:`, patientTypes)
+
+    // 신환/구환 필터링 테스트
+    const newPatients = receptionRecords.filter(r =>
+      r.patientType === '신환' || r.patientType === 'NEW' || r.patientType === 'new'
+    )
+    const returningPatients = receptionRecords.filter(r =>
+      r.patientType === '구환' || r.patientType === 'RETURNING' || r.patientType === 'returning' ||
+      r.patientType === '재진' || r.patientType === 'REVISIT'
+    )
+
+    console.log(`[PATIENTS DEBUG] 신환 필터 결과: ${newPatients.length}명`)
+    console.log(`[PATIENTS DEBUG] 구환 필터 결과: ${returningPatients.length}명`)
+
+    // 수익 정보 확인
+    const revenueData = receptionRecords.filter(r => r.totalRevenue && r.totalRevenue > 0)
+    console.log(`[PATIENTS DEBUG] 수익 데이터가 있는 기록: ${revenueData.length}개`)
+    if (revenueData.length > 0) {
+      console.log(`[PATIENTS DEBUG] 첫 번째 수익 기록:`, {
+        patientType: revenueData[0].patientType,
+        totalRevenue: revenueData[0].totalRevenue
+      })
+    }
+  }
+
+  // 현재 선택된 월의 상세 접수 기록 (시간대별 분석용)
+  const currentMonthReceptionRecords = await prisma.receptionRecord.findMany({
     where: {
       clinicId,
       year,
@@ -109,7 +158,7 @@ export default async function PatientsPage({
     orderBy: { receptionTime: "asc" }
   })
 
-  console.log(`[PATIENTS DEBUG] receptionRecords 결과: ${receptionRecords.length}개`)
+  console.log(`[PATIENTS DEBUG] currentMonthReceptionRecords 결과: ${currentMonthReceptionRecords.length}개`)
 
   // 치료 계획 데이터 (환자 유지율 분석용)
   const treatmentPlans = await prisma.treatmentPlan.findMany({
@@ -182,6 +231,7 @@ export default async function PatientsPage({
       availableData={availableData}
       fallbackData={fallbackData}
       receptionRecords={receptionRecords}
+      currentMonthReceptionRecords={currentMonthReceptionRecords}
       treatmentPlans={treatmentPlans}
       historicalReceptionData={historicalReceptionData}
     />

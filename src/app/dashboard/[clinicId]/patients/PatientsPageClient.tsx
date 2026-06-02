@@ -89,6 +89,7 @@ interface PatientsPageClientProps {
   availableData: AvailableData[]
   fallbackData: MonthlySummaryData[] | null
   receptionRecords: ReceptionRecordData[]
+  currentMonthReceptionRecords: ReceptionRecordData[]
   treatmentPlans: TreatmentPlanData[]
   historicalReceptionData: HistoricalReceptionData[]
 }
@@ -125,6 +126,7 @@ export default function PatientsPageClient({
   availableData,
   fallbackData,
   receptionRecords,
+  currentMonthReceptionRecords,
   treatmentPlans,
   historicalReceptionData
 }: PatientsPageClientProps) {
@@ -133,6 +135,35 @@ export default function PatientsPageClient({
 
   const [selectedYear, setSelectedYear] = useState(initialYear)
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
+
+  // 데이터 디버깅
+  console.log(`[CLIENT DEBUG] receptionRecords 전체: ${receptionRecords.length}개`)
+  console.log(`[CLIENT DEBUG] currentMonthReceptionRecords: ${currentMonthReceptionRecords.length}개`)
+
+  if (receptionRecords.length > 0) {
+    const patientTypes = [...new Set(receptionRecords.map(r => r.patientType).filter(Boolean))]
+    console.log(`[CLIENT DEBUG] 전체 patientType 값들:`, patientTypes)
+
+    // 현재 연도 데이터만 필터링해서 확인
+    const currentYearRecords = receptionRecords.filter(r => {
+      if (!r.receptionTime) return false
+      const date = new Date(r.receptionTime)
+      return date.getFullYear() === selectedYear
+    })
+
+    console.log(`[CLIENT DEBUG] ${selectedYear}년 데이터: ${currentYearRecords.length}개`)
+
+    const currentYearPatientTypes = [...new Set(currentYearRecords.map(r => r.patientType).filter(Boolean))]
+    console.log(`[CLIENT DEBUG] ${selectedYear}년 patientType 값들:`, currentYearPatientTypes)
+
+    // 수익 데이터 확인
+    const revenueRecords = currentYearRecords.filter(r => r.totalRevenue && r.totalRevenue > 0)
+    console.log(`[CLIENT DEBUG] ${selectedYear}년 수익 데이터: ${revenueRecords.length}개`)
+    if (revenueRecords.length > 0) {
+      const totalRevenue = revenueRecords.reduce((sum, r) => sum + (r.totalRevenue || 0), 0)
+      console.log(`[CLIENT DEBUG] ${selectedYear}년 총 수익: ${totalRevenue.toLocaleString()}원`)
+    }
+  }
 
   // URL 업데이트 (무한 루프 방지)
   useEffect(() => {
@@ -519,20 +550,18 @@ export default function PatientsPageClient({
 
   // 3. 요일별/시간대별 패턴 분석 (정확성 개선)
   const getTimePatternAnalysis = () => {
-    if (!receptionRecords || receptionRecords.length === 0) return null
+    if (!currentMonthReceptionRecords || currentMonthReceptionRecords.length === 0) return null
 
     const weekdayPattern = Array(7).fill(0) // 월=0, 일=6
     const hourlyPattern = Array(24).fill(0)
     const weekdayNames = ['월', '화', '수', '목', '금', '토', '일']
 
-    // 선택된 연도와 월 데이터만 분석 (범위 정확성)
-    const filteredRecords = receptionRecords.filter(record => {
+    // 현재 월 데이터를 바로 사용 (이미 필터링된 데이터)
+    const filteredRecords = currentMonthReceptionRecords.filter(record => {
       if (!record.receptionTime) return false
       const date = new Date(record.receptionTime)
       // 유효한 날짜인지 확인
-      if (isNaN(date.getTime())) return false
-      // 선택된 년월과 일치하는지 확인
-      return date.getFullYear() === selectedYear && date.getMonth() + 1 === selectedMonth
+      return !isNaN(date.getTime())
     })
 
     // 중복 방문 제거 (같은 환자의 같은 날 여러 기록)
