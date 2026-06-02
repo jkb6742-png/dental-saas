@@ -156,16 +156,38 @@ export default function PatientsPageClient({
     // MonthlySummary 데이터 우선 사용 (올바른 고유 환자 수 계산)
     if (fallbackData && fallbackData.length > 0) {
       return months.map(month => {
-        const data = fallbackData.find(d => d.month === month)
+        const data = fallbackData.find(d => d.year === selectedYear && d.month === month)
         const newPatients = data?.newPatients || 0
         const totalPatients = data?.totalPatients || 0
         const returningPatients = Math.max(0, totalPatients - newPatients)
 
+        // 해당 월의 ReceptionRecord에서 실제 신환/구환 데이터 확인 (날짜 범위 정확성 개선)
+        const monthlyReceptionRecords = receptionRecords.filter(r => {
+          if (!r.receptionTime) return false
+          const receptionDate = new Date(r.receptionTime)
+          return receptionDate.getFullYear() === selectedYear && receptionDate.getMonth() + 1 === month
+        })
+
+        const receptionNewPatients = monthlyReceptionRecords.filter(r =>
+          r.patientType === '신환' || r.patientType === 'NEW' || r.patientType === 'new'
+        ).length
+
+        const receptionReturningPatients = monthlyReceptionRecords.filter(r =>
+          r.patientType === '구환' || r.patientType === 'RETURNING' || r.patientType === 'returning' ||
+          r.patientType === '재진' || r.patientType === 'REVISIT'
+        ).length
+
+        // 데이터 정확성 검증: 실제 접수 데이터가 있고 더 많은 경우 사용
+        const finalNewPatients = (monthlyReceptionRecords.length > 0 && receptionNewPatients > newPatients)
+          ? receptionNewPatients : newPatients
+        const finalReturningPatients = (monthlyReceptionRecords.length > 0 && receptionReturningPatients > returningPatients)
+          ? receptionReturningPatients : returningPatients
+
         return {
           month: `${month}월`,
-          신환수: newPatients,
-          구환수: returningPatients,
-          총환자수: totalPatients,
+          신환수: finalNewPatients,
+          구환수: finalReturningPatients,
+          총환자수: Math.max(totalPatients, finalNewPatients + finalReturningPatients),
           신환진료비: data?.newPatientRevenue || 0,
           재내원율: Math.round((data?.revisitRate || 0) * 100) / 100,
           신환성장률: Math.round((data?.newPatientGrowth || 0) * 100) / 100
@@ -207,24 +229,65 @@ export default function PatientsPageClient({
     예약수: data.totalAppointments || 0
   }))
 
-  // 현재 월 통계 계산 (MonthlySummary 우선, 없으면 PatientStat에서 올바른 계산)
+  // 현재 월 통계 계산 (MonthlySummary 우선, 없으면 PatientStat에서 올바른 계산, 정확성 개선)
   const getCurrentMonthStats = () => {
     // MonthlySummary 데이터 우선 사용 (올바른 고유 환자 수 계산)
     if (fallbackData && fallbackData.length > 0) {
       const currentMonthData = fallbackData.find(d => d.year === selectedYear && d.month === selectedMonth)
       if (currentMonthData) {
-        const newPatients = currentMonthData.newPatients || 0
-        const totalPatients = currentMonthData.totalPatients || 0
+        let newPatients = currentMonthData.newPatients || 0
+        let totalPatients = currentMonthData.totalPatients || 0
+        let newPatientRevenue = currentMonthData.newPatientRevenue || 0
+
+        // 실제 접수 데이터로 검증 및 보정 (현재 선택된 월만)
+        const currentMonthReceptions = receptionRecords.filter(r => {
+          if (!r.receptionTime) return false
+          const date = new Date(r.receptionTime)
+          return date.getFullYear() === selectedYear && date.getMonth() + 1 === selectedMonth
+        })
+
+        if (currentMonthReceptions.length > 0) {
+          // 중복 환자 제거를 위한 고유 환자 집합
+          const uniqueNewPatients = new Set<string>()
+          const uniqueAllPatients = new Set<string>()
+          let actualNewPatientRevenue = 0
+
+          currentMonthReceptions.forEach(r => {
+            const patientKey = r.chartNumber || r.patientName
+            if (!patientKey || patientKey.trim() === '') return
+
+            uniqueAllPatients.add(patientKey)
+
+            if (r.patientType === '신환' || r.patientType === 'NEW' || r.patientType === 'new') {
+              uniqueNewPatients.add(patientKey)
+              if (r.totalRevenue && r.totalRevenue > 0) {
+                actualNewPatientRevenue += r.totalRevenue
+              }
+            }
+          })
+
+          // 실제 접수 데이터가 더 정확한 경우 사용
+          if (uniqueNewPatients.size > newPatients) {
+            newPatients = uniqueNewPatients.size
+          }
+          if (uniqueAllPatients.size > totalPatients) {
+            totalPatients = uniqueAllPatients.size
+          }
+          if (actualNewPatientRevenue > newPatientRevenue) {
+            newPatientRevenue = actualNewPatientRevenue
+          }
+        }
+
         const returningPatients = Math.max(0, totalPatients - newPatients)
-        const newPatientRevenue = currentMonthData.newPatientRevenue || 0
-        const avgDailyNewPatients = (currentMonthData.workingDays || 0) > 0 ? newPatients / (currentMonthData.workingDays || 1) : 0
+        const workingDays = currentMonthData.workingDays || 0
+        const avgDailyNewPatients = workingDays > 0 ? newPatients / workingDays : 0
 
         return {
           신환내원: newPatients,
           구환내원: returningPatients,
           내원환자수: totalPatients,
           일평균신환: Math.round(avgDailyNewPatients * 10) / 10,
-          근무일수: currentMonthData.workingDays || 0,
+          근무일수: workingDays,
           신환1인객단가: newPatients > 0 ? newPatientRevenue / newPatients : 0,
           신환총진료비: newPatientRevenue
         }
@@ -299,24 +362,45 @@ export default function PatientsPageClient({
 
   // ===== 환자 관리 고도화 분석 함수들 =====
 
-  // 1. 환자 유지율 분석
+  // 1. 환자 유지율 분석 (정확성 개선)
   const getPatientRetentionAnalysis = () => {
     if (!historicalReceptionData || historicalReceptionData.length === 0) return null
 
-    // 환자별 최근 방문 이력 분석
+    // 환자별 최근 방문 이력 분석 (중복 제거 및 유효성 검증)
     const patientVisits = new Map<string, Date[]>()
 
     historicalReceptionData.forEach(record => {
-      if (record.receptionTime && record.patientName) {
+      if (record.receptionTime && (record.patientName || record.chartNumber)) {
+        // 차트번호 우선, 없으면 환자명 사용 (정확성 개선)
         const key = record.chartNumber || record.patientName
+        if (!key || key.trim() === '') return
+
+        const receptionDate = new Date(record.receptionTime)
+        // 유효한 날짜인지 확인
+        if (isNaN(receptionDate.getTime())) return
+
+        // 현재 선택된 연도 데이터만 분석 (범위 정확성)
+        if (receptionDate.getFullYear() !== selectedYear) return
+
         if (!patientVisits.has(key)) {
           patientVisits.set(key, [])
         }
-        patientVisits.get(key)!.push(new Date(record.receptionTime))
+
+        const existingVisits = patientVisits.get(key)!
+        // 중복 방문 제거 (같은 날짜의 중복 기록)
+        const sameDay = existingVisits.find(visit =>
+          visit.getFullYear() === receptionDate.getFullYear() &&
+          visit.getMonth() === receptionDate.getMonth() &&
+          visit.getDate() === receptionDate.getDate()
+        )
+
+        if (!sameDay) {
+          existingVisits.push(receptionDate)
+        }
       }
     })
 
-    // 재방문 패턴 분석
+    // 재방문 패턴 분석 (정확성 개선)
     let returningPatients = 0
     let totalUniquePatients = patientVisits.size
     let avgVisitInterval = 0
@@ -325,12 +409,15 @@ export default function PatientsPageClient({
     patientVisits.forEach(visits => {
       if (visits.length > 1) {
         returningPatients++
-        // 방문 간격 계산
+        // 방문 간격 계산 (시간순 정렬 후)
         visits.sort((a, b) => a.getTime() - b.getTime())
         for (let i = 1; i < visits.length; i++) {
           const interval = (visits[i].getTime() - visits[i-1].getTime()) / (1000 * 60 * 60 * 24)
-          avgVisitInterval += interval
-          totalIntervals++
+          // 비정상적인 간격 제외 (0일 또는 너무 큰 값)
+          if (interval > 0 && interval <= 365) {
+            avgVisitInterval += interval
+            totalIntervals++
+          }
         }
       }
     })
@@ -338,29 +425,52 @@ export default function PatientsPageClient({
     const retentionRate = totalUniquePatients > 0 ? (returningPatients / totalUniquePatients) * 100 : 0
     const avgDaysBetweenVisits = totalIntervals > 0 ? Math.round(avgVisitInterval / totalIntervals) : 0
 
-    // 신환의 재방문률 (지난 3개월 신환들의 재방문 현황)
+    // 신환의 재방문률 분석 (선택된 연도 기준으로 정확성 개선)
     const newPatientReturns = new Map<string, {firstVisit: Date, hasReturn: boolean}>()
 
-    historicalReceptionData
-      .filter(r => r.patientType === '신환' || r.patientType === '새환자')
-      .forEach(record => {
-        const key = record.chartNumber || record.patientName || 'unknown'
-        const visitDate = new Date(record.receptionTime!)
+    // 선택된 연도의 신환 데이터만 분석
+    const yearlyReceptionData = historicalReceptionData.filter(r => {
+      if (!r.receptionTime) return false
+      const date = new Date(r.receptionTime)
+      return date.getFullYear() === selectedYear
+    })
 
+    yearlyReceptionData
+      .filter(r => r.patientType === '신환' || r.patientType === '새환자' ||
+                   r.patientType === 'NEW' || r.patientType === 'new')
+      .forEach(record => {
+        const key = record.chartNumber || record.patientName
+        if (!key || key.trim() === '') return
+
+        const visitDate = new Date(record.receptionTime!)
+        if (isNaN(visitDate.getTime())) return
+
+        // 가장 이른 신환 방문을 기록
         if (!newPatientReturns.has(key)) {
           newPatientReturns.set(key, { firstVisit: visitDate, hasReturn: false })
+        } else {
+          const existing = newPatientReturns.get(key)!
+          if (visitDate < existing.firstVisit) {
+            existing.firstVisit = visitDate
+          }
         }
       })
 
-    // 신환들의 재방문 체크
-    historicalReceptionData.forEach(record => {
-      const key = record.chartNumber || record.patientName || 'unknown'
+    // 신환들의 재방문 체크 (신환 첫 방문 이후의 모든 방문 확인)
+    yearlyReceptionData.forEach(record => {
+      const key = record.chartNumber || record.patientName
+      if (!key || key.trim() === '') return
+
       const newPatientData = newPatientReturns.get(key)
 
       if (newPatientData && record.receptionTime) {
         const visitDate = new Date(record.receptionTime)
-        if (visitDate > newPatientData.firstVisit) {
-          newPatientData.hasReturn = true
+        if (!isNaN(visitDate.getTime()) && visitDate > newPatientData.firstVisit) {
+          // 첫 방문 이후 최소 1일 이후의 방문을 재방문으로 간주
+          const dayDiff = (visitDate.getTime() - newPatientData.firstVisit.getTime()) / (1000 * 60 * 60 * 24)
+          if (dayDiff >= 1) {
+            newPatientData.hasReturn = true
+          }
         }
       }
     })
@@ -407,7 +517,7 @@ export default function PatientsPageClient({
     }
   }
 
-  // 3. 요일별/시간대별 패턴 분석
+  // 3. 요일별/시간대별 패턴 분석 (정확성 개선)
   const getTimePatternAnalysis = () => {
     if (!receptionRecords || receptionRecords.length === 0) return null
 
@@ -415,24 +525,47 @@ export default function PatientsPageClient({
     const hourlyPattern = Array(24).fill(0)
     const weekdayNames = ['월', '화', '수', '목', '금', '토', '일']
 
-    receptionRecords.forEach(record => {
-      if (record.receptionTime) {
-        const date = new Date(record.receptionTime)
-        const weekday = (date.getDay() + 6) % 7 // 월=0, 일=6으로 조정
-        const hour = date.getHours()
+    // 선택된 연도와 월 데이터만 분석 (범위 정확성)
+    const filteredRecords = receptionRecords.filter(record => {
+      if (!record.receptionTime) return false
+      const date = new Date(record.receptionTime)
+      // 유효한 날짜인지 확인
+      if (isNaN(date.getTime())) return false
+      // 선택된 년월과 일치하는지 확인
+      return date.getFullYear() === selectedYear && date.getMonth() + 1 === selectedMonth
+    })
 
+    // 중복 방문 제거 (같은 환자의 같은 날 여러 기록)
+    const uniqueVisits = new Set<string>()
+    const deduplicatedRecords = filteredRecords.filter(record => {
+      const date = new Date(record.receptionTime!)
+      const key = `${record.chartNumber || record.patientName}_${date.getFullYear()}_${date.getMonth()}_${date.getDate()}_${date.getHours()}`
+
+      if (uniqueVisits.has(key)) {
+        return false // 중복 제거
+      }
+      uniqueVisits.add(key)
+      return true
+    })
+
+    deduplicatedRecords.forEach(record => {
+      const date = new Date(record.receptionTime!)
+      const weekday = (date.getDay() + 6) % 7 // 월=0, 일=6으로 조정
+      const hour = date.getHours()
+
+      // 비정상적인 시간대 제외 (0-23시간 외)
+      if (hour >= 0 && hour <= 23) {
         weekdayPattern[weekday]++
         hourlyPattern[hour]++
       }
     })
 
-    // 히트맵 데이터 생성
+    // 히트맵 데이터 생성 (진료시간만)
     const heatmapData = []
     for (let day = 0; day < 7; day++) {
       for (let hour = 9; hour < 18; hour++) { // 9시-17시만 표시
-        const dayRecords = receptionRecords.filter(r => {
-          if (!r.receptionTime) return false
-          const date = new Date(r.receptionTime)
+        const dayRecords = deduplicatedRecords.filter(r => {
+          const date = new Date(r.receptionTime!)
           const recordDay = (date.getDay() + 6) % 7
           const recordHour = date.getHours()
           return recordDay === day && recordHour === hour
@@ -463,29 +596,72 @@ export default function PatientsPageClient({
     }
   }
 
-  // 4. 예약 효율성 분석 (예약 vs 실제 내원)
+  // 4. 예약 효율성 분석 (예약 vs 실제 내원, 정확성 개선)
   const getAppointmentEfficiencyAnalysis = () => {
-    if (!yearlyData || yearlyData.length === 0) return null
+    // 선택된 월의 PatientStat 데이터 확인
+    const currentMonthData = monthlyData.find(d =>
+      d.year === selectedYear && d.month === selectedMonth
+    )
 
-    const currentMonthData = yearlyData.find(d => d.month === selectedMonth)
-    if (!currentMonthData) return null
+    if (!currentMonthData && (!yearlyData || yearlyData.length === 0)) return null
 
-    const totalAppointments = currentMonthData.totalAppointments || 0
-    const totalVisits = currentMonthData.totalVisits || 0
+    let totalAppointments = 0
+    let totalVisits = 0
+
+    if (currentMonthData) {
+      totalAppointments = currentMonthData.totalAppointments || 0
+      totalVisits = currentMonthData.totalVisits || 0
+    } else {
+      // monthlyData가 없으면 yearlyData에서 찾기
+      const yearlyCurrentMonth = yearlyData.find(d => d.month === selectedMonth)
+      if (yearlyCurrentMonth) {
+        totalAppointments = yearlyCurrentMonth.totalAppointments || 0
+        totalVisits = yearlyCurrentMonth.totalVisits || 0
+      }
+    }
+
+    // 실제 접수 기록으로 검증 (선택된 월만)
+    const currentMonthReceptions = receptionRecords.filter(r => {
+      if (!r.receptionTime) return false
+      const date = new Date(r.receptionTime)
+      return date.getFullYear() === selectedYear && date.getMonth() + 1 === selectedMonth
+    })
+
+    // 중복 제거된 실제 내원 수
+    const uniqueVisits = new Set<string>()
+    currentMonthReceptions.forEach(r => {
+      const patientKey = r.chartNumber || r.patientName
+      if (patientKey && patientKey.trim() !== '') {
+        const date = new Date(r.receptionTime!)
+        const visitKey = `${patientKey}_${date.getFullYear()}_${date.getMonth()}_${date.getDate()}`
+        uniqueVisits.add(visitKey)
+      }
+    })
+
+    // 실제 접수 데이터가 더 정확한 경우 사용
+    if (uniqueVisits.size > totalVisits && currentMonthReceptions.length > 0) {
+      totalVisits = uniqueVisits.size
+    }
+
+    // 예약 수가 실제 내원 수보다 적으면 데이터 오류로 간주하고 조정
+    if (totalAppointments < totalVisits && totalVisits > 0) {
+      totalAppointments = totalVisits // 최소한 내원한만큼은 예약이 있었다고 가정
+    }
 
     const showRate = totalAppointments > 0 ? (totalVisits / totalAppointments) * 100 : 0
-    const noShowRate = 100 - showRate
+    const noShowRate = Math.max(0, 100 - showRate)
+    const noShowCount = Math.max(0, totalAppointments - totalVisits)
 
     return {
       totalAppointments,
       totalVisits,
-      showRate,
+      showRate: Math.min(100, showRate), // 100% 초과 방지
       noShowRate,
-      noShowCount: totalAppointments - totalVisits
+      noShowCount
     }
   }
 
-  // 5. 목표 대비 성과 분석
+  // 5. 목표 대비 성과 분석 (정확성 개선)
   const getGoalAnalysis = () => {
     // 목표 설정 (실제로는 설정 가능하게 만들 수 있음)
     const monthlyNewPatientGoal = 50 // 예시 목표
@@ -497,10 +673,22 @@ export default function PatientsPageClient({
     const newPatientAchievementRate = monthlyNewPatientGoal > 0 ? (actualNewPatients / monthlyNewPatientGoal) * 100 : 0
     const revenueAchievementRate = monthlyRevenueGoal > 0 ? (actualRevenue / monthlyRevenueGoal) * 100 : 0
 
-    // 목표 달성까지 필요한 일일 신환수 (남은 날짜 계산)
+    // 목표 달성까지 필요한 일일 신환수 계산 (정확성 개선)
     const today = new Date()
-    const endOfMonth = new Date(selectedYear, selectedMonth, 0)
-    const remainingDays = Math.max(0, endOfMonth.getDate() - today.getDate())
+    let remainingDays = 0
+
+    // 현재 달과 선택된 달이 같은 경우만 남은 일수 계산
+    if (today.getFullYear() === selectedYear && today.getMonth() + 1 === selectedMonth) {
+      const endOfMonth = new Date(selectedYear, selectedMonth, 0) // 해당 월의 마지막 날
+      remainingDays = Math.max(0, endOfMonth.getDate() - today.getDate())
+    } else if (selectedYear > today.getFullYear() ||
+               (selectedYear === today.getFullYear() && selectedMonth > today.getMonth() + 1)) {
+      // 미래의 월인 경우 전체 근무일 수 사용
+      const endOfMonth = new Date(selectedYear, selectedMonth, 0)
+      remainingDays = endOfMonth.getDate()
+    }
+    // 과거 월인 경우 remainingDays = 0
+
     const remainingNewPatientsNeeded = Math.max(0, monthlyNewPatientGoal - actualNewPatients)
     const dailyNewPatientsNeeded = remainingDays > 0 ? remainingNewPatientsNeeded / remainingDays : 0
 
@@ -509,11 +697,11 @@ export default function PatientsPageClient({
       monthlyRevenueGoal,
       actualNewPatients,
       actualRevenue,
-      newPatientAchievementRate,
-      revenueAchievementRate,
+      newPatientAchievementRate: Math.min(999, newPatientAchievementRate), // 과도한 달성률 제한
+      revenueAchievementRate: Math.min(999, revenueAchievementRate), // 과도한 달성률 제한
       remainingDays,
       remainingNewPatientsNeeded,
-      dailyNewPatientsNeeded
+      dailyNewPatientsNeeded: Math.round(dailyNewPatientsNeeded * 10) / 10
     }
   }
 
@@ -684,8 +872,19 @@ export default function PatientsPageClient({
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="flex items-center justify-center h-[400px] text-[#8b95a1]">
-            연간 데이터가 없습니다.
+          <div className="flex flex-col items-center justify-center h-[400px] bg-gray-50 rounded-xl border border-gray-200">
+            <Users className="w-16 h-16 text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">환자 데이터가 없습니다</h3>
+            <p className="text-gray-600 text-center mb-4 max-w-md">
+              환자 통계를 보려면 환자 데이터나 접수 기록을 업로드해주세요
+            </p>
+            <a
+              href={`/dashboard/${clinicId}/upload`}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              데이터 업로드하기
+            </a>
           </div>
         )}
       </SectionCard>
@@ -874,7 +1073,61 @@ export default function PatientsPageClient({
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 신환/구환 분포 차트 */}
+            {hasValidPatientData && (
+              <div>
+                <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">환자 유형별 분포</h4>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          {
+                            name: '신환',
+                            value: currentStats.신환수,
+                            color: '#3182f6',
+                            percentage: ((currentStats.신환수 / (currentStats.신환수 + currentStats.구환수)) * 100).toFixed(1)
+                          },
+                          {
+                            name: '구환',
+                            value: currentStats.구환수,
+                            color: '#10b981',
+                            percentage: ((currentStats.구환수 / (currentStats.신환수 + currentStats.구환수)) * 100).toFixed(1)
+                          }
+                        ].filter(item => item.value > 0)}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        label={({name, value, percentage}) => `${name}: ${value}명 (${percentage}%)`}
+                      >
+                        {[
+                          { name: '신환', color: '#3182f6' },
+                          { name: '구환', color: '#10b981' }
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* 범례 */}
+                <div className="flex justify-center space-x-4 mt-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="text-sm text-gray-600">신환 ({currentStats.신환수}명)</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-gray-600">구환 ({currentStats.구환수}명)</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 치료 상태별 분포 */}
             <div>
               <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">치료 상태별 현황</h4>
