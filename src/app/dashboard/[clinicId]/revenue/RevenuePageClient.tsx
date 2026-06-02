@@ -79,6 +79,15 @@ export default function RevenuePageClient({
 
   const [selectedYear, setSelectedYear] = useState(initialYear)
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
+  const [chartsReady, setChartsReady] = useState(false)
+
+  // 차트 렌더링 준비 - DOM이 완전히 로드된 후 차트 렌더링
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setChartsReady(true)
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [])
 
   // URL 업데이트 (무한 루프 방지)
   useEffect(() => {
@@ -418,8 +427,9 @@ export default function RevenuePageClient({
 
       {/* 연간 매출 추이 및 성장 트렌드 */}
       <SectionCard title={`${selectedYear}년 매출 추이 분석`} description="월별 성장 패턴 및 전년 대비">
-        <div className="h-[450px]">
-          <ResponsiveContainer width="100%" height="100%">
+        {chartsReady ? (
+          <div className="w-full" style={{ width: '100%', height: '450px' }}>
+            <ResponsiveContainer width="100%" height={450}>
             <ComposedChart data={yearlyTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
               <XAxis
@@ -463,7 +473,12 @@ export default function RevenuePageClient({
               />
             </ComposedChart>
           </ResponsiveContainer>
-        </div>
+          </div>
+        ) : (
+          <div className="h-[450px] flex items-center justify-center">
+            <div className="text-gray-500">차트를 로딩 중...</div>
+          </div>
+        )}
       </SectionCard>
 
       {/* 예측 분석 섹션 제거됨 (사용자 요청) */}
