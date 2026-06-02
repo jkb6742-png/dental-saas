@@ -135,6 +135,15 @@ export default function PatientsPageClient({
 
   const [selectedYear, setSelectedYear] = useState(initialYear)
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
+  const [chartsReady, setChartsReady] = useState(false)
+
+  // 차트 렌더링 준비 - DOM이 완전히 로드된 후 차트 렌더링
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setChartsReady(true)
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [])
 
   // 데이터 디버깅
   console.log(`[CLIENT DEBUG] receptionRecords 전체: ${receptionRecords.length}개`)
@@ -859,9 +868,9 @@ export default function PatientsPageClient({
 
       {/* 연간 환자 추이 차트 */}
       <SectionCard title={`${selectedYear}년 월별 환자 현황 추이`} description="연간 전체 트렌드">
-        {yearlyTrendData.length > 0 ? (
-          <div className="h-[450px] min-h-[450px] w-full">
-            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={400}>
+        {yearlyTrendData.length > 0 && chartsReady ? (
+          <div className="w-full" style={{ width: '100%', height: '450px' }}>
+            <ResponsiveContainer width="100%" height={450}>
               <ComposedChart data={yearlyTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
                 <XAxis
@@ -919,10 +928,10 @@ export default function PatientsPageClient({
       </SectionCard>
 
       {/* 월간 일별 상세 차트 */}
-      {monthlyChartData.length > 0 && (
+      {monthlyChartData.length > 0 && chartsReady && (
         <SectionCard title={`${selectedYear}년 ${selectedMonth}월 일별 환자 현황`} description="선택된 월의 상세 분석">
-          <div className="h-[400px] min-h-[400px] w-full">
-            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={350}>
+          <div className="w-full" style={{ width: '100%', height: '400px' }}>
+            <ResponsiveContainer width="100%" height={400}>
               <BarChart data={monthlyChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
                 <XAxis
@@ -945,10 +954,10 @@ export default function PatientsPageClient({
       )}
 
       {/* 신환 수익 분석 (MonthlySummary 데이터가 있을 때) */}
-      {fallbackData && fallbackData.length > 0 && (
+      {fallbackData && fallbackData.length > 0 && chartsReady && (
         <SectionCard title={`${selectedYear}년 신환 수익 분석`} description="신환 관련 재무 지표">
-          <div className="h-[400px] min-h-[400px] w-full">
-            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={350}>
+          <div className="w-full" style={{ width: '100%', height: '400px' }}>
+            <ResponsiveContainer width="100%" height={400}>
               <ComposedChart data={yearlyTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
                 <XAxis
@@ -1321,9 +1330,10 @@ export default function PatientsPageClient({
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 예약 대비 내원 현황 */}
-            <div className="h-[300px] min-h-[300px] w-full">
+            <div className="w-full">
               <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">예약 vs 실제 내원</h4>
-              <ResponsiveContainer width="100%" height="100%" minWidth={250} minHeight={250}>
+              <div className="w-full" style={{ width: '100%', height: '250px' }}>
+                <ResponsiveContainer width={300} height={250}>
                 <BarChart data={[
                   {
                     name: '예약 현황',
@@ -1340,7 +1350,8 @@ export default function PatientsPageClient({
                   <Bar dataKey="실제내원" fill="#10b981" name="실제 내원" />
                   <Bar dataKey="노쇼" fill="#ef4444" name="노쇼" />
                 </BarChart>
-              </ResponsiveContainer>
+                </ResponsiveContainer>
+              </div>
             </div>
 
             {/* 효율성 인사이트 */}
