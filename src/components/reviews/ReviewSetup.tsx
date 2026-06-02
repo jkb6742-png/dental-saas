@@ -266,14 +266,70 @@ export default function ReviewSetup({ clinicId, onConfigSaved }: ReviewSetupProp
         </div>
       </div>
 
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <h5 className="font-medium text-yellow-800 mb-2">설정 안내</h5>
-        <ul className="text-sm text-yellow-700 space-y-1 list-disc list-inside">
-          <li><strong>구글 리뷰:</strong> Google Places API 키가 필요합니다. (.env 파일에 GOOGLE_PLACES_API_KEY 설정)</li>
-          <li><strong>네이버 리뷰:</strong> 현재는 수동 입력만 지원됩니다. 자동 크롤링은 추후 업데이트 예정입니다.</li>
-          <li>리뷰 수집은 하루 1-2회 정도 실행하는 것을 권장합니다.</li>
-          <li>리뷰 데이터는 월별로 요약되어 대시보드에 표시됩니다.</li>
-        </ul>
+      {/* 간편 수동 입력 섹션 */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-blue-800 mb-4">💡 간편 리뷰 현황 입력</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* 네이버 간편 입력 */}
+          <div className="bg-white rounded-lg p-4 border">
+            <div className="flex items-center space-x-2 mb-3">
+              <div className="w-6 h-6 bg-green-500 rounded text-white text-xs flex items-center justify-center font-bold">N</div>
+              <span className="font-medium">네이버 플레이스</span>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex space-x-2">
+                <input
+                  type="number"
+                  placeholder="총 리뷰 수"
+                  className="flex-1 px-2 py-1 text-sm border rounded"
+                />
+                <input
+                  type="number"
+                  placeholder="이번달"
+                  className="w-20 px-2 py-1 text-sm border rounded"
+                />
+              </div>
+              <input
+                type="text"
+                placeholder="주요 피드백 (선택사항)"
+                className="w-full px-2 py-1 text-sm border rounded"
+              />
+              <button className="w-full py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600">
+                저장
+              </button>
+            </div>
+          </div>
+
+          {/* 구글 간편 입력 */}
+          <div className="bg-white rounded-lg p-4 border">
+            <div className="flex items-center space-x-2 mb-3">
+              <div className="w-6 h-6 bg-blue-500 rounded text-white text-xs flex items-center justify-center font-bold">G</div>
+              <span className="font-medium">구글 리뷰</span>
+            </div>
+
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="Place ID (자동 수집용)"
+                className="w-full px-2 py-1 text-sm border rounded"
+              />
+              <button className="w-full py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600">
+                자동 수집
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 text-sm text-blue-700">
+          <p><strong>📋 사용법:</strong></p>
+          <ul className="mt-1 space-y-1 list-disc list-inside">
+            <li><strong>네이버:</strong> 직접 네이버 지도에서 확인 후 수동 입력 (월 1회)</li>
+            <li><strong>구글:</strong> Place ID 입력 후 자동 수집 가능</li>
+            <li>주요 피드백: 개선이 필요한 부분만 간단히 메모</li>
+          </ul>
+        </div>
       </div>
     </div>
   )

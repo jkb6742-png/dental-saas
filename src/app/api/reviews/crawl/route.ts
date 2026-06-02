@@ -21,13 +21,105 @@ async function fetchGoogleReviews(placeId: string) {
   return data.result
 }
 
-// 네이버 리뷰 크롤링 (간단한 예시 - 실제로는 더 복잡한 구현 필요)
+// 네이버 리뷰 크롤링 (Puppeteer 사용)
 async function fetchNaverReviews(placeUrl: string) {
-  // 네이버는 공식 API가 없으므로 실제 구현시에는
-  // 웹 스크래핑이나 다른 방법이 필요합니다
-  // 여기서는 데모용 빈 배열을 반환합니다
-  console.warn("Naver review crawling not implemented - requires web scraping")
-  return { reviews: [], rating: null, user_ratings_total: 0 }
+  try {
+    console.log("🕷️ 네이버 리뷰 크롤링 시작:", placeUrl)
+
+    // 환경 체크 - 프로덕션에서는 크롤링 비활성화
+    if (process.env.NODE_ENV === 'production') {
+      console.warn("⚠️ 프로덕션 환경에서는 네이버 크롤링을 비활성화합니다")
+      return { reviews: [], rating: null, user_ratings_total: 0 }
+    }
+
+    const puppeteer = require('puppeteer')
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu'
+      ]
+    })
+
+    const page = await browser.newPage()
+
+    // User-Agent 설정으로 봇 탐지 우회 시도
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+
+    // 페이지 로드
+    await page.goto(placeUrl, {
+      waitUntil: 'networkidle2',
+      timeout: 30000
+    })
+
+    // 리뷰 탭 클릭 시도
+    try {
+      await page.waitForSelector('[data-tab="review"]', { timeout: 5000 })
+      await page.click('[data-tab="review"]')
+      await page.waitForTimeout(2000)
+    } catch (e) {
+      console.warn("리뷰 탭을 찾을 수 없음, 기본 페이지에서 시도")
+    }
+
+    // 리뷰 데이터 추출
+    const reviews = await page.evaluate(() => {
+      const reviewElements = document.querySelectorAll('.place_section_content .zPfVt') // 네이버 리뷰 셀렉터 (변경 가능)
+      const reviews = []
+
+      reviewElements.forEach((element, index) => {
+        if (index >= 10) return // 최대 10개만
+
+        try {
+          const authorElement = element.querySelector('.YeINN')
+          const ratingElement = element.querySelector('.PXMot em')
+          const contentElement = element.querySelector('.ZZ4OK')
+          const dateElement = element.querySelector('.BB2Kx')
+
+          const author = authorElement?.textContent?.trim() || '익명'
+          const ratingText = ratingElement?.textContent?.trim()
+          const rating = ratingText ? parseInt(ratingText) : null
+          const content = contentElement?.textContent?.trim() || ''
+          const dateText = dateElement?.textContent?.trim()
+
+          if (content) {
+            reviews.push({
+              author_name: author,
+              rating: rating,
+              text: content,
+              time: dateText,
+              relative_time_description: dateText
+            })
+          }
+        } catch (err) {
+          console.warn('개별 리뷰 파싱 오류:', err)
+        }
+      })
+
+      return reviews
+    })
+
+    await browser.close()
+
+    console.log(`✅ 네이버 리뷰 ${reviews.length}개 수집 완료`)
+
+    return {
+      reviews: reviews,
+      rating: null, // 네이버에서 전체 평점 추출은 별도 구현 필요
+      user_ratings_total: reviews.length
+    }
+
+  } catch (error) {
+    console.error("❌ 네이버 리뷰 크롤링 실패:", error)
+
+    // 크롤링 실패시 빈 결과 반환 (에러 발생시키지 않음)
+    return { reviews: [], rating: null, user_ratings_total: 0 }
+  }
 }
 
 export async function POST(request: Request) {

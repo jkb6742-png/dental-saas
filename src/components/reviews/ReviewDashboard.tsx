@@ -228,6 +228,41 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
         </div>
       </SectionCard>
 
+      {/* 주요 피드백 */}
+      {summaries.some(s => s.topKeywords && (s.topKeywords as any).feedback) && (
+        <SectionCard title="주요 피드백" description="개선이 필요한 부분">
+          <div className="space-y-3">
+            {summaries.map((summary) => {
+              const feedback = summary.topKeywords && (summary.topKeywords as any).feedback
+              if (!feedback || !Array.isArray(feedback)) return null
+
+              return (
+                <div key={summary.source} className="border rounded-lg p-4">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      summary.source === "NAVER"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-blue-100 text-blue-700"
+                    }`}>
+                      {summary.source}
+                    </span>
+                    <span className="text-sm text-gray-600">피드백 {feedback.length}건</span>
+                  </div>
+                  <div className="space-y-2">
+                    {feedback.map((item: string, index: number) => (
+                      <div key={index} className="flex items-start space-x-2">
+                        <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
+                        <p className="text-sm text-gray-700">{item}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </SectionCard>
+      )}
+
       {/* 최근 리뷰 */}
       {recentReviews.length > 0 && (
         <SectionCard title="최근 리뷰" description="최근 작성된 리뷰">
