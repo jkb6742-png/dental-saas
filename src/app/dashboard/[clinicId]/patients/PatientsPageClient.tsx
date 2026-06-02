@@ -271,13 +271,21 @@ export default function PatientsPageClient({
 
   // 현재 월 통계 계산 (MonthlySummary 우선, 없으면 PatientStat에서 올바른 계산, 정확성 개선)
   const getCurrentMonthStats = () => {
+    console.log(`[STATS DEBUG] 현재 선택: ${selectedYear}년 ${selectedMonth}월`)
+    console.log(`[STATS DEBUG] fallbackData 길이:`, fallbackData?.length || 0)
+    console.log(`[STATS DEBUG] currentMonthReceptionRecords 길이:`, currentMonthReceptionRecords?.length || 0)
+
     // MonthlySummary 데이터 우선 사용 (올바른 고유 환자 수 계산)
     if (fallbackData && fallbackData.length > 0) {
       const currentMonthData = fallbackData.find(d => d.year === selectedYear && d.month === selectedMonth)
+      console.log(`[STATS DEBUG] currentMonthData 찾기 결과:`, currentMonthData ? 'Found' : 'Not Found')
+
       if (currentMonthData) {
         let newPatients = currentMonthData.newPatients || 0
         let totalPatients = currentMonthData.totalPatients || 0
         let newPatientRevenue = currentMonthData.newPatientRevenue || 0
+
+        console.log(`[STATS DEBUG] MonthlySummary 기본값 - 신환: ${newPatients}, 총환자: ${totalPatients}, 수익: ${newPatientRevenue}`)
 
         // 실제 접수 데이터로 검증 및 보정 (현재 선택된 월만)
         const currentMonthReceptions = receptionRecords.filter(r => {
@@ -285,6 +293,8 @@ export default function PatientsPageClient({
           const date = new Date(r.receptionTime)
           return date.getFullYear() === selectedYear && date.getMonth() + 1 === selectedMonth
         })
+
+        console.log(`[STATS DEBUG] 현재 월 접수기록 필터링 결과: ${currentMonthReceptions.length}개`)
 
         if (currentMonthReceptions.length > 0) {
           // 중복 환자 제거를 위한 고유 환자 집합
@@ -298,6 +308,8 @@ export default function PatientsPageClient({
 
             uniqueAllPatients.add(patientKey)
 
+            console.log(`[STATS DEBUG] 환자: ${patientKey}, 타입: ${r.patientType}, 수익: ${r.totalRevenue}`)
+
             if (r.patientType === '신환' || r.patientType === 'NEW' || r.patientType === 'new') {
               uniqueNewPatients.add(patientKey)
               if (r.totalRevenue && r.totalRevenue > 0) {
@@ -306,14 +318,19 @@ export default function PatientsPageClient({
             }
           })
 
+          console.log(`[STATS DEBUG] 집계 결과 - 고유 신환: ${uniqueNewPatients.size}명, 고유 전체: ${uniqueAllPatients.size}명, 신환 수익: ${actualNewPatientRevenue}원`)
+
           // 실제 접수 데이터가 더 정확한 경우 사용
           if (uniqueNewPatients.size > newPatients) {
+            console.log(`[STATS DEBUG] 신환수 업데이트: ${newPatients} -> ${uniqueNewPatients.size}`)
             newPatients = uniqueNewPatients.size
           }
           if (uniqueAllPatients.size > totalPatients) {
+            console.log(`[STATS DEBUG] 총환자수 업데이트: ${totalPatients} -> ${uniqueAllPatients.size}`)
             totalPatients = uniqueAllPatients.size
           }
           if (actualNewPatientRevenue > newPatientRevenue) {
+            console.log(`[STATS DEBUG] 신환수익 업데이트: ${newPatientRevenue} -> ${actualNewPatientRevenue}`)
             newPatientRevenue = actualNewPatientRevenue
           }
         }
@@ -322,7 +339,7 @@ export default function PatientsPageClient({
         const workingDays = currentMonthData.workingDays || 0
         const avgDailyNewPatients = workingDays > 0 ? newPatients / workingDays : 0
 
-        return {
+        const result = {
           신환내원: newPatients,
           구환내원: returningPatients,
           내원환자수: totalPatients,
@@ -331,7 +348,49 @@ export default function PatientsPageClient({
           신환1인객단가: newPatients > 0 ? newPatientRevenue / newPatients : 0,
           신환총진료비: newPatientRevenue
         }
+
+        console.log(`[STATS DEBUG] 최종 결과:`, result)
+        return result
       }
+    }
+
+    // 현재 월 접수기록에서 직접 계산 (fallbackData가 없는 경우)
+    console.log(`[STATS DEBUG] MonthlySummary 없음, 접수기록에서 직접 계산`)
+    if (currentMonthReceptionRecords && currentMonthReceptionRecords.length > 0) {
+      const uniqueNewPatients = new Set<string>()
+      const uniqueAllPatients = new Set<string>()
+      const uniqueReturningPatients = new Set<string>()
+      let totalNewPatientRevenue = 0
+
+      currentMonthReceptionRecords.forEach(r => {
+        const patientKey = r.chartNumber || r.patientName
+        if (!patientKey || patientKey.trim() === '') return
+
+        uniqueAllPatients.add(patientKey)
+
+        if (r.patientType === '신환' || r.patientType === 'NEW' || r.patientType === 'new') {
+          uniqueNewPatients.add(patientKey)
+          if (r.totalRevenue && r.totalRevenue > 0) {
+            totalNewPatientRevenue += r.totalRevenue
+          }
+        } else if (r.patientType === '구환' || r.patientType === 'RETURNING' || r.patientType === 'returning' ||
+                   r.patientType === '재진' || r.patientType === 'REVISIT') {
+          uniqueReturningPatients.add(patientKey)
+        }
+      })
+
+      const result = {
+        신환내원: uniqueNewPatients.size,
+        구환내원: uniqueReturningPatients.size,
+        내원환자수: uniqueAllPatients.size,
+        일평균신환: 0, // 근무일수 정보 없음
+        근무일수: 0,
+        신환1인객단가: uniqueNewPatients.size > 0 ? totalNewPatientRevenue / uniqueNewPatients.size : 0,
+        신환총진료비: totalNewPatientRevenue
+      }
+
+      console.log(`[STATS DEBUG] 접수기록 직접 계산 결과:`, result)
+      return result
     }
 
     // MonthlySummary 데이터가 없을 때만 PatientStat 사용 (방문 수만 표시)
