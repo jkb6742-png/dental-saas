@@ -566,6 +566,5 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
         </div>
       </div>
     </div>
-    </div>
   )
 }

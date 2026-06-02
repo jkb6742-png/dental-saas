@@ -27,7 +27,7 @@ export async function POST() {
     return NextResponse.json({
       success: false,
       error: "비밀번호 재설정 중 오류가 발생했습니다.",
-      detail: error.message
+      detail: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
   }
 }
