@@ -760,6 +760,7 @@ export default function RevenuePageClient({
               </div>
             </div>
           </div>
+        </div>
         ) : null}
       </SectionCard>
 
