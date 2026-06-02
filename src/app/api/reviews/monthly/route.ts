@@ -12,16 +12,17 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url)
     const clinicId = url.searchParams.get("clinicId")
+    const source = url.searchParams.get("source") as "NAVER" | "GOOGLE" | null
 
     if (!clinicId) {
       return NextResponse.json({ error: "Missing clinicId" }, { status: 400 })
     }
 
-    // 네이버 리뷰의 최근 12개월 데이터 조회
+    // 소스별 최근 12개월 데이터 조회
     const reviews = await prisma.reviewSummary.findMany({
       where: {
         clinicId,
-        source: "NAVER"
+        ...(source && { source })
       },
       select: {
         id: true,
