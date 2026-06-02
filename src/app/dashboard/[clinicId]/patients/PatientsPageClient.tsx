@@ -296,11 +296,16 @@ export default function PatientsPageClient({
 
         console.log(`[STATS DEBUG] 현재 월 접수기록 필터링 결과: ${currentMonthReceptions.length}개`)
 
+        let actualAvgDailyNewPatients = 0 // 실제 접수 기록 기반 일평균
+
         if (currentMonthReceptions.length > 0) {
           // 중복 환자 제거를 위한 고유 환자 집합
           const uniqueNewPatients = new Set<string>()
           const uniqueAllPatients = new Set<string>()
           let actualNewPatientRevenue = 0
+
+          // 일별 신환 수 계산 (더 정확한 일평균신환 계산용)
+          const dailyNewPatients = new Map<string, Set<string>>()
 
           currentMonthReceptions.forEach(r => {
             const patientKey = r.chartNumber || r.patientName
@@ -314,6 +319,16 @@ export default function PatientsPageClient({
               uniqueNewPatients.add(patientKey)
               if (r.totalRevenue && r.totalRevenue > 0) {
                 actualNewPatientRevenue += r.totalRevenue
+              }
+
+              // 일별 신환 수 집계
+              if (r.receptionTime) {
+                const date = new Date(r.receptionTime)
+                const dateKey = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`
+                if (!dailyNewPatients.has(dateKey)) {
+                  dailyNewPatients.set(dateKey, new Set<string>())
+                }
+                dailyNewPatients.get(dateKey)!.add(patientKey)
               }
             }
           })
@@ -333,11 +348,28 @@ export default function PatientsPageClient({
             console.log(`[STATS DEBUG] 신환수익 업데이트: ${newPatientRevenue} -> ${actualNewPatientRevenue}`)
             newPatientRevenue = actualNewPatientRevenue
           }
+
+          // 일평균 신환 계산 (실제 접수 데이터 기반)
+          let totalDailyNewPatients = 0
+          let actualWorkingDays = dailyNewPatients.size
+
+          dailyNewPatients.forEach(patientsOnDay => {
+            totalDailyNewPatients += patientsOnDay.size
+          })
+
+          actualAvgDailyNewPatients = actualWorkingDays > 0 ? totalDailyNewPatients / actualWorkingDays : 0
+          console.log(`[STATS DEBUG] 실제 일평균 신환: 총 ${totalDailyNewPatients}명 ÷ ${actualWorkingDays}일 = ${actualAvgDailyNewPatients.toFixed(1)}명`)
         }
 
         const returningPatients = Math.max(0, totalPatients - newPatients)
         const workingDays = currentMonthData.workingDays || 0
-        const avgDailyNewPatients = workingDays > 0 ? newPatients / workingDays : 0
+
+        // 실제 접수 데이터에서 일평균 신환 계산 (더 정확함)
+        let avgDailyNewPatients = workingDays > 0 ? newPatients / workingDays : 0
+        if (actualAvgDailyNewPatients > 0) {
+          avgDailyNewPatients = actualAvgDailyNewPatients
+          console.log(`[STATS DEBUG] 일평균신환 업데이트: ${(workingDays > 0 ? newPatients / workingDays : 0).toFixed(1)} -> ${actualAvgDailyNewPatients.toFixed(1)}`)
+        }
 
         const result = {
           신환내원: newPatients,
@@ -362,6 +394,9 @@ export default function PatientsPageClient({
       const uniqueReturningPatients = new Set<string>()
       let totalNewPatientRevenue = 0
 
+      // 일별 신환 수 계산 (일평균신환 계산용)
+      const dailyNewPatients = new Map<string, Set<string>>() // 날짜별 신환 집합
+
       currentMonthReceptionRecords.forEach(r => {
         const patientKey = r.chartNumber || r.patientName
         if (!patientKey || patientKey.trim() === '') return
@@ -373,18 +408,40 @@ export default function PatientsPageClient({
           if (r.totalRevenue && r.totalRevenue > 0) {
             totalNewPatientRevenue += r.totalRevenue
           }
+
+          // 일별 신환 수 집계
+          if (r.receptionTime) {
+            const date = new Date(r.receptionTime)
+            const dateKey = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`
+            if (!dailyNewPatients.has(dateKey)) {
+              dailyNewPatients.set(dateKey, new Set<string>())
+            }
+            dailyNewPatients.get(dateKey)!.add(patientKey)
+          }
         } else if (r.patientType === '구환' || r.patientType === 'RETURNING' || r.patientType === 'returning' ||
                    r.patientType === '재진' || r.patientType === 'REVISIT') {
           uniqueReturningPatients.add(patientKey)
         }
       })
 
+      // 일평균 신환 계산 (실제 접수가 있었던 날 기준)
+      let totalDailyNewPatients = 0
+      let workingDays = dailyNewPatients.size // 실제 접수가 있었던 날 수
+
+      dailyNewPatients.forEach(patientsOnDay => {
+        totalDailyNewPatients += patientsOnDay.size
+      })
+
+      const avgDailyNewPatients = workingDays > 0 ? totalDailyNewPatients / workingDays : 0
+
+      console.log(`[STATS DEBUG] 일별 신환 계산: 총 ${totalDailyNewPatients}명, ${workingDays}일, 평균 ${avgDailyNewPatients.toFixed(1)}명`)
+
       const result = {
         신환내원: uniqueNewPatients.size,
         구환내원: uniqueReturningPatients.size,
         내원환자수: uniqueAllPatients.size,
-        일평균신환: 0, // 근무일수 정보 없음
-        근무일수: 0,
+        일평균신환: Math.round(avgDailyNewPatients * 10) / 10,
+        근무일수: workingDays,
         신환1인객단가: uniqueNewPatients.size > 0 ? totalNewPatientRevenue / uniqueNewPatients.size : 0,
         신환총진료비: totalNewPatientRevenue
       }
