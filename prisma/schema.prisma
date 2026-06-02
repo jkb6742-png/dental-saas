@@ -1,0 +1,472 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  MASTER
+  ADMIN
+  ANALYST
+  VIEWER
+}
+
+enum UserStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PlanTier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum TreatmentStatus {
+  IN_PROGRESS
+  COMPLETED
+  PENDING
+  ON_HOLD
+}
+
+enum PaymentStatus {
+  COMPLETED
+  INCOMPLETE
+  NA
+}
+
+enum TreatmentCategory {
+  INSURANCE
+  NON_INSURANCE
+}
+
+model Agency {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      PlanTier @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       User[]
+  clinics     Clinic[]
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  name      String
+  role      UserRole   @default(VIEWER)
+  status    UserStatus @default(PENDING)
+  agencyId  String
+  lockedAt  DateTime?  // 계정 잠금 시간
+  lockUntil DateTime?  // 계정 잠금 해제 시간
+  inviteCodeId String? // 사용한 초대 코드 ID
+  approvedBy   String? // 승인자 ID
+  approvedAt   DateTime? // 승인 시간
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  agency     Agency      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  inviteCode InviteCode? @relation(fields: [inviteCodeId], references: [id])
+  createdInviteCodes InviteCode[] @relation("InviteCodeCreator")
+  peiSheetConfigs PeiSheetConfig[]
+  generatedPeiReports PeiReport[] @relation("PeiReportGenerator")
+}
+
+model Clinic {
+  id        String   @id @default(cuid())
+  name      String
+  code      String
+  agencyId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agency           Agency             @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  dailyLedgers     DailyLedger[]
+  monthlySummaries MonthlySummary[]
+  patientStats     PatientStat[]
+  treatmentStats   TreatmentStat[]
+  visitRoutes      VisitRoute[]
+  treatmentPlans   TreatmentPlan[]
+  reports          Report[]
+  implantStats     ImplantStat[]
+  consultationStats ConsultationStat[]
+  receptionRecords ReceptionRecord[]
+  ageDists         AgeDist[]
+  regionDists      RegionDist[]
+  inviteCodes      InviteCode[]
+  peiSheetConfig   PeiSheetConfig?
+  peiReports       PeiReport[]
+
+  @@unique([agencyId, code])
+}
+
+model DailyLedger {
+  id             String   @id @default(cuid())
+  clinicId       String
+  date           DateTime
+  month          Int
+  year           Int
+  cashIncome     Float?
+  cardIncome     Float?
+  onlineIncome   Float?
+  receiptIssued  Float?
+  insuranceClaim Float?
+  cashExpense    Float?
+  cardExpense    Float?
+  onlineExpense  Float?
+  cardFee        Float?
+  totalIncome    Float?
+  totalExpense   Float?
+  netTotal       Float?
+  createdAt      DateTime @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, date])
+  @@index([clinicId, year, month])
+}
+
+model MonthlySummary {
+  id                    String   @id @default(cuid())
+  clinicId              String
+  year                  Int
+  month                 Int
+  totalRevenue          Float?
+  totalExpense          Float?
+  netProfit             Float?
+  cashIncome            Float?
+  cardIncome            Float?
+  insuranceClaim        Float?
+  nonInsuranceRevenue   Float?
+  newPatients           Int?
+  totalPatients         Int?
+  workingDays           Int?
+  avgDailyRevenue       Float?
+  newPatientRevenue     Float?
+  revisitRate           Float?
+  nonInsuranceRatio     Float?
+  revenueGrowth         Float?
+  newPatientGrowth      Float?
+  totalArrears          Float?
+  arrearsRate           Float?
+  treatmentCompleteRate Float?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  clinic Clinic  @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  report Report?
+
+  @@unique([clinicId, year, month])
+  @@index([clinicId, year])
+}
+
+model PatientStat {
+  id                   String   @id @default(cuid())
+  clinicId             String
+  date                 DateTime
+  month                Int
+  year                 Int
+  workingDays          Float?
+  newPatients          Float?
+  totalVisits          Float?
+  totalAppointments    Float?
+  avgDailyNewPatients  Float?
+  avgDailyAppointments Float?
+  createdAt            DateTime @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, date])
+  @@index([clinicId, year, month])
+}
+
+model TreatmentStat {
+  id           String            @id @default(cuid())
+  clinicId     String
+  year         Int
+  month        Int
+  itemName     String
+  category     TreatmentCategory
+  patientCount Float?
+  visitCount   Float?
+  revenue      Float?
+  visitRatio   Float?
+  revenueRatio Float?
+  createdAt    DateTime          @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month, itemName])
+  @@index([clinicId, year, month])
+}
+
+model VisitRoute {
+  id                String   @id @default(cuid())
+  clinicId          String
+  year              Int
+  month             Int
+  routeName         String
+  totalVisitors     Float?
+  returningPatients Float?
+  newPatients       Float?
+  totalVisits       Float?
+  avgRevenue        Float?
+  totalRevenue      Float?
+  acquisitionCost   Float?
+  createdAt         DateTime @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month, routeName])
+  @@index([clinicId, year, month])
+}
+
+model TreatmentPlan {
+  id              String           @id @default(cuid())
+  clinicId        String
+  patientName     String
+  chartNumber     String?
+  writtenDate     DateTime?
+  lastVisit       DateTime?
+  nextAppointment DateTime?
+  status          TreatmentStatus?
+  paymentStatus   PaymentStatus?
+  doctor          String?
+  counselor       String?
+  planContent     String?
+  contractAmount  Float?
+  remainingAmount Float?
+  month           Int?
+  year            Int?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, year, month])
+  @@index([clinicId, paymentStatus])
+}
+
+model Report {
+  id               String          @id @default(cuid())
+  clinicId         String
+  monthlySummaryId String?         @unique
+  year             Int
+  month            Int
+  content          String?
+  pdfUrl           String?
+  generatedAt      DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  clinic         Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  monthlySummary MonthlySummary? @relation(fields: [monthlySummaryId], references: [id])
+
+  @@unique([clinicId, year, month])
+}
+
+model ImplantStat {
+  id           String   @id @default(cuid())
+  clinicId     String
+  year         Int
+  month        Int
+  fixtureName  String
+  surgeryCount Float?
+  usageCount   Float?
+  createdAt    DateTime @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month, fixtureName])
+  @@index([clinicId, year, month])
+}
+
+model ConsultationStat {
+  id                   String   @id @default(cuid())
+  clinicId             String
+  year                 Int
+  month                Int
+  counselorName        String
+  planCount            Float?
+  confirmedCount       Float?
+  confirmationRate     Float?
+  patientCount         Float?
+  confirmedPatients    Float?
+  patientConfirmRate   Float?
+  confirmedAmount      Float?
+  avgDiscountRate      Float?
+  createdAt            DateTime @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month, counselorName])
+  @@index([clinicId, year, month])
+}
+
+model ReceptionRecord {
+  id               String    @id @default(cuid())
+  clinicId         String
+  year             Int
+  month            Int
+  receptionTime    DateTime?
+  status           String?
+  chartNumber      String?
+  patientName      String?
+  ageGender        String?
+  insuranceType    String?
+  patientType      String?
+  doctor           String?
+  totalRevenue     Float?
+  insuranceCoverage Float?
+  patientPayment   Float?
+  nonInsurance     Float?
+  cardPayment      Float?
+  cashPayment      Float?
+  onlinePayment    Float?
+  dailyArrears     Float?
+  totalArrears     Float?
+  visitRoute       String?
+  createdAt        DateTime  @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, year, month])
+  @@index([clinicId, patientType])
+  @@index([clinicId, doctor])
+}
+
+model AgeDist {
+  id                String   @id @default(cuid())
+  clinicId          String
+  year              Int
+  month             Int
+  ageGroup          String
+  totalPatients     Float?
+  returningPatients Float?
+  newPatients       Float?
+  avgRevenue        Float?
+  createdAt         DateTime @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month, ageGroup])
+  @@index([clinicId, year, month])
+}
+
+model RegionDist {
+  id                String   @id @default(cuid())
+  clinicId          String
+  year              Int
+  month             Int
+  region            String
+  totalPatients     Float?
+  returningPatients Float?
+  newPatients       Float?
+  totalVisits       Float?
+  avgRevenue        Float?
+  createdAt         DateTime @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month, region])
+  @@index([clinicId, year, month])
+}
+
+model InviteCode {
+  id          String    @id @default(cuid())
+  code        String    @unique // 초대 코드 (8자리 랜덤)
+  clinicId    String    // 어떤 치과용 코드인지
+  createdBy   String    // 생성자 ID (마스터 계정)
+  usedBy      String?   // 사용자 ID (사용된 경우)
+  usedAt      DateTime? // 사용된 시간
+  expiresAt   DateTime? // 만료 시간 (선택적)
+  maxUses     Int       @default(1) // 최대 사용 횟수
+  currentUses Int       @default(0) // 현재 사용 횟수
+  description String?   // 코드 설명
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  clinic    Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  creator   User   @relation("InviteCodeCreator", fields: [createdBy], references: [id])
+  users     User[] // 이 코드로 가입한 사용자들
+
+  @@index([clinicId, isActive])
+  @@index([code])
+}
+
+model SecurityLog {
+  id        String   @id @default(cuid())
+  userId    String? // 사용자 ID 또는 이메일
+  event     String  // 보안 이벤트 타입 (UNAUTHORIZED_ACCESS, ACCOUNT_LOCKED, etc.)
+  clinicId  String?
+  agencyId  String?
+  ip        String?
+  details   Json?   // 추가 정보 (JSON 형태)
+  timestamp DateTime @default(now())
+  severity  String  @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+
+  @@index([userId, timestamp])
+  @@index([event, timestamp])
+  @@index([clinicId, timestamp])
+}
+
+model PeiSheetConfig {
+  id           String   @id @default(cuid())
+  clinicId     String   @unique // 한 치과당 하나의 시트 설정
+  sheetUrl     String   // 구글 스프레드시트 URL
+  sheetId      String   // 스프레드시트 ID 추출
+  sheetName    String?  // 시트 이름 (기본: Sheet1)
+  isActive     Boolean  @default(true)
+  lastSyncAt   DateTime? // 마지막 동기화 시간
+  createdBy    String   // 설정한 사용자 ID
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  clinic    Clinic      @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  creator   User        @relation(fields: [createdBy], references: [id])
+  reports   PeiReport[] // 이 설정으로 생성된 보고서들
+
+  @@index([clinicId, isActive])
+}
+
+model PeiReport {
+  id               String         @id @default(cuid())
+  clinicId         String
+  sheetConfigId    String?        // 연결된 시트 설정
+  year             Int
+  month            Int
+  title            String?        // 보고서 제목
+  summary          String?        // AI 분석 요약
+  insights         Json?          // 상세 인사이트 (JSON)
+  recommendations  Json?          // 개선 권장사항 (JSON)
+  rawData          Json?          // 원본 스프레드시트 데이터
+  peiScore         Float?         // 전체 PEI 점수
+  categoryScores   Json?          // 영역별 점수
+  content          String?        // 전체 보고서 내용 (마크다운)
+  pdfUrl           String?        // 생성된 PDF 파일 URL
+  status           String         @default("GENERATING") // GENERATING, COMPLETED, ERROR
+  generatedAt      DateTime?      // 생성 완료 시간
+  generatedBy      String         // 생성한 사용자 ID
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  clinic      Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  sheetConfig PeiSheetConfig? @relation(fields: [sheetConfigId], references: [id])
+  generator   User            @relation("PeiReportGenerator", fields: [generatedBy], references: [id])
+
+  @@unique([clinicId, year, month])
+  @@index([clinicId, status])
+  @@index([generatedAt])
+}

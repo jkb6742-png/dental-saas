@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: dental_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dental_db
+      POSTGRES_USER: dental_user
+      POSTGRES_PASSWORD: dental_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - dental_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dental_user -d dental_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: dental_app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://dental_user:dental_pass@db:5432/dental_db
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    networks:
+      - dental_net
+    ports:
+      - "3000:3000"
+
+  nginx:
+    image: nginx:alpine
+    container_name: dental_nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - dental_net
+
+volumes:
+  postgres_data:
+
+networks:
+  dental_net:
+    driver: bridge
