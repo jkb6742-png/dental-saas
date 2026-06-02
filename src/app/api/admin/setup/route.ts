@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
     console.error('❌ 관리자 설정 실패:', error)
     return NextResponse.json({
       error: "관리자 계정 생성 중 오류가 발생했습니다",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
     }, { status: 500 })
   }
 }

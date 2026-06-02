@@ -21,7 +21,11 @@ export async function DELETE(req: NextRequest) {
     const inviteCode = await prisma.inviteCode.findUnique({
       where: { id: codeId },
       include: {
-        agency: true,
+        clinic: {
+          include: {
+            agency: true
+          }
+        },
         users: true
       }
     })
@@ -47,11 +51,11 @@ export async function DELETE(req: NextRequest) {
       data: {
         userId: (session.user as any).id,
         event: 'INVITE_CODE_DELETED',
-        agencyId: inviteCode.agencyId,
+        agencyId: inviteCode.clinic.agencyId,
         details: {
           codeId: codeId,
           code: inviteCode.code,
-          agencyName: inviteCode.agency.name,
+          agencyName: inviteCode.clinic.agency.name,
           deletedBy: (session.user as any).email,
           reason: 'Manual deletion by master user',
         },

@@ -107,6 +107,9 @@ model Clinic {
   inviteCodes      InviteCode[]
   peiSheetConfig   PeiSheetConfig?
   peiReports       PeiReport[]
+  reviewConfigs    ReviewConfig[]
+  reviews          Review[]
+  reviewSummaries  ReviewSummary[]
 
   @@unique([agencyId, code])
 }
@@ -469,4 +472,76 @@ model PeiReport {
   @@unique([clinicId, year, month])
   @@index([clinicId, status])
   @@index([generatedAt])
+}
+
+enum ReviewSource {
+  NAVER
+  GOOGLE
+}
+
+model ReviewConfig {
+  id           String      @id @default(cuid())
+  clinicId     String
+  source       ReviewSource
+  placeName    String?     // 네이버/구글에서의 업체명
+  placeId      String?     // Google Place ID 또는 네이버 업체 ID
+  placeUrl     String?     // 리뷰 페이지 URL
+  isActive     Boolean     @default(true)
+  lastSyncAt   DateTime?   // 마지막 동기화 시간
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  clinic   Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  reviews  Review[]
+
+  @@unique([clinicId, source])
+  @@index([clinicId, isActive])
+}
+
+model Review {
+  id             String       @id @default(cuid())
+  clinicId       String
+  configId       String
+  source         ReviewSource
+  reviewId       String       // 플랫폼별 고유 ID
+  authorName     String?
+  rating         Int?         // 1-5점
+  content        String?      // 리뷰 내용
+  reviewDate     DateTime?    // 리뷰 작성일
+  reply          String?      // 사장님 답글
+  replyDate      DateTime?    // 답글 작성일
+  isPositive     Boolean?     // AI 감정 분석 결과
+  keywords       Json?        // 추출된 키워드
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  clinic Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  config ReviewConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([configId, reviewId])
+  @@index([clinicId, source, reviewDate])
+  @@index([clinicId, rating])
+}
+
+model ReviewSummary {
+  id              String       @id @default(cuid())
+  clinicId        String
+  source          ReviewSource
+  year            Int
+  month           Int
+  totalReviews    Int          @default(0)
+  newReviews      Int          @default(0) // 해당 월에 새로 작성된 리뷰
+  avgRating       Float?       // 평균 평점
+  positiveCount   Int          @default(0) // 긍정 리뷰 수
+  negativeCount   Int          @default(0) // 부정 리뷰 수
+  replyRate       Float?       // 답글 응답률
+  topKeywords     Json?        // 상위 키워드
+  ratingDist      Json?        // 평점 분포 (1점~5점)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, source, year, month])
+  @@index([clinicId, year, month])
 }

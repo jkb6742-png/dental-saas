@@ -20,7 +20,13 @@ export async function POST(req: NextRequest) {
     // 코드 존재 확인
     const inviteCode = await prisma.inviteCode.findUnique({
       where: { id: codeId },
-      include: { agency: true }
+      include: {
+        clinic: {
+          include: {
+            agency: true
+          }
+        }
+      }
     })
 
     if (!inviteCode) {
@@ -38,11 +44,11 @@ export async function POST(req: NextRequest) {
       data: {
         userId: (session.user as any).id,
         event: isActive ? 'INVITE_CODE_ACTIVATED' : 'INVITE_CODE_DEACTIVATED',
-        agencyId: inviteCode.agencyId,
+        agencyId: inviteCode.clinic.agencyId,
         details: {
           codeId: codeId,
           code: inviteCode.code,
-          agencyName: inviteCode.agency.name,
+          agencyName: inviteCode.clinic.agency.name,
           isActive: isActive,
           changedBy: (session.user as any).email,
         },

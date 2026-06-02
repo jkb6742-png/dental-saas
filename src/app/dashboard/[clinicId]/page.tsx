@@ -7,6 +7,7 @@ import KpiCard from "@/components/ui/KpiCard"
 import SectionCard from "@/components/ui/SectionCard"
 import RevenueChart from "@/components/charts/RevenueChart"
 import MonthSelector from "@/components/ui/MonthSelector"
+import ReviewDashboard from "@/components/reviews/ReviewDashboard"
 import { TrendingUp, Users, Activity, DollarSign, Calendar, Target } from "lucide-react"
 import { Suspense } from "react"
 
@@ -246,6 +247,15 @@ export default async function DashboardHome({
           </div>
         </SectionCard>
       )}
+
+      {/* 온라인 리뷰 현황 */}
+      <Suspense fallback={<div className="text-center py-8">리뷰 데이터를 불러오는 중...</div>}>
+        <ReviewDashboard
+          clinicId={clinicId}
+          year={year}
+          month={month}
+        />
+      </Suspense>
     </div>
   )
 }

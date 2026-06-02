@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       create: {
         name: "평촌이생각치과 에이전시",
         slug: "pyeongchon-agency",
-        plan: "PROFESSIONAL"
+        plan: "PRO"
       }
     })
 
@@ -23,10 +23,17 @@ export async function POST(req: NextRequest) {
     })
 
     // 3. 평촌이생각치과를 전용 에이전시로 이동
-    const updatedClinic = await prisma.clinic.update({
-      where: { name: "평촌이생각치과" },
-      data: { agencyId: pyeongchonAgency.id }
+    const clinic = await prisma.clinic.findFirst({
+      where: { name: "평촌이생각치과" }
     })
+
+    let updatedClinic = null
+    if (clinic) {
+      updatedClinic = await prisma.clinic.update({
+        where: { id: clinic.id },
+        data: { agencyId: pyeongchonAgency.id }
+      })
+    }
 
     // 4. 결과 확인
     const finalCheck = await prisma.user.findUnique({
@@ -63,7 +70,7 @@ export async function POST(req: NextRequest) {
     console.error('[FORCE_FIX] 강제 수정 실패:', error)
     return NextResponse.json({
       error: "강제 수정 실패",
-      details: error.message
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
   }
 }

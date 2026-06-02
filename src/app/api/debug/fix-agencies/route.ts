@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
       data: {
         name: "평촌이생각치과",
         slug: `pyeongchon-agency-${Date.now()}`,
-        plan: "PROFESSIONAL"
+        plan: "PRO"
       }
     })
 
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       data: {
         name: "중산사과나무치과",
         slug: `jungsan-agency-${Date.now()}`,
-        plan: "PROFESSIONAL"
+        plan: "PRO"
       }
     })
 
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     console.error('[FIX_AGENCIES] 수정 실패:', error)
     return NextResponse.json({
       error: "에이전시 구조 수정 실패",
-      details: error.message
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
   }
 }

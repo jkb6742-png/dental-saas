@@ -22,7 +22,7 @@ export async function POST() {
           }
         })
         createdAgencies.push(agency)
-      } catch (error) {
+      } catch (error: any) {
         // 이미 존재하는 경우 스킵
         if (error.code === 'P2002') {
           console.log(`Agency ${agencyData.name} already exists, skipping...`)
@@ -42,7 +42,7 @@ export async function POST() {
     return NextResponse.json({
       success: false,
       error: "테스트 에이전시 생성 중 오류가 발생했습니다.",
-      detail: error.message
+      detail: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
   }
 }

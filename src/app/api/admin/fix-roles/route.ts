@@ -25,10 +25,10 @@ export async function POST(req: NextRequest) {
     for (const user of inviteCodeUsers) {
       const updated = await prisma.user.update({
         where: { id: user.id },
-        data: { role: 'CLINIC_ADMIN' }
+        data: { role: 'VIEWER' }
       })
 
-      console.log(`✅ ${user.name} (${user.email}) → USER 권한으로 변경`)
+      console.log(`✅ ${user.name} (${user.email}) → VIEWER 권한으로 변경`)
       results.push({
         id: user.id,
         name: user.name,

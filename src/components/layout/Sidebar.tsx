@@ -15,6 +15,7 @@ import {
   Building2,
   UserCheck,
   MessageSquare,
+  MessageCircle,
   BarChart2,
   Globe,
   Crown,
@@ -45,6 +46,7 @@ const baseNavItems: NavItem[] = [
 
   { href: "/dashboard/routes", label: "내원경로 ROI", icon: <MapPin className="w-4 h-4" />, group: "마케팅" },
   { href: "/dashboard/consultations", label: "상담 성과", icon: <MessageSquare className="w-4 h-4" />, group: "마케팅" },
+  { href: "/dashboard/reviews", label: "온라인 리뷰", icon: <MessageCircle className="w-4 h-4" />, group: "마케팅" },
 
   { href: "/dashboard/reports", label: "월간 리포트", icon: <FileText className="w-4 h-4" /> },
 ]
