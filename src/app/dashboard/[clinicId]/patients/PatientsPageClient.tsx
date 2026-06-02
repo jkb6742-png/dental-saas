@@ -860,8 +860,8 @@ export default function PatientsPageClient({
       {/* 연간 환자 추이 차트 */}
       <SectionCard title={`${selectedYear}년 월별 환자 현황 추이`} description="연간 전체 트렌드">
         {yearlyTrendData.length > 0 ? (
-          <div className="h-[450px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[450px] min-h-[450px] w-full">
+            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={400}>
               <ComposedChart data={yearlyTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
                 <XAxis
@@ -921,8 +921,8 @@ export default function PatientsPageClient({
       {/* 월간 일별 상세 차트 */}
       {monthlyChartData.length > 0 && (
         <SectionCard title={`${selectedYear}년 ${selectedMonth}월 일별 환자 현황`} description="선택된 월의 상세 분석">
-          <div className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[400px] min-h-[400px] w-full">
+            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={350}>
               <BarChart data={monthlyChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
                 <XAxis
@@ -947,8 +947,8 @@ export default function PatientsPageClient({
       {/* 신환 수익 분석 (MonthlySummary 데이터가 있을 때) */}
       {fallbackData && fallbackData.length > 0 && (
         <SectionCard title={`${selectedYear}년 신환 수익 분석`} description="신환 관련 재무 지표">
-          <div className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[400px] min-h-[400px] w-full">
+            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={350}>
               <ComposedChart data={yearlyTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
                 <XAxis
@@ -1107,8 +1107,8 @@ export default function PatientsPageClient({
             {hasValidPatientData && (
               <div>
                 <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">환자 유형별 분포</h4>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-[300px] min-h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={250} minHeight={250}>
                     <PieChart>
                       <Pie
                         data={[
@@ -1160,8 +1160,8 @@ export default function PatientsPageClient({
             {/* 치료 상태별 분포 */}
             <div>
               <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">치료 상태별 현황</h4>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-[300px] min-h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%" minWidth={250} minHeight={250}>
                   <PieChart>
                     <Pie
                       data={[
@@ -1238,8 +1238,8 @@ export default function PatientsPageClient({
             {/* 요일별 현황 */}
             <div>
               <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">요일별 내원 현황</h4>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-[300px] min-h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%" minWidth={250} minHeight={250}>
                   <BarChart data={timePatternAnalysis.weekdayPattern}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
                     <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#6b7280" }} stroke="#9ca3af" />
@@ -1253,8 +1253,8 @@ export default function PatientsPageClient({
             {/* 시간대별 현황 */}
             <div>
               <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">시간대별 내원 현황</h4>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-[300px] min-h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%" minWidth={250} minHeight={250}>
                   <BarChart data={timePatternAnalysis.hourlyPattern}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
                     <XAxis dataKey="hour" tick={{ fontSize: 11, fill: "#6b7280" }} stroke="#9ca3af" />
@@ -1321,9 +1321,9 @@ export default function PatientsPageClient({
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 예약 대비 내원 현황 */}
-            <div className="h-[300px]">
+            <div className="h-[300px] min-h-[300px] w-full">
               <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">예약 vs 실제 내원</h4>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={250} minHeight={250}>
                 <BarChart data={[
                   {
                     name: '예약 현황',
