@@ -186,80 +186,44 @@ export default function RevenuePageClient({
     }
   }
 
-  // 3. 예측 모델링
-  const getPredictionAnalysis = () => {
-    const trendData = getTrendAnalysis()
-    if (!trendData) return null
+  // 제거됨: 예측 모델링 및 ARPU 분석 기능 (사용자 요청에 따라 제거)
 
-    const currentRevenue = currentMonthData?.totalRevenue || 0
-    const avgGrowth = trendData.recent6Months.slice(1).reduce((sum, month, index) => {
-      const prevRevenue = trendData.recent6Months[index]?.revenue || 1
-      return sum + ((month.revenue - prevRevenue) / prevRevenue)
-    }, 0) / (trendData.recent6Months.length - 1)
+  // 5. 목표 관리 (실제 설정된 목표값 사용)
+  const [revenueGoals, setRevenueGoals] = useState<{
+    monthlyGoal: number | null
+    yearlyGoal: number | null
+  }>({
+    monthlyGoal: null,
+    yearlyGoal: null
+  })
 
-    // 다음달 예측 (트렌드 기반)
-    const nextMonthPrediction = currentRevenue * (1 + avgGrowth)
+  // 목표 데이터 로드
+  useEffect(() => {
+    const fetchGoals = async () => {
+      try {
+        // 월별 목표 조회
+        const monthlyResponse = await fetch(`/api/goals?clinicId=${clinicId}&year=${selectedYear}&month=${selectedMonth}`)
+        const monthlyData = await monthlyResponse.json()
 
-    // 연말 예측 (현재 월부터 12월까지)
-    const remainingMonths = 12 - selectedMonth
-    let yearEndPrediction = monthlySummaries
-      .filter(s => s.year === selectedYear && s.month <= selectedMonth)
-      .reduce((sum, s) => sum + (s.totalRevenue || 0), 0)
+        // 연간 목표 조회
+        const yearlyResponse = await fetch(`/api/goals?clinicId=${clinicId}&year=${selectedYear}`)
+        const yearlyData = await yearlyResponse.json()
 
-    for (let i = 0; i < remainingMonths; i++) {
-      yearEndPrediction += currentRevenue * (1 + avgGrowth * (i + 1) / 12)
-    }
-
-    // 계절성 팩터 (전년 동월 대비 평균)
-    const seasonalFactors = []
-    for (let m = 1; m <= 12; m++) {
-      const thisYearMonth = monthlySummaries.find(s => s.year === selectedYear && s.month === m)
-      const lastYearMonth = monthlySummaries.find(s => s.year === selectedYear - 1 && s.month === m)
-      if (thisYearMonth && lastYearMonth && lastYearMonth.totalRevenue) {
-        seasonalFactors.push((thisYearMonth.totalRevenue || 0) / lastYearMonth.totalRevenue)
+        setRevenueGoals({
+          monthlyGoal: monthlyData.goals?.find((g: any) => g.month === selectedMonth)?.revenueGoal || null,
+          yearlyGoal: yearlyData.goals?.find((g: any) => g.month === null)?.revenueGoal || null
+        })
+      } catch (error) {
+        console.error('목표 조회 실패:', error)
       }
     }
 
-    const avgSeasonalFactor = seasonalFactors.length > 0 ?
-      seasonalFactors.reduce((sum, f) => sum + f, 0) / seasonalFactors.length : 1
+    fetchGoals()
+  }, [clinicId, selectedYear, selectedMonth])
 
-    return {
-      nextMonthPrediction,
-      yearEndPrediction,
-      avgGrowthRate: avgGrowth * 100,
-      seasonalFactor: (avgSeasonalFactor - 1) * 100,
-      confidence: Math.max(0, Math.min(100, 100 - trendData.volatility))
-    }
-  }
-
-  // 4. ARPU 분석
-  const getARPUAnalysis = () => {
-    if (!currentMonthData) return null
-
-    const currentARPU = (currentMonthData.totalPatients || 0) > 0 ?
-      (currentMonthData.totalRevenue || 0) / (currentMonthData.totalPatients || 1) : 0
-
-    const prevARPU = (prevMonthData?.totalPatients || 0) > 0 ?
-      (prevMonthData?.totalRevenue || 0) / (prevMonthData?.totalPatients || 1) : 0
-
-    const arpuGrowth = prevARPU > 0 ? ((currentARPU - prevARPU) / prevARPU) * 100 : 0
-
-    const newPatientARPU = (currentMonthData.newPatients || 0) > 0 ?
-      (currentMonthData.newPatientRevenue || 0) / (currentMonthData.newPatients || 1) : 0
-
-    return {
-      currentARPU,
-      arpuGrowth,
-      newPatientARPU,
-      totalPatients: currentMonthData.totalPatients || 0,
-      newPatients: currentMonthData.newPatients || 0
-    }
-  }
-
-  // 5. 목표 관리 (예시 목표값들)
   const getGoalAnalysis = () => {
-    const monthlyRevenueGoal = 50000000 // 5천만원 예시
-    const yearlyRevenueGoal = 600000000 // 6억원 예시
+    const monthlyRevenueGoal = revenueGoals.monthlyGoal || 50000000 // 기본값 5천만원
+    const yearlyRevenueGoal = revenueGoals.yearlyGoal || 600000000 // 기본값 6억원
 
     const currentRevenue = currentMonthData?.totalRevenue || 0
     const monthlyAchievementRate = (currentRevenue / monthlyRevenueGoal) * 100
@@ -283,7 +247,9 @@ export default function RevenuePageClient({
       monthlyAchievementRate,
       yearlyAchievementRate,
       remainingMonths,
-      requiredMonthlyAverage
+      requiredMonthlyAverage,
+      hasMonthlyGoal: !!revenueGoals.monthlyGoal,
+      hasYearlyGoal: !!revenueGoals.yearlyGoal
     }
   }
 
@@ -308,10 +274,12 @@ export default function RevenuePageClient({
   // 분석 결과 계산
   const growthAnalysis = getGrowthAnalysis()
   const trendAnalysis = getTrendAnalysis()
-  const predictionAnalysis = getPredictionAnalysis()
-  const arpuAnalysis = getARPUAnalysis()
   const goalAnalysis = getGoalAnalysis()
   const yearlyTrendData = createYearlyTrendData()
+
+  // 제거된 기능들을 위한 더미 객체 (에러 방지)
+  const predictionAnalysis = null
+  const arpuAnalysis = null
 
   return (
     <div className="space-y-6">
@@ -355,17 +323,7 @@ export default function RevenuePageClient({
             icon={<Activity className="w-4 h-4" />}
             color={growthAnalysis.ytdGrowth >= 0 ? "green" : "red"}
           />
-          {arpuAnalysis && (
-            <KpiCard
-              label="환자당 매출 (ARPU)"
-              value={formatAmount(arpuAnalysis.currentARPU)}
-              unit=""
-              change={arpuAnalysis.arpuGrowth}
-              changeLabel="전월 대비"
-              icon={<Target className="w-4 h-4" />}
-              color="yellow"
-            />
-          )}
+          {/* ARPU 분석 카드 제거됨 */}
         </div>
 
         {/* 성장률 상세 분석 */}
@@ -508,38 +466,11 @@ export default function RevenuePageClient({
         </div>
       </SectionCard>
 
-      {/* 트렌드 분석 및 예측 */}
-      {trendAnalysis && predictionAnalysis && (
+      {/* 예측 분석 섹션 제거됨 (사용자 요청) */}
+      {predictionAnalysis && (
         <SectionCard title="트렌드 분석 및 매출 예측" description="데이터 기반 매출 전망">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-            <KpiCard
-              label="다음달 예상 매출"
-              value={formatAmount(predictionAnalysis.nextMonthPrediction)}
-              unit=""
-              icon={<Calendar className="w-4 h-4" />}
-              color="blue"
-            />
-            <KpiCard
-              label="연말 예상 매출"
-              value={formatAmount(predictionAnalysis.yearEndPrediction)}
-              unit=""
-              icon={<Target className="w-4 h-4" />}
-              color="green"
-            />
-            <KpiCard
-              label="평균 성장률"
-              value={predictionAnalysis.avgGrowthRate.toFixed(1)}
-              unit="% (월평균)"
-              icon={<TrendingUp className="w-4 h-4" />}
-              color="yellow"
-            />
-            <KpiCard
-              label="예측 신뢰도"
-              value={predictionAnalysis.confidence.toFixed(0)}
-              unit="%"
-              icon={<AlertCircle className="w-4 h-4" />}
-              color="red"
-            />
+            {/* 예측 분석 KPI 카드들 제거됨 (사용자 요청) */}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -616,10 +547,7 @@ export default function RevenuePageClient({
               <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                 <div className="text-[14px] font-medium text-blue-800 mb-1">📊 계절성 팩터</div>
                 <div className="text-[12px] text-blue-700">
-                  {predictionAnalysis.seasonalFactor > 0 ?
-                    `이 시기는 평균보다 ${predictionAnalysis.seasonalFactor.toFixed(1)}% 높은 매출을 보입니다` :
-                    `이 시기는 평균보다 ${Math.abs(predictionAnalysis.seasonalFactor).toFixed(1)}% 낮은 매출을 보입니다`
-                  }
+                  계절성 분석 데이터가 준비 중입니다.
                 </div>
               </div>
 
@@ -636,7 +564,7 @@ export default function RevenuePageClient({
         </SectionCard>
       )}
 
-      {/* ARPU 및 환자당 수익성 분석 */}
+      {/* ARPU 및 환자당 수익성 분석 - 제거됨 (사용자 요청) */}
       {arpuAnalysis && (
         <SectionCard title="환자당 수익성 분석 (ARPU)" description="환자 1인당 평균 매출 및 효율성 지표">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -688,40 +616,70 @@ export default function RevenuePageClient({
       )}
 
       {/* 목표 관리 및 성과 추적 */}
-      {goalAnalysis && (
-        <SectionCard title="목표 관리 및 달성 현황" description="매출 목표 대비 실적 추적">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-            <KpiCard
-              label="월 목표 달성률"
-              value={goalAnalysis.monthlyAchievementRate.toFixed(1)}
-              unit="%"
-              icon={<Target className="w-4 h-4" />}
-              color="blue"
-            />
-            <KpiCard
-              label="연간 목표 달성률"
-              value={goalAnalysis.yearlyAchievementRate.toFixed(1)}
-              unit="%"
-              icon={<Activity className="w-4 h-4" />}
-              color="green"
-            />
-            <KpiCard
-              label="연말까지 남은 달"
-              value={goalAnalysis.remainingMonths.toString()}
-              unit="개월"
-              icon={<Calendar className="w-4 h-4" />}
-              color="yellow"
-            />
-            <KpiCard
-              label="필요 월평균 매출"
-              value={formatAmount(goalAnalysis.requiredMonthlyAverage)}
-              unit=""
-              icon={<TrendingUp className="w-4 h-4" />}
-              color="red"
-            />
+      <SectionCard
+        title="목표 관리 및 달성 현황"
+        description={
+          (!revenueGoals.monthlyGoal && !revenueGoals.yearlyGoal)
+            ? "매출 목표를 설정하여 성과를 추적하세요"
+            : "매출 목표 대비 실적 추적"
+        }
+      >
+        {(!revenueGoals.monthlyGoal && !revenueGoals.yearlyGoal) ? (
+          // 목표가 설정되지 않은 경우
+          <div className="text-center py-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+            <Target className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">목표를 설정하여 성과를 관리하세요</h3>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              월별 및 연간 매출 목표를 설정하면 달성률을 실시간으로 추적하고 성장을 관리할 수 있습니다.
+            </p>
+            <div className="space-y-3">
+              <a
+                href="/admin/goals"
+                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                <Target className="w-4 h-4 mr-2" />
+                목표 설정하기
+              </a>
+              <div className="text-sm text-gray-500">
+                관리자 권한이 필요합니다
+              </div>
+            </div>
           </div>
+        ) : goalAnalysis ? (
+          // 목표가 설정된 경우 기존 UI
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+              <KpiCard
+                label="월 목표 달성률"
+                value={goalAnalysis.monthlyAchievementRate.toFixed(1)}
+                unit="%"
+                icon={<Target className="w-4 h-4" />}
+                color="blue"
+              />
+              <KpiCard
+                label="연간 목표 달성률"
+                value={goalAnalysis.yearlyAchievementRate.toFixed(1)}
+                unit="%"
+                icon={<Activity className="w-4 h-4" />}
+                color="green"
+              />
+              <KpiCard
+                label="연말까지 남은 달"
+                value={goalAnalysis.remainingMonths.toString()}
+                unit="개월"
+                icon={<Calendar className="w-4 h-4" />}
+                color="yellow"
+              />
+              <KpiCard
+                label="필요 월평균 매출"
+                value={formatAmount(goalAnalysis.requiredMonthlyAverage)}
+                unit=""
+                icon={<TrendingUp className="w-4 h-4" />}
+                color="red"
+              />
+            </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* 월 목표 달성 현황 */}
             <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
               <h4 className="text-[16px] font-semibold text-[#191f28] mb-6">월별 목표 달성 현황</h4>
@@ -802,13 +760,33 @@ export default function RevenuePageClient({
               </div>
             </div>
           </div>
-        </SectionCard>
-      )}
+        ) : null}
+      </SectionCard>
 
       {/* 데이터가 없는 경우 */}
       {monthlySummaries.length === 0 && (
-        <div className="text-center py-12 text-[14px] text-[#8b95a1]">
-          매출 데이터가 없습니다. 월간 요약 데이터를 생성해주세요.
+        <div className="flex flex-col items-center justify-center py-16 bg-gray-50 rounded-xl border border-gray-200">
+          <DollarSign className="w-16 h-16 text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">매출 데이터가 없습니다</h3>
+          <p className="text-gray-600 text-center mb-6 max-w-md">
+            매출 분석을 보려면 일별 매출 데이터(월간장부)나 기타 매출 관련 데이터를 업로드해주세요
+          </p>
+          <div className="flex space-x-3">
+            <a
+              href={`/dashboard/${clinicId}/upload`}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
+              <Activity className="w-4 h-4 mr-2" />
+              데이터 업로드하기
+            </a>
+            <a
+              href="/admin/goals"
+              className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+            >
+              <Target className="w-4 h-4 mr-2" />
+              목표 먼저 설정하기
+            </a>
+          </div>
         </div>
       )}
     </div>
