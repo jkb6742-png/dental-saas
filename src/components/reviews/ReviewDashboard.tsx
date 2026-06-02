@@ -55,7 +55,7 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
     }
   }
 
-  const handleCrawl = async (source: "NAVER" | "GOOGLE") => {
+  const handleCrawl = async (source: "GOOGLE") => {
     setCrawling(source)
     try {
       const response = await fetch("/api/reviews/crawl", {
@@ -141,14 +141,13 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
                 </div>
                 <h3 className="text-lg font-semibold text-green-800">네이버 리뷰</h3>
               </div>
-              <button
-                onClick={() => handleCrawl("NAVER")}
-                disabled={crawling === "NAVER"}
-                className="px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm font-medium disabled:opacity-50 flex items-center space-x-1"
+              <a
+                href={`/dashboard/${clinicId}/reviews?tab=settings`}
+                className="px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm font-medium flex items-center space-x-1"
               >
-                <RefreshCw className={`w-4 h-4 ${crawling === "NAVER" ? "animate-spin" : ""}`} />
-                <span>{crawling === "NAVER" ? "수집중..." : "수집"}</span>
-              </button>
+                <span>📝</span>
+                <span>입력</span>
+              </a>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

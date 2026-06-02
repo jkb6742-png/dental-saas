@@ -1,14 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Settings, Save, Search } from "lucide-react"
+import { Settings, Save, Plus, MessageCircle, Calendar, Star } from "lucide-react"
 
 interface ReviewConfig {
   id: string
-  source: "NAVER" | "GOOGLE"
+  source: "GOOGLE"
   placeName: string | null
   placeId: string | null
-  placeUrl: string | null
   isActive: boolean
   lastSyncAt: string | null
 }
@@ -23,15 +22,18 @@ export default function ReviewSetup({ clinicId, onConfigSaved }: ReviewSetupProp
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
 
-  // 폼 상태
-  const [naverConfig, setNaverConfig] = useState({
-    placeName: "",
-    placeUrl: "",
-  })
-
+  // 구글 설정 상태
   const [googleConfig, setGoogleConfig] = useState({
     placeName: "",
     placeId: "",
+  })
+
+  // 네이버 수동 입력 상태
+  const [naverInput, setNaverInput] = useState({
+    totalReviews: "",
+    monthlyReviews: "",
+    averageRating: "",
+    feedback: "",
   })
 
   const fetchConfigs = async () => {
@@ -39,18 +41,9 @@ export default function ReviewSetup({ clinicId, onConfigSaved }: ReviewSetupProp
       const response = await fetch(`/api/reviews/config?clinicId=${clinicId}`)
       if (response.ok) {
         const data = await response.json()
-        setConfigs(data)
+        setConfigs(data.filter((c: any) => c.source === "GOOGLE"))
 
-        // 기존 설정이 있으면 폼에 설정
-        const naver = data.find((c: ReviewConfig) => c.source === "NAVER")
-        if (naver) {
-          setNaverConfig({
-            placeName: naver.placeName || "",
-            placeUrl: naver.placeUrl || "",
-          })
-        }
-
-        const google = data.find((c: ReviewConfig) => c.source === "GOOGLE")
+        const google = data.find((c: any) => c.source === "GOOGLE")
         if (google) {
           setGoogleConfig({
             placeName: google.placeName || "",
@@ -65,43 +58,25 @@ export default function ReviewSetup({ clinicId, onConfigSaved }: ReviewSetupProp
     }
   }
 
-  const saveConfig = async (source: "NAVER" | "GOOGLE") => {
-    setSaving(source)
+  const saveGoogleConfig = async () => {
+    setSaving("GOOGLE")
     try {
-      const config = source === "NAVER" ? naverConfig : googleConfig
-
-      // 프론트엔드에서 먼저 검증
-      if (!config.placeName.trim()) {
+      if (!googleConfig.placeName.trim()) {
         alert("업체명을 입력해주세요")
         return
       }
 
-      if (source === "NAVER") {
-        if (!config.placeUrl.trim()) {
-          alert("네이버 플레이스 URL을 입력해주세요")
-          return
-        }
-        if (!config.placeUrl.includes('map.naver.com')) {
-          alert("올바른 네이버 지도 URL 형식이 아닙니다\n예: https://map.naver.com/p/...")
-          return
-        }
-      }
-
-      if (source === "GOOGLE") {
-        if (!(config as any).placeId?.trim()) {
-          alert("Google Place ID를 입력해주세요")
-          return
-        }
+      if (!googleConfig.placeId.trim()) {
+        alert("Google Place ID를 입력해주세요")
+        return
       }
 
       const requestData = {
         clinicId,
-        source,
-        placeName: config.placeName.trim(),
-        ...(source === "NAVER" ? { placeUrl: config.placeUrl.trim() } : { placeId: (config as any).placeId.trim() }),
+        source: "GOOGLE",
+        placeName: googleConfig.placeName.trim(),
+        placeId: googleConfig.placeId.trim(),
       }
-
-      console.log(`📤 ${source} 설정 저장 요청:`, requestData)
 
       const response = await fetch("/api/reviews/config", {
         method: "POST",
@@ -111,17 +86,54 @@ export default function ReviewSetup({ clinicId, onConfigSaved }: ReviewSetupProp
 
       if (response.ok) {
         const data = await response.json()
-        alert(data.message || `${source} 리뷰 설정이 저장되었습니다.`)
+        alert(data.message || "구글 리뷰 설정이 저장되었습니다.")
         await fetchConfigs()
         onConfigSaved?.()
       } else {
         const error = await response.json()
-        console.error(`${source} 설정 저장 에러:`, error)
         alert(`설정 저장 실패: ${error.error}`)
       }
     } catch (error) {
-      console.error(`❌ ${source} 설정 저장 에러:`, error)
-      alert(`설정 저장 중 오류가 발생했습니다.\n네트워크 연결과 로그인 상태를 확인해주세요.`)
+      alert("설정 저장 중 오류가 발생했습니다.")
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  const saveNaverInput = async () => {
+    setSaving("NAVER")
+    try {
+      if (!naverInput.totalReviews) {
+        alert("총 리뷰 수를 입력해주세요")
+        return
+      }
+
+      const requestData = {
+        clinicId,
+        source: "NAVER",
+        totalReviews: parseInt(naverInput.totalReviews) || 0,
+        monthlyReviews: parseInt(naverInput.monthlyReviews) || 0,
+        averageRating: parseFloat(naverInput.averageRating) || null,
+        feedbackComments: naverInput.feedback ? [naverInput.feedback] : [],
+      }
+
+      const response = await fetch("/api/reviews/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestData),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert(data.message || "네이버 리뷰 현황이 저장되었습니다.")
+        setNaverInput({ totalReviews: "", monthlyReviews: "", averageRating: "", feedback: "" })
+        onConfigSaved?.()
+      } else {
+        const error = await response.json()
+        alert(`저장 실패: ${error.error}`)
+      }
+    } catch (error) {
+      alert("저장 중 오류가 발생했습니다.")
     } finally {
       setSaving(null)
     }
@@ -135,85 +147,123 @@ export default function ReviewSetup({ clinicId, onConfigSaved }: ReviewSetupProp
     return <div className="text-center py-8">설정을 불러오는 중...</div>
   }
 
-  const naverLastSync = configs.find(c => c.source === "NAVER")?.lastSyncAt
   const googleLastSync = configs.find(c => c.source === "GOOGLE")?.lastSyncAt
 
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-3">
         <Settings className="w-5 h-5 text-gray-600" />
-        <h3 className="text-lg font-semibold">리뷰 수집 설정</h3>
+        <h3 className="text-lg font-semibold">리뷰 관리</h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* 네이버 리뷰 설정 */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <div className="flex items-center space-x-3 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 네이버 - 수동 입력 */}
+        <div className="bg-green-50 rounded-xl border border-green-200 p-6">
+          <div className="flex items-center space-x-3 mb-6">
             <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
               N
             </div>
-            <h4 className="text-lg font-semibold">네이버 리뷰 설정</h4>
+            <div>
+              <h4 className="text-lg font-semibold text-green-800">네이버 리뷰</h4>
+              <p className="text-sm text-green-600">수동 입력 방식</p>
+            </div>
           </div>
 
           <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="flex items-center text-sm font-medium text-green-700 mb-2">
+                  <MessageCircle className="w-4 h-4 mr-1" />
+                  총 리뷰 수
+                </label>
+                <input
+                  type="number"
+                  value={naverInput.totalReviews}
+                  onChange={(e) => setNaverInput(prev => ({ ...prev, totalReviews: e.target.value }))}
+                  placeholder="전체"
+                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+              <div>
+                <label className="flex items-center text-sm font-medium text-green-700 mb-2">
+                  <Calendar className="w-4 h-4 mr-1" />
+                  이번달 신규
+                </label>
+                <input
+                  type="number"
+                  value={naverInput.monthlyReviews}
+                  onChange={(e) => setNaverInput(prev => ({ ...prev, monthlyReviews: e.target.value }))}
+                  placeholder="신규"
+                  className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                업체명
+              <label className="flex items-center text-sm font-medium text-green-700 mb-2">
+                <Star className="w-4 h-4 mr-1" />
+                평균 평점
               </label>
               <input
-                type="text"
-                value={naverConfig.placeName}
-                onChange={(e) => setNaverConfig(prev => ({ ...prev, placeName: e.target.value }))}
-                placeholder="네이버에 등록된 치과 이름"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                type="number"
+                step="0.1"
+                min="1"
+                max="5"
+                value={naverInput.averageRating}
+                onChange={(e) => setNaverInput(prev => ({ ...prev, averageRating: e.target.value }))}
+                placeholder="4.5"
+                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                네이버 플레이스 URL
+              <label className="flex items-center text-sm font-medium text-green-700 mb-2">
+                💬 주요 피드백 (선택사항)
               </label>
-              <input
-                type="url"
-                value={naverConfig.placeUrl}
-                onChange={(e) => setNaverConfig(prev => ({ ...prev, placeUrl: e.target.value }))}
-                placeholder="https://map.naver.com/p/..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              <textarea
+                value={naverInput.feedback}
+                onChange={(e) => setNaverInput(prev => ({ ...prev, feedback: e.target.value }))}
+                placeholder="개선이 필요한 부분이나 중요한 피드백..."
+                rows={3}
+                className="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                네이버 지도에서 치과 검색 후 URL을 복사해주세요
-              </p>
             </div>
 
             <button
-              onClick={() => saveConfig("NAVER")}
-              disabled={saving === "NAVER" || !naverConfig.placeName || !naverConfig.placeUrl}
-              className="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              onClick={saveNaverInput}
+              disabled={saving === "NAVER" || !naverInput.totalReviews}
+              className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
-              <Save className="w-4 h-4" />
-              <span>{saving === "NAVER" ? "저장 중..." : "설정 저장"}</span>
+              <Plus className="w-4 h-4" />
+              <span>{saving === "NAVER" ? "저장 중..." : "현황 저장"}</span>
             </button>
+          </div>
 
-            {naverLastSync && (
-              <p className="text-sm text-gray-500">
-                마지막 동기화: {new Date(naverLastSync).toLocaleString()}
-              </p>
-            )}
+          <div className="mt-4 p-3 bg-green-100 rounded-lg">
+            <h5 className="text-sm font-medium text-green-800 mb-1">📋 입력 방법</h5>
+            <ul className="text-xs text-green-700 space-y-1">
+              <li>• 네이버 지도에서 치과 검색</li>
+              <li>• 리뷰 탭에서 총 개수 확인</li>
+              <li>• 월 1회 업데이트 권장</li>
+            </ul>
           </div>
         </div>
 
-        {/* 구글 리뷰 설정 */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <div className="flex items-center space-x-3 mb-4">
+        {/* 구글 - 자동 수집 */}
+        <div className="bg-blue-50 rounded-xl border border-blue-200 p-6">
+          <div className="flex items-center space-x-3 mb-6">
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
               G
             </div>
-            <h4 className="text-lg font-semibold">구글 리뷰 설정</h4>
+            <div>
+              <h4 className="text-lg font-semibold text-blue-800">구글 리뷰</h4>
+              <p className="text-sm text-blue-600">자동 수집 방식</p>
+            </div>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-blue-700 mb-2">
                 업체명
               </label>
               <input
@@ -221,12 +271,12 @@ export default function ReviewSetup({ clinicId, onConfigSaved }: ReviewSetupProp
                 value={googleConfig.placeName}
                 onChange={(e) => setGoogleConfig(prev => ({ ...prev, placeName: e.target.value }))}
                 placeholder="구글 비즈니스에 등록된 치과 이름"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-blue-700 mb-2">
                 Google Place ID
               </label>
               <input
@@ -234,101 +284,44 @@ export default function ReviewSetup({ clinicId, onConfigSaved }: ReviewSetupProp
                 value={googleConfig.placeId}
                 onChange={(e) => setGoogleConfig(prev => ({ ...prev, placeId: e.target.value }))}
                 placeholder="ChIJ..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-blue-600 mt-1">
                 <a
                   href="https://developers.google.com/maps/documentation/places/web-service/place-id"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline"
+                  className="hover:underline"
                 >
-                  Place ID 찾는 방법
-                </a>을 참고하세요
+                  Place ID 찾는 방법 →
+                </a>
               </p>
             </div>
 
             <button
-              onClick={() => saveConfig("GOOGLE")}
+              onClick={saveGoogleConfig}
               disabled={saving === "GOOGLE" || !googleConfig.placeName || !googleConfig.placeId}
-              className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               <Save className="w-4 h-4" />
               <span>{saving === "GOOGLE" ? "저장 중..." : "설정 저장"}</span>
             </button>
 
             {googleLastSync && (
-              <p className="text-sm text-gray-500">
+              <p className="text-xs text-blue-600">
                 마지막 동기화: {new Date(googleLastSync).toLocaleString()}
               </p>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* 간편 수동 입력 섹션 */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-blue-800 mb-4">💡 간편 리뷰 현황 입력</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* 네이버 간편 입력 */}
-          <div className="bg-white rounded-lg p-4 border">
-            <div className="flex items-center space-x-2 mb-3">
-              <div className="w-6 h-6 bg-green-500 rounded text-white text-xs flex items-center justify-center font-bold">N</div>
-              <span className="font-medium">네이버 플레이스</span>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex space-x-2">
-                <input
-                  type="number"
-                  placeholder="총 리뷰 수"
-                  className="flex-1 px-2 py-1 text-sm border rounded"
-                />
-                <input
-                  type="number"
-                  placeholder="이번달"
-                  className="w-20 px-2 py-1 text-sm border rounded"
-                />
-              </div>
-              <input
-                type="text"
-                placeholder="주요 피드백 (선택사항)"
-                className="w-full px-2 py-1 text-sm border rounded"
-              />
-              <button className="w-full py-2 text-sm bg-green-500 text-white rounded hover:bg-green-600">
-                저장
-              </button>
-            </div>
+          <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+            <h5 className="text-sm font-medium text-blue-800 mb-1">🔧 설정 필요</h5>
+            <ul className="text-xs text-blue-700 space-y-1">
+              <li>• .env 파일에 GOOGLE_PLACES_API_KEY 추가</li>
+              <li>• 한 번 설정하면 자동 수집 가능</li>
+              <li>• API 할당량 주의</li>
+            </ul>
           </div>
-
-          {/* 구글 간편 입력 */}
-          <div className="bg-white rounded-lg p-4 border">
-            <div className="flex items-center space-x-2 mb-3">
-              <div className="w-6 h-6 bg-blue-500 rounded text-white text-xs flex items-center justify-center font-bold">G</div>
-              <span className="font-medium">구글 리뷰</span>
-            </div>
-
-            <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Place ID (자동 수집용)"
-                className="w-full px-2 py-1 text-sm border rounded"
-              />
-              <button className="w-full py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600">
-                자동 수집
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 text-sm text-blue-700">
-          <p><strong>📋 사용법:</strong></p>
-          <ul className="mt-1 space-y-1 list-disc list-inside">
-            <li><strong>네이버:</strong> 직접 네이버 지도에서 확인 후 수동 입력 (월 1회)</li>
-            <li><strong>구글:</strong> Place ID 입력 후 자동 수집 가능</li>
-            <li>주요 피드백: 개선이 필요한 부분만 간단히 메모</li>
-          </ul>
         </div>
       </div>
     </div>
