@@ -210,20 +210,47 @@ export default function RevenuePageClient({
   useEffect(() => {
     const fetchGoals = async () => {
       try {
+        console.log(`[GOALS DEBUG] 목표 조회 시작: clinicId=${clinicId}, year=${selectedYear}, month=${selectedMonth}`)
+
         // 월별 목표 조회
         const monthlyResponse = await fetch(`/api/goals?clinicId=${clinicId}&year=${selectedYear}&month=${selectedMonth}`)
+        console.log(`[GOALS DEBUG] 월별 목표 응답 상태: ${monthlyResponse.status}`)
+
+        if (!monthlyResponse.ok) {
+          const errorText = await monthlyResponse.text()
+          console.error(`[GOALS DEBUG] 월별 목표 조회 실패: ${monthlyResponse.status} - ${errorText}`)
+          setRevenueGoals({
+            monthlyGoal: null,
+            yearlyGoal: null
+          })
+          return
+        }
+
         const monthlyData = await monthlyResponse.json()
+        console.log(`[GOALS DEBUG] 월별 목표 데이터:`, monthlyData)
 
         // 연간 목표 조회
         const yearlyResponse = await fetch(`/api/goals?clinicId=${clinicId}&year=${selectedYear}`)
-        const yearlyData = await yearlyResponse.json()
+        console.log(`[GOALS DEBUG] 연간 목표 응답 상태: ${yearlyResponse.status}`)
 
-        setRevenueGoals({
-          monthlyGoal: monthlyData.goals?.find((g: any) => g.month === selectedMonth)?.revenueGoal || null,
-          yearlyGoal: yearlyData.goals?.find((g: any) => g.month === null)?.revenueGoal || null
-        })
+        if (!yearlyResponse.ok) {
+          const errorText = await yearlyResponse.text()
+          console.error(`[GOALS DEBUG] 연간 목표 조회 실패: ${yearlyResponse.status} - ${errorText}`)
+        } else {
+          const yearlyData = await yearlyResponse.json()
+          console.log(`[GOALS DEBUG] 연간 목표 데이터:`, yearlyData)
+
+          setRevenueGoals({
+            monthlyGoal: monthlyData.goals?.find((g: any) => g.month === selectedMonth)?.revenueGoal || null,
+            yearlyGoal: yearlyData.goals?.find((g: any) => g.month === null)?.revenueGoal || null
+          })
+        }
       } catch (error) {
-        console.error('목표 조회 실패:', error)
+        console.error('[GOALS DEBUG] 목표 조회 중 예외 발생:', error)
+        setRevenueGoals({
+          monthlyGoal: null,
+          yearlyGoal: null
+        })
       }
     }
 
