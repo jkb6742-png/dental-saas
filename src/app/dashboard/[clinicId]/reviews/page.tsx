@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 
 import { auth } from "@/auth"
+import { prisma } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import ReviewSetup from "@/components/reviews/ReviewSetup"
@@ -19,6 +20,14 @@ export default async function ReviewsPage({
 
   const { clinicId } = await params
   const sp = await searchParams
+
+  // 사용자 권한 조회
+  const user = await prisma.user.findUnique({
+    where: { email: session.user?.email || "" },
+    select: { role: true }
+  })
+
+  const userRole = user?.role || "VIEWER"
 
   const now = new Date()
   const year = sp.year ? parseInt(sp.year) : now.getFullYear()
@@ -74,7 +83,7 @@ export default async function ReviewsPage({
           </Suspense>
         ) : (
           <Suspense fallback={<div className="text-center py-12">설정을 불러오는 중...</div>}>
-            <ReviewSetup clinicId={clinicId} />
+            <ReviewSetup clinicId={clinicId} userRole={userRole} />
           </Suspense>
         )}
       </div>

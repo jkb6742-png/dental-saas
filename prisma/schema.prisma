@@ -529,9 +529,11 @@ model ReviewSummary {
   source          ReviewSource
   year            Int
   month           Int
-  totalReviews    Int          @default(0)
+  totalReviews    Int          @default(0) // 총 리뷰 수
   newReviews      Int          @default(0) // 해당 월에 새로 작성된 리뷰
-  avgRating       Float?       // 평균 평점
+  targetReviews   Int?         // 목표 리뷰 수 (네이버만 사용)
+  achievementRate Float?       // 달성률 (계산된 값)
+  avgRating       Float?       // 평균 평점 (구글용)
   positiveCount   Int          @default(0) // 긍정 리뷰 수
   negativeCount   Int          @default(0) // 부정 리뷰 수
   replyRate       Float?       // 답글 응답률
