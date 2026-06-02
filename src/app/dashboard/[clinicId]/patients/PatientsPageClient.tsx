@@ -1116,8 +1116,8 @@ export default function PatientsPageClient({
             {hasValidPatientData && (
               <div>
                 <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">환자 유형별 분포</h4>
-                <div className="h-[300px] min-h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={250} minHeight={250}>
+                <div className="w-full" style={{ width: '100%', height: '300px' }}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
                         data={[
@@ -1169,8 +1169,8 @@ export default function PatientsPageClient({
             {/* 치료 상태별 분포 */}
             <div>
               <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">치료 상태별 현황</h4>
-              <div className="h-[300px] min-h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%" minWidth={250} minHeight={250}>
+              <div className="w-full" style={{ width: '100%', height: '300px' }}>
+                <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
                       data={[
@@ -1241,14 +1241,14 @@ export default function PatientsPageClient({
       )}
 
       {/* 요일별/시간대별 패턴 분석 */}
-      {timePatternAnalysis && (
+      {timePatternAnalysis && chartsReady && (
         <SectionCard title="내원 시간 패턴 분석" description="요일별, 시간대별 환자 내원 현황">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* 요일별 현황 */}
             <div>
               <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">요일별 내원 현황</h4>
-              <div className="h-[300px] min-h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%" minWidth={250} minHeight={250}>
+              <div className="w-full" style={{ width: '100%', height: '300px' }}>
+                <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={timePatternAnalysis.weekdayPattern}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
                     <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#6b7280" }} stroke="#9ca3af" />
@@ -1262,8 +1262,8 @@ export default function PatientsPageClient({
             {/* 시간대별 현황 */}
             <div>
               <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">시간대별 내원 현황</h4>
-              <div className="h-[300px] min-h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%" minWidth={250} minHeight={250}>
+              <div className="w-full" style={{ width: '100%', height: '300px' }}>
+                <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={timePatternAnalysis.hourlyPattern}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
                     <XAxis dataKey="hour" tick={{ fontSize: 11, fill: "#6b7280" }} stroke="#9ca3af" />
