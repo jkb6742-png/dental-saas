@@ -6,9 +6,15 @@ export async function POST(req: NextRequest) {
   try {
     console.log('🚀 관리자 계정 설정 시작...')
 
-    // 보안을 위해 특정 키 확인 (개발 환경에서만)
+    // 보안을 위해 환경 변수 키 확인
     const { setupKey } = await req.json()
-    if (setupKey !== 'dental-admin-setup-2025') {
+    const validSetupKey = process.env.ADMIN_SETUP_SECRET
+
+    if (!validSetupKey) {
+      return NextResponse.json({ error: "관리자 설정이 구성되지 않았습니다" }, { status: 500 })
+    }
+
+    if (setupKey !== validSetupKey) {
       return NextResponse.json({ error: "잘못된 설정 키입니다" }, { status: 403 })
     }
 
@@ -29,8 +35,14 @@ export async function POST(req: NextRequest) {
     }
 
     // 기존 관리자 계정 확인
+    const adminEmail = process.env.ADMIN_EMAIL
+
+    if (!adminEmail) {
+      return NextResponse.json({ error: "관리자 이메일이 설정되지 않았습니다" }, { status: 500 })
+    }
+
     const existingAdmin = await prisma.user.findUnique({
-      where: { email: 'thinklabmedi@gmail.com' }
+      where: { email: adminEmail }
     })
 
     if (existingAdmin) {
@@ -48,13 +60,19 @@ export async function POST(req: NextRequest) {
 
     // 비밀번호 해시
     console.log('🔐 비밀번호 해시 생성...')
-    const hashedPassword = await bcrypt.hash('dltodrkr13!', 12)
+    const defaultPassword = process.env.ADMIN_DEFAULT_PASSWORD
+
+    if (!defaultPassword) {
+      return NextResponse.json({ error: "관리자 기본 비밀번호가 설정되지 않았습니다" }, { status: 500 })
+    }
+
+    const hashedPassword = await bcrypt.hash(defaultPassword, 12)
 
     // 관리자 계정 생성
     console.log('👤 관리자 계정 생성...')
     const admin = await prisma.user.create({
       data: {
-        email: 'thinklabmedi@gmail.com',
+        email: adminEmail,
         password: hashedPassword,
         name: 'Master Admin',
         role: 'MASTER',

@@ -53,12 +53,22 @@ function num(v: unknown): number | null {
 }
 
 export async function POST(req: NextRequest) {
+  console.log(`[UPLOAD API] 시작 - ${new Date().toISOString()}`)
+
   const session = await auth()
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  console.log(`[UPLOAD API] 세션:`, session?.user)
+
+  if (!session) {
+    console.log(`[UPLOAD API] 세션 없음 - Unauthorized`)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
 
   // 마스터 계정만 접근 가능
   const userRole = (session.user as any).role
+  console.log(`[UPLOAD API] 사용자 역할:`, userRole)
+
   if (userRole !== "MASTER") {
+    console.log(`[UPLOAD API] 권한 없음 - 마스터 계정 필요`)
     return NextResponse.json({ error: "마스터 계정만 접근할 수 있습니다" }, { status: 403 })
   }
 
@@ -67,48 +77,78 @@ export async function POST(req: NextRequest) {
   const file = form.get("file") as File | null
   const clinicId = form.get("clinicId") as string | null
 
-  if (!file || !clinicId)
+  console.log(`[UPLOAD API] 파라미터 - 파일: ${file?.name}, 크기: ${file?.size}, clinicId: ${clinicId}`)
+
+  if (!file || !clinicId) {
+    console.log(`[UPLOAD API] 파라미터 부족`)
     return NextResponse.json({ error: "file과 clinicId가 필요합니다" }, { status: 400 })
+  }
 
   const clinic = await prisma.clinic.findFirst({ where: { id: clinicId, agencyId } })
-  if (!clinic) return NextResponse.json({ error: "치과를 찾을 수 없습니다" }, { status: 404 })
+  console.log(`[UPLOAD API] 클리닉 조회:`, clinic ? `${clinic.name} (${clinic.id})` : '없음')
+
+  if (!clinic) {
+    console.log(`[UPLOAD API] 클리닉 없음`)
+    return NextResponse.json({ error: "치과를 찾을 수 없습니다" }, { status: 404 })
+  }
 
   const buffer = await file.arrayBuffer()
+  console.log(`[UPLOAD API] 파일 읽기 완료 - ${buffer.byteLength} bytes`)
 
   // ZIP 파일인지 확인
   const isZipFile = file.name.toLowerCase().endsWith('.zip')
+  console.log(`[UPLOAD API] ZIP 파일 여부:`, isZipFile)
 
   let allParsedData: { type: string; rows: any[] }[] = []
 
   if (isZipFile) {
-    console.log(`[UPLOAD] ZIP 파일 감지: ${file.name}`)
+    console.log(`[UPLOAD API] ZIP 파일 처리 시작: ${file.name}`)
 
     // ZIP 파일에서 엑셀 파일들 추출
-    const excelFiles = await extractExcelFilesFromZip(buffer)
+    try {
+      const excelFiles = await extractExcelFilesFromZip(buffer)
+      console.log(`[UPLOAD API] ZIP에서 추출된 엑셀 파일 수:`, excelFiles.length)
 
-    if (excelFiles.length === 0) {
-      return NextResponse.json({
-        error: `ZIP 파일 내에 엑셀 파일(.xlsx, .xls)이 없습니다: ${file.name}`
-      }, { status: 400 })
-    }
-
-    // 각 엑셀 파일을 개별 파싱
-    for (const excelFile of excelFiles) {
-      try {
-        const parsedData = parseExcel(excelFile.buffer, excelFile.name)
-        allParsedData.push(parsedData)
-        console.log(`[ZIP] ${excelFile.name} 파싱 완료: ${parsedData.type}, ${parsedData.rows.length}개 행`)
-      } catch (error) {
-        console.error(`[ZIP] ${excelFile.name} 파싱 실패:`, error)
+      if (excelFiles.length === 0) {
+        console.log(`[UPLOAD API] ZIP 파일 내 엑셀 파일 없음`)
         return NextResponse.json({
-          error: `ZIP 내 파일 파싱 실패: ${excelFile.name} - ${error}`
+          error: `ZIP 파일 내에 엑셀 파일(.xlsx, .xls)이 없습니다: ${file.name}`
         }, { status: 400 })
       }
+
+      // 각 엑셀 파일을 개별 파싱
+      for (const excelFile of excelFiles) {
+        try {
+          console.log(`[UPLOAD API] ${excelFile.name} 파싱 시작`)
+          const parsedData = parseExcel(excelFile.buffer, excelFile.name)
+          allParsedData.push(parsedData)
+          console.log(`[UPLOAD API] ${excelFile.name} 파싱 완료: ${parsedData.type}, ${parsedData.rows.length}개 행`)
+        } catch (error) {
+          console.error(`[UPLOAD API] ${excelFile.name} 파싱 실패:`, error)
+          return NextResponse.json({
+            error: `ZIP 내 파일 파싱 실패: ${excelFile.name} - ${error}`
+          }, { status: 400 })
+        }
+      }
+    } catch (error) {
+      console.error(`[UPLOAD API] ZIP 처리 실패:`, error)
+      return NextResponse.json({
+        error: `ZIP 파일 처리 실패: ${error}`
+      }, { status: 400 })
     }
   } else {
     // 단일 엑셀 파일 처리 (기존 로직)
-    const parsedData = parseExcel(buffer, file.name)
-    allParsedData.push(parsedData)
+    console.log(`[UPLOAD API] 단일 엑셀 파일 처리 시작: ${file.name}`)
+    try {
+      const parsedData = parseExcel(buffer, file.name)
+      allParsedData.push(parsedData)
+      console.log(`[UPLOAD API] 파싱 완료: ${parsedData.type}, ${parsedData.rows.length}개 행`)
+    } catch (error) {
+      console.error(`[UPLOAD API] 파싱 실패:`, error)
+      return NextResponse.json({
+        error: `파일 파싱 실패: ${error}`
+      }, { status: 400 })
+    }
   }
 
   // 파싱 결과 통합 정보 출력
@@ -132,12 +172,19 @@ export async function POST(req: NextRequest) {
   const errors: string[] = []
   const affectedMonths = new Set<string>()
   const processedTypes = new Set<string>()
+  const uploadedFiles: string[] = [] // 업로드 기록을 위한 배열
 
   try {
     // 모든 파싱된 데이터 순회 처리
     for (const { type, rows } of allParsedData) {
       console.log(`[UPLOAD] 처리 중: ${type}, ${rows.length}개 행`)
       processedTypes.add(type)
+
+      // 파일명 결정 (ZIP이면 개별 파일명, 아니면 원본 파일명)
+      const currentFileName = isZipFile ?
+        allParsedData.find(data => data.type === type)?.fileName || file.name :
+        file.name
+
       if (type === "monthly_ledger") {
       const payloads = rows
         .map((row) => {
@@ -206,6 +253,95 @@ export async function POST(req: NextRequest) {
         } catch (error) {
           console.error(`[PATIENT_STATS DEBUG] DB 저장 실패:`, error)
           errors.push(`DB 저장 실패: ${error}`)
+        }
+      }
+
+    } else if (type === "daily_ledgers" || type === "monthly_ledger" || type === "annual_ledger") {
+      console.log(`[DAILY_LEDGER] 일별 매출 데이터 처리 시작: ${rows.length}개 행`)
+
+      const payloads = rows.map((row, index) => {
+        const d = clean(row as any)
+
+        // 날짜 파싱
+        let date: Date
+        try {
+          if (d.date) {
+            date = new Date(d.date as string)
+          } else {
+            // 년도/월/일이 따로 있는 경우
+            const year = d.year || d.Year || d['연도']
+            const month = d.month || d.Month || d['월']
+            const day = d.day || d.Day || d.date || d.Date || d['일'] || 1
+            date = new Date(Number(year), Number(month) - 1, Number(day))
+          }
+
+          if (isNaN(date.getTime())) {
+            console.warn(`[DAILY_LEDGER] 잘못된 날짜 형식: 행 ${index + 1}`)
+            return null
+          }
+        } catch (error) {
+          console.warn(`[DAILY_LEDGER] 날짜 파싱 실패: 행 ${index + 1}`, error)
+          return null
+        }
+
+        const year = date.getFullYear()
+        const month = date.getMonth() + 1
+
+        affectedMonths.add(`${year}-${month}`)
+
+        const payload = {
+          clinicId,
+          date,
+          month,
+          year,
+          cashIncome: num(d.cashIncome) || num(d['현금수입']) || num(d['현금매출']),
+          cardIncome: num(d.cardIncome) || num(d['카드수입']) || num(d['카드매출']),
+          onlineIncome: num(d.onlineIncome) || num(d['온라인수입']) || num(d['온라인매출']),
+          receiptIssued: num(d.receiptIssued) || num(d['영수증발행액']),
+          insuranceClaim: num(d.insuranceClaim) || num(d['보험청구액']) || num(d['급여매출']),
+          cashExpense: num(d.cashExpense) || num(d['현금지출']),
+          cardExpense: num(d.cardExpense) || num(d['카드지출']),
+          onlineExpense: num(d.onlineExpense) || num(d['온라인지출']),
+          cardFee: num(d.cardFee) || num(d['카드수수료']),
+          totalIncome: num(d.totalIncome) || num(d['총매출']) || num(d['총수입']),
+          totalExpense: num(d.totalExpense) || num(d['총지출']),
+          netTotal: num(d.netTotal) || num(d['순매출']) || num(d['순수익'])
+        }
+
+        // totalIncome이 없으면 계산
+        if (!payload.totalIncome) {
+          payload.totalIncome = (payload.cashIncome || 0) + (payload.cardIncome || 0) + (payload.onlineIncome || 0) + (payload.insuranceClaim || 0)
+        }
+
+        // netTotal이 없으면 계산
+        if (!payload.netTotal && payload.totalIncome && payload.totalExpense) {
+          payload.netTotal = payload.totalIncome - payload.totalExpense
+        }
+
+        console.log(`[DAILY_LEDGER] 행 ${index + 1} 변환:`, {
+          date: date.toISOString().split('T')[0],
+          totalIncome: payload.totalIncome,
+          totalExpense: payload.totalExpense,
+          netTotal: payload.netTotal
+        })
+
+        return payload
+      }).filter(Boolean) as any[]
+
+      console.log(`[DAILY_LEDGER] 유효한 데이터: ${payloads.length}개`)
+
+      for (const p of payloads) {
+        try {
+          await prisma.dailyLedger.upsert({
+            where: { clinicId_date: { clinicId, date: p.date } },
+            create: p,
+            update: p,
+          })
+          created++
+          console.log(`[DAILY_LEDGER] DB 저장 성공: ${p.date.toISOString().split('T')[0]}`)
+        } catch (error) {
+          console.error(`[DAILY_LEDGER] DB 저장 실패:`, error)
+          errors.push(`일별매출 저장 실패: ${error}`)
         }
       }
 
@@ -314,7 +450,7 @@ export async function POST(req: NextRequest) {
         created++
       }
 
-    } else if (type === "reception_records") {
+    } else if (type === "reception_records" || type === "new_patient_records" || type === "all_patient_records") {
       // createMany로 배치 처리 (가장 큰 파일)
       const BATCH = 200
       const payloads = rows.map((row) => {
@@ -335,6 +471,7 @@ export async function POST(req: NextRequest) {
           cardPayment: num(d.cardPayment), cashPayment: num(d.cashPayment),
           onlinePayment: num(d.onlinePayment), dailyArrears: num(d.dailyArrears),
           totalArrears: num(d.totalArrears), visitRoute: d.visitRoute as string ?? null,
+          waitingTime: num(d.waitingTime),
         }
       })
 
@@ -381,6 +518,140 @@ export async function POST(req: NextRequest) {
       }
     }
     } // for 루프 종료
+
+    // 성공적으로 처리된 파일들을 FileUpload 테이블에 기록
+    if (isZipFile) {
+      // ZIP 파일의 경우 각 엑셀 파일별로 기록
+      for (const data of allParsedData) {
+        const fileName = allParsedData.find(d => d.type === data.type)?.fileName || `${data.type}.xlsx`
+
+        // 파일명에서 년도/월 추출
+        const yearMatch = fileName.match(/(\d{4})년/)
+        const monthMatch = fileName.match(/(\d{1,2})월/)
+
+        const extractedYear = yearMatch ? parseInt(yearMatch[1]) : new Date().getFullYear()
+        const extractedMonth = monthMatch ? parseInt(monthMatch[1]) : null
+
+        // 🔥 ZIP 내 FileUpload 저장 - 카테고리 매핑 수정
+        try {
+          console.log(`💾 ZIP FileUpload 저장 시도: ${fileName}`)
+
+          // 동일한 카테고리 매핑 적용
+          const categoryMap: Record<string, string> = {
+            'age_dist': 'AGE_DISTRIBUTION',
+            'region_dist': 'REGION_DISTRIBUTION',
+            'monthly_ledger': 'MONTHLY_LEDGER',
+            'annual_ledger': 'ANNUAL_LEDGER',
+            'treatment_stats': 'TREATMENT_STATS',
+            'implant_stats': 'IMPLANT_STATS',
+            'reception_records': 'COMPREHENSIVE_PATIENTS',
+            'new_patient_records': 'COMPREHENSIVE_PATIENTS',
+            'all_patient_records': 'COMPREHENSIVE_PATIENTS',
+            'visit_routes': 'VISIT_ROUTES',
+            'patient_stats': 'DAILY_PATIENTS'
+          }
+
+          const mappedCategory = categoryMap[data.type] || data.type.toUpperCase()
+          console.log(`🔄 ZIP 카테고리 매핑: "${data.type}" → "${mappedCategory}"`)
+
+          const fileRecord = await prisma.fileUpload.create({
+            data: {
+              clinicId,
+              fileName,
+              originalName: fileName,
+              filePath: `/uploads/${fileName}`,
+              fileSize: file.size,
+              category: mappedCategory as any,
+              year: extractedYear,
+              month: extractedMonth,
+              status: 'COMPLETED',
+              checksum: `${fileName}-${Date.now()}`,
+              recordCount: data.rows.length,
+            }
+          })
+          console.log(`✅ ZIP FileUpload 저장 성공: ${fileRecord.id}`)
+          uploadedFiles.push(fileName)
+        } catch (fileUploadError) {
+          console.error(`❌ ZIP FileUpload 저장 실패: ${fileName}`, fileUploadError)
+          errors.push(`ZIP FileUpload 저장 실패: ${fileName} - ${fileUploadError}`)
+        }
+      }
+    } else {
+      // 단일 파일의 경우
+      const data = allParsedData[0]
+
+      // 🔥 강화된 년도/월 추출 로직
+      const yearMatch = file.name.match(/(\d{4})년?/)
+      let monthMatch = file.name.match(/(\d{1,2})월/)
+
+      // 추가 월 패턴들
+      if (!monthMatch) {
+        monthMatch = file.name.match(/(\d{1,2})월/) ||
+                    file.name.match(/^(\d{1,2})월/) ||
+                    file.name.match(/_(\d{1,2})월/) ||
+                    file.name.match(/(\d{1,2})월_/) ||
+                    file.name.match(/month(\d{1,2})/i) ||
+                    file.name.match(/m(\d{1,2})/i)
+      }
+
+      const extractedYear = yearMatch ? parseInt(yearMatch[1]) : new Date().getFullYear()
+      const extractedMonth = monthMatch ? parseInt(monthMatch[1]) : null
+
+      console.log(`🔥 === 파일명 파싱 상세 ===`)
+      console.log(`📄 파일명: "${file.name}"`)
+      console.log(`🔍 yearMatch:`, yearMatch)
+      console.log(`🔍 monthMatch:`, monthMatch)
+      console.log(`📅 추출된 년도: ${extractedYear} (${typeof extractedYear})`)
+      console.log(`📅 추출된 월: ${extractedMonth} (${typeof extractedMonth})`)
+      console.log(`🔥 === 파싱 완료 ===`)
+
+      // 🔥 FileUpload 저장 - 카테고리 매핑 수정
+      try {
+        console.log(`💾 FileUpload 저장 시도: ${file.name}`)
+
+        // 파일 타입을 올바른 FileCategory로 매핑
+        const categoryMap: Record<string, string> = {
+          'age_dist': 'AGE_DISTRIBUTION',
+          'region_dist': 'REGION_DISTRIBUTION',
+          'monthly_ledger': 'MONTHLY_LEDGER',
+          'annual_ledger': 'ANNUAL_LEDGER',
+          'treatment_stats': 'TREATMENT_STATS',
+          'implant_stats': 'IMPLANT_STATS',
+          'reception_records': 'COMPREHENSIVE_PATIENTS',
+          'new_patient_records': 'COMPREHENSIVE_PATIENTS',
+          'all_patient_records': 'COMPREHENSIVE_PATIENTS',
+          'visit_routes': 'VISIT_ROUTES',
+          'patient_stats': 'DAILY_PATIENTS'
+        }
+
+        const mappedCategory = categoryMap[data.type] || data.type.toUpperCase()
+        console.log(`🔄 카테고리 매핑: "${data.type}" → "${mappedCategory}"`)
+
+        const fileRecord = await prisma.fileUpload.create({
+          data: {
+            clinicId,
+            fileName: file.name,
+            originalName: file.name,
+            filePath: `/uploads/${file.name}`,
+            fileSize: file.size,
+            category: mappedCategory as any, // 매핑된 카테고리 사용
+            year: extractedYear,
+            month: extractedMonth,
+            status: 'COMPLETED',
+            checksum: `${file.name}-${Date.now()}`,
+            recordCount: data.rows.length,
+          }
+        })
+        console.log(`✅ FileUpload 저장 성공: ${fileRecord.id}`)
+        uploadedFiles.push(file.name)
+      } catch (fileUploadError) {
+        console.error(`❌ FileUpload 저장 실패: ${file.name}`, fileUploadError)
+        errors.push(`FileUpload 저장 실패: ${file.name} - ${fileUploadError}`)
+      }
+    }
+
+    console.log(`[UPLOAD] FileUpload 기록 저장 완료: ${uploadedFiles.join(', ')}`)
+
   } catch (e: any) {
     errors.push(String(e?.message ?? e).slice(0, 200))
   }
@@ -393,7 +664,7 @@ export async function POST(req: NextRequest) {
   }
 
   // ReceptionRecord가 업로드된 경우 PatientStat 자동 생성
-  if (processedTypes.has("reception_records") && created > 0) {
+  if ((processedTypes.has("reception_records") || processedTypes.has("new_patient_records") || processedTypes.has("all_patient_records")) && created > 0) {
     console.log(`[UPLOAD] ReceptionRecord 업로드 완료, PatientStat 자동 생성 시도`)
     try {
       const { generatePatientStatsFromReception } = await import("@/lib/analytics/patient-stats")
@@ -427,10 +698,33 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // 더 광범위한 캐시 무효화
   revalidatePath(`/dashboard/${clinicId}`, "layout")
+  revalidatePath(`/dashboard/${clinicId}`, "page")
+  revalidatePath(`/dashboard/${clinicId}/upload`, "page")
+  revalidatePath(`/dashboard/${clinicId}/uploads`, "page") // 업로드 관리 페이지
+
+  // 각 데이터 타입별 페이지도 revalidate
+  for (const type of processedTypes) {
+    switch(type) {
+      case "patient_stats":
+        revalidatePath(`/dashboard/${clinicId}/patients`, "page")
+        break
+      case "treatment_stats":
+        revalidatePath(`/dashboard/${clinicId}/treatments`, "page")
+        break
+      case "daily_ledgers":
+      case "monthly_ledger":
+      case "annual_ledger":
+        revalidatePath(`/dashboard/${clinicId}/revenue`, "page")
+        break
+    }
+  }
 
   // 처리된 파일들의 총 행 수 계산
   const totalRows = allParsedData.reduce((sum, data) => sum + data.rows.length, 0)
+
+  console.log(`[UPLOAD COMPLETE] 클리닉: ${clinicId}, 파일: ${isZipFile ? 'ZIP' : '단일'}, 타입: ${Array.from(processedTypes).join(', ')}, 생성: ${created}건, 스킵: ${skipped}건`)
 
   return NextResponse.json({
     fileType: isZipFile ? 'zip' : 'single',
@@ -439,6 +733,8 @@ export async function POST(req: NextRequest) {
     total: totalRows,
     created,
     skipped,
-    errors: errors.slice(0, 10) // ZIP일 때는 에러가 더 많을 수 있으므로 10개까지
+    errors: errors.slice(0, 10), // ZIP일 때는 에러가 더 많을 수 있으므로 10개까지
+    success: true,
+    message: `${created}건의 데이터가 성공적으로 업로드되었습니다.`
   })
 }

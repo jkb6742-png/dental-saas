@@ -3,19 +3,25 @@ import { prisma } from "@/lib/db"
 import { auth } from "@/auth"
 import { requireClinicAccess, logSecurityEvent } from "@/lib/security"
 import { createSecureQueryExecutor } from "@/lib/db-secure"
-import OpenAI from "openai"
+import OpenAI from 'openai'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
+  apiKey: process.env.OPENAI_API_KEY!, // 🔥 OpenAI API 사용 (임시 해결책)
 })
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("🔍 API 호출 시작")
+    console.log("🔍 DATABASE_URL 존재:", !!process.env.DATABASE_URL)
+    console.log("🔍 NODE_ENV:", process.env.NODE_ENV)
+
     const { clinicId, year, month } = await request.json()
 
     if (!clinicId || !year || !month) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
+
+    console.log("🔍 요청 파라미터:", { clinicId, year, month })
 
     // 🔒 보안 검증: 클리닉 접근 권한 확인
     const user = await requireClinicAccess(clinicId)
@@ -78,7 +84,7 @@ export async function POST(request: NextRequest) {
     })
 
     // OpenAI API를 사용해 리포트 생성
-    const reportContent = await generateReportWithGPT({
+    const reportContent = await generateReportWithOpenAI({
       clinic: clinic!,
       year: parseInt(year),
       month: parseInt(month),
@@ -89,6 +95,14 @@ export async function POST(request: NextRequest) {
       implantStats,
       consultationStats,
     })
+
+    // HTML 파일 생성
+    const fileName = `[${clinic?.name}] ${year}년 ${month}월 경영보고서.html`
+    const filePath = `C:\\Users\\jjang\\Desktop\\${fileName}`
+
+    // HTML 파일로 저장
+    const fs = require('fs').promises
+    await fs.writeFile(filePath, reportContent, 'utf8')
 
     // 리포트 저장 또는 업데이트
     const reportData = {
@@ -112,13 +126,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       reportId: report.id,
+      fileName: fileName,
+      filePath: filePath,
       message: "리포트가 성공적으로 생성되었습니다."
     })
 
   } catch (error) {
     console.error("Error generating report:", error)
+
+    // 더 상세한 오류 정보 제공
+    if (error instanceof Error) {
+      console.error("Error message:", error.message)
+      console.error("Error stack:", error.stack)
+
+      // 인증 관련 오류인 경우 구체적 메시지 반환
+      if (error.message.includes("인증되지 않은") || error.message.includes("접근 권한이")) {
+        return NextResponse.json({
+          error: error.message,
+          code: "AUTH_ERROR"
+        }, { status: 401 })
+      }
+    }
+
     return NextResponse.json({
-      error: "리포트 생성 중 오류가 발생했습니다."
+      error: "리포트 생성 중 오류가 발생했습니다.",
+      details: error instanceof Error ? error.message : "Unknown error"
     }, { status: 500 })
   }
 }
@@ -135,108 +167,62 @@ interface ReportData {
   consultationStats: any
 }
 
-async function generateReportWithGPT(data: ReportData): Promise<string> {
+async function generateReportWithOpenAI(data: ReportData): Promise<string> {
   const prompt = `
-당신은 치과 경영 컨설턴트입니다. 다음 데이터를 바탕으로 ${data.clinic.name}의 ${data.year}년 ${data.month}월 경영 분석 리포트를 작성해주세요.
+제공된 데이터를 바탕으로 ${data.clinic.name}의 ${data.year}년 ${data.month}월 경영 분석 리포트를 작성해주세요.
 
-## 기본 정보
+## 데이터 현황
 - 치과명: ${data.clinic.name}
 - 분석 기간: ${data.year}년 ${data.month}월
-
-## 월간 매출 현황
 - 총 매출: ${data.monthlySummary?.totalRevenue?.toLocaleString() || 'N/A'}원
 - 보험 매출: ${data.monthlySummary?.insuranceRevenue?.toLocaleString() || 'N/A'}원
 - 비보험 매출: ${data.monthlySummary?.nonInsuranceRevenue?.toLocaleString() || 'N/A'}원
 - 진료 일수: ${data.monthlySummary?.workingDays || 'N/A'}일
-- 일 평균 매출: ${data.monthlySummary?.dailyAverage?.toLocaleString() || 'N/A'}원
-
-## 환자 현황
 - 총 방문 환자수: ${data.patientStats?.totalPatients || 'N/A'}명
 - 신환자수: ${data.patientStats?.newPatients || 'N/A'}명
 - 재방문환자수: ${data.patientStats?.returningPatients || 'N/A'}명
-- 신환자 비율: ${data.patientStats?.newPatientRatio ? (data.patientStats.newPatientRatio * 100).toFixed(1) : 'N/A'}%
 
-## 진료 현황
-${data.treatmentStats ? `
-- 보험 진료 건수: ${data.treatmentStats.insuranceCount || 0}건
-- 비보험 진료 건수: ${data.treatmentStats.nonInsuranceCount || 0}건
-- 평균 진료비: ${data.treatmentStats.averageTreatmentCost?.toLocaleString() || 'N/A'}원
-` : '진료 현황 데이터 없음'}
+**완성된 HTML 문서를 출력해주세요. HTML에는 다음 요소들이 포함되어야 합니다:**
 
-## 임플란트 현황
-${data.implantStats ? `
-- 임플란트 건수: ${data.implantStats.totalCount || 0}건
-- 임플란트 매출: ${data.implantStats.totalRevenue?.toLocaleString() || 'N/A'}원
-- 건당 평균 금액: ${data.implantStats.averageCost?.toLocaleString() || 'N/A'}원
-` : '임플란트 현황 데이터 없음'}
+1. **전문적인 디자인**: 깔끔하고 현대적인 스타일
+2. **월 회의 논의 항목**:
+   - 매출 목표 달성률 및 분석
+   - 신환/구환 관리 현황
+   - 진료 항목별 수익성
+   - 상담 성약률 현황
+   - 마케팅 ROI 분석
+   - 개선 필요 사항
+   - 다음 달 행동 계획
 
-## 상담 현황
-${data.consultationStats ? `
-- 총 상담 건수: ${data.consultationStats.totalConsultations || 0}건
-- 성약 건수: ${data.consultationStats.successfulConsultations || 0}건
-- 성약률: ${data.consultationStats.successRate ? (data.consultationStats.successRate * 100).toFixed(1) : 'N/A'}%
-` : '상담 현황 데이터 없음'}
+3. **시각적 요소**:
+   - 색상 구분 (긍정: 파란색, 주의: 주황색, 위험: 빨간색)
+   - 카드형 레이아웃
+   - 아이콘 활용
+   - 반응형 디자인
 
-## 주요 내원 경로
-${data.visitRoutes.length > 0 ?
-  data.visitRoutes.map(route => `- ${route.routeName}: ${route.patientCount}명 (비용: ${route.cost?.toLocaleString() || 'N/A'}원)`).join('\n')
-  : '내원 경로 데이터 없음'
-}
+4. **실용적 내용**:
+   - 구체적 수치와 비교 분석
+   - 실행 가능한 개선안
+   - 명확한 액션 아이템
 
-다음 형식으로 리포트를 작성해주세요:
-
-# ${data.clinic.name} ${data.year}년 ${data.month}월 경영 분석 리포트
-
-## 📊 월간 성과 요약
-
-## 💰 매출 분석
-- 전월 대비 성장률 추정 및 분석
-- 보험/비보험 매출 비중 분석
-- 일 평균 매출 트렌드 분석
-
-## 👥 환자 현황 분석
-- 신환자 유입 현황 및 평가
-- 재방문 환자 관리 현황
-- 환자당 평균 매출 분석
-
-## 🦷 진료 현황 분석
-- 주요 진료 항목별 수익성 분석
-- 임플란트 사업 현황 (해당시)
-- 고수익 진료 비중 분석
-
-## 📈 마케팅 ROI 분석
-- 내원 경로별 효율성 분석
-- 마케팅 비용 대비 효과
-- 상담 성약률 개선 방안
-
-## 🎯 개선 권장사항
-1. 즉시 개선 가능한 항목 3가지
-2. 중장기 발전 방향 3가지
-3. 다음 달 목표 설정
-
-## 📋 종합 평가
-- 이번 달 경영 성과 평점 (A~F)
-- 강점 요약
-- 약점 및 개선점 요약
-
-**리포트는 실용적이고 구체적인 조언을 포함해야 하며, 마케팅 담당자가 실제로 활용할 수 있는 인사이트를 제공해주세요.**
-`
+완전한 HTML 문서(<!DOCTYPE html>부터 </html>까지)로 작성해주세요.`
 
   try {
+    // 🔥 OpenAI API로 월 보고서 생성
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4", // GPT-4 모델 사용
       max_tokens: 4000,
       temperature: 0.7,
       messages: [
         {
           role: "system",
-          content: "당신은 치과 경영 컨설턴트입니다. 제공된 데이터를 분석하여 실용적이고 구체적인 경영 분석 리포트를 작성해주세요."
+          content: "당신은 치과 경영 컨설턴트입니다. 월간 경영 회의에서 논의할 전문적인 HTML 보고서를 작성해주세요."
         },
         {
           role: "user",
-          content: prompt,
-        },
-      ],
+          content: prompt
+        }
+      ]
     })
 
     return completion.choices[0]?.message?.content || ""

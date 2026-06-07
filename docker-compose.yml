@@ -29,8 +29,15 @@ services:
     environment:
       DATABASE_URL: postgresql://dental_user:dental_pass@db:5432/dental_db
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-https://localhost}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY}
+      GOOGLE_SERVICE_ACCOUNT_KEY: ${GOOGLE_SERVICE_ACCOUNT_KEY}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_SETUP_SECRET: ${ADMIN_SETUP_SECRET}
+      ADMIN_DEFAULT_PASSWORD: ${ADMIN_DEFAULT_PASSWORD}
+      CRON_SECRET: ${CRON_SECRET}
+      NODE_ENV: production
     networks:
       - dental_net
     ports:

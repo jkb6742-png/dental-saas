@@ -1,21 +1,625 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Agency {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      PlanTier @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  clinics   Clinic[]
+  users     User[]
+}
+
+model User {
+  id                  String           @id @default(cuid())
+  email               String           @unique
+  password            String
+  name                String
+  role                UserRole         @default(VIEWER)
+  agencyId            String
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  approvedAt          DateTime?
+  approvedBy          String?
+  inviteCodeId        String?
+  status              UserStatus       @default(PENDING)
+  lockedAt            DateTime?
+  lockUntil           DateTime?
+  createdInviteCodes  InviteCode[]     @relation("InviteCodeCreator")
+  generatedPeiReports PeiReport[]      @relation("PeiReportGenerator")
+  peiSheetConfigs     PeiSheetConfig[]
+  agency              Agency           @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  inviteCode          InviteCode?      @relation(fields: [inviteCodeId], references: [id])
+}
+
+model Clinic {
+  id                    String                 @id @default(cuid())
+  name                  String
+  code                  String
+  agencyId              String
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  ageDists              AgeDist[]
+  agency                Agency                 @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  consultationStats     ConsultationStat[]
+  dailyLedgers          DailyLedger[]
+  dataProcessingRecords DataProcessingRecord[]
+  fileUploads           FileUpload[]
+  implantStats          ImplantStat[]
+  inviteCodes           InviteCode[]
+  monthlySummaries      MonthlySummary[]
+  patientConsents       PatientConsent[]
+  patientStats          PatientStat[]
+  peiReports            PeiReport[]
+  peiSheetConfig        PeiSheetConfig?
+  receptionRecords      ReceptionRecord[]
+  regionDists           RegionDist[]
+  reports               Report[]
+  revenueGoals          RevenueGoal[]
+  reviews               Review[]
+  reviewConfigs         ReviewConfig[]
+  reviewSummaries       ReviewSummary[]
+  treatmentPlans        TreatmentPlan[]
+  treatmentStats        TreatmentStat[]
+  uploadLogs            UploadLog[]
+  visitRoutes           VisitRoute[]
+
+  // 새로운 6개 핵심 데이터 관계
+  revenues              Revenue[]
+  patientInfos          PatientInfo[]
+  treatmentDatas        TreatmentData[]
+  visitRouteDatas       VisitRouteData[]
+  regionDatas           RegionData[]
+  ageDatas              AgeData[]
+
+  @@unique([agencyId, code])
+}
+
+model DailyLedger {
+  id             String   @id @default(cuid())
+  clinicId       String
+  date           DateTime
+  month          Int
+  year           Int
+  cashIncome     Float?
+  cardIncome     Float?
+  onlineIncome   Float?
+  receiptIssued  Float?
+  insuranceClaim Float?
+  cashExpense    Float?
+  cardExpense    Float?
+  onlineExpense  Float?
+  cardFee        Float?
+  totalIncome    Float?
+  totalExpense   Float?
+  netTotal       Float?
+  createdAt      DateTime @default(now())
+  clinic         Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, date])
+  @@index([clinicId, year, month])
+}
+
+model MonthlySummary {
+  id                    String   @id @default(cuid())
+  clinicId              String
+  year                  Int
+  month                 Int
+  totalRevenue          Float?
+  totalExpense          Float?
+  netProfit             Float?
+  cashIncome            Float?
+  cardIncome            Float?
+  insuranceClaim        Float?
+  nonInsuranceRevenue   Float?
+  newPatients           Int?
+  totalPatients         Int?
+  workingDays           Int?
+  avgDailyRevenue       Float?
+  newPatientRevenue     Float?
+  revisitRate           Float?
+  nonInsuranceRatio     Float?
+  revenueGrowth         Float?
+  newPatientGrowth      Float?
+  totalArrears          Float?
+  arrearsRate           Float?
+  treatmentCompleteRate Float?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  totalBilledRevenue    Float?
+  clinic                Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  report                Report?
+
+  @@unique([clinicId, year, month])
+  @@index([clinicId, year])
+}
+
+model PatientStat {
+  id                   String   @id @default(cuid())
+  clinicId             String
+  date                 DateTime
+  month                Int
+  year                 Int
+  workingDays          Float?
+  newPatients          Float?
+  totalVisits          Float?
+  totalAppointments    Float?
+  avgDailyNewPatients  Float?
+  avgDailyAppointments Float?
+  createdAt            DateTime @default(now())
+  clinic               Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, date])
+  @@index([clinicId, year, month])
+}
+
+model TreatmentStat {
+  id           String            @id @default(cuid())
+  clinicId     String
+  year         Int
+  month        Int
+  itemName     String
+  category     TreatmentCategory
+  patientCount Float?
+  visitCount   Float?
+  revenue      Float?
+  visitRatio   Float?
+  revenueRatio Float?
+  createdAt    DateTime          @default(now())
+  clinic       Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month, itemName])
+  @@index([clinicId, year, month])
+}
+
+model VisitRoute {
+  id                String   @id @default(cuid())
+  clinicId          String
+  year              Int
+  month             Int
+  routeName         String
+  totalVisitors     Float?
+  returningPatients Float?
+  newPatients       Float?
+  totalVisits       Float?
+  avgRevenue        Float?
+  totalRevenue      Float?
+  acquisitionCost   Float?
+  createdAt         DateTime @default(now())
+  clinic            Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month, routeName])
+  @@index([clinicId, year, month])
+}
+
+model TreatmentPlan {
+  id              String           @id @default(cuid())
+  clinicId        String
+  patientName     String
+  chartNumber     String?
+  writtenDate     DateTime?
+  lastVisit       DateTime?
+  nextAppointment DateTime?
+  status          TreatmentStatus?
+  paymentStatus   PaymentStatus?
+  doctor          String?
+  counselor       String?
+  planContent     String?
+  contractAmount  Float?
+  remainingAmount Float?
+  month           Int?
+  year            Int?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  clinic          Clinic           @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, year, month])
+  @@index([clinicId, paymentStatus])
+}
+
+model Report {
+  id               String          @id @default(cuid())
+  clinicId         String
+  monthlySummaryId String?         @unique
+  year             Int
+  month            Int
+  content          String?
+  pdfUrl           String?
+  generatedAt      DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  clinic           Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  monthlySummary   MonthlySummary? @relation(fields: [monthlySummaryId], references: [id])
+
+  @@unique([clinicId, year, month])
+}
+
+model ImplantStat {
+  id           String   @id @default(cuid())
+  clinicId     String
+  year         Int
+  month        Int
+  fixtureName  String
+  surgeryCount Float?
+  usageCount   Float?
+  createdAt    DateTime @default(now())
+  clinic       Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month, fixtureName])
+  @@index([clinicId, year, month])
+}
+
+model ConsultationStat {
+  id                 String   @id @default(cuid())
+  clinicId           String
+  year               Int
+  month              Int
+  counselorName      String
+  planCount          Float?
+  confirmedCount     Float?
+  confirmationRate   Float?
+  patientCount       Float?
+  confirmedPatients  Float?
+  patientConfirmRate Float?
+  confirmedAmount    Float?
+  avgDiscountRate    Float?
+  createdAt          DateTime @default(now())
+  clinic             Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month, counselorName])
+  @@index([clinicId, year, month])
+}
+
+model ReceptionRecord {
+  id                String    @id @default(cuid())
+  clinicId          String
+  year              Int
+  month             Int
+  receptionTime     DateTime?
+  status            String?
+  chartNumber       String?
+  patientName       String?
+  ageGender         String?
+  insuranceType     String?
+  patientType       String?
+  doctor            String?
+  totalRevenue      Float?
+  insuranceCoverage Float?
+  patientPayment    Float?
+  nonInsurance      Float?
+  cardPayment       Float?
+  cashPayment       Float?
+  onlinePayment     Float?
+  dailyArrears      Float?
+  totalArrears      Float?
+  visitRoute        String?
+  createdAt         DateTime  @default(now())
+  waitingTime       Float?
+  clinic            Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, year, month])
+  @@index([clinicId, patientType])
+  @@index([clinicId, doctor])
+}
+
+model AgeDist {
+  id                String   @id @default(cuid())
+  clinicId          String
+  year              Int
+  month             Int
+  ageGroup          String
+  totalPatients     Float?
+  returningPatients Float?
+  newPatients       Float?
+  avgRevenue        Float?
+  createdAt         DateTime @default(now())
+  clinic            Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month, ageGroup])
+  @@index([clinicId, year, month])
+}
+
+model RegionDist {
+  id                String   @id @default(cuid())
+  clinicId          String
+  year              Int
+  month             Int
+  region            String
+  totalPatients     Float?
+  returningPatients Float?
+  newPatients       Float?
+  totalVisits       Float?
+  avgRevenue        Float?
+  createdAt         DateTime @default(now())
+  clinic            Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month, region])
+  @@index([clinicId, year, month])
+}
+
+model InviteCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  createdBy   String
+  usedBy      String?
+  usedAt      DateTime?
+  expiresAt   DateTime?
+  maxUses     Int       @default(1)
+  currentUses Int       @default(0)
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  clinicId    String
+  clinic      Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  creator     User      @relation("InviteCodeCreator", fields: [createdBy], references: [id])
+  users       User[]
+
+  @@index([clinicId, isActive])
+  @@index([code])
+}
+
+model SecurityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  event     String
+  clinicId  String?
+  agencyId  String?
+  ip        String?
+  details   Json?
+  timestamp DateTime @default(now())
+  severity  String   @default("MEDIUM")
+
+  @@index([userId, timestamp])
+  @@index([event, timestamp])
+  @@index([clinicId, timestamp])
+}
+
+model PeiSheetConfig {
+  id         String      @id @default(cuid())
+  clinicId   String      @unique
+  sheetUrl   String
+  sheetId    String
+  sheetName  String?
+  isActive   Boolean     @default(true)
+  lastSyncAt DateTime?
+  createdBy  String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  reports    PeiReport[]
+  clinic     Clinic      @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  creator    User        @relation(fields: [createdBy], references: [id])
+
+  @@index([clinicId, isActive])
+}
+
+model PeiReport {
+  id              String          @id @default(cuid())
+  clinicId        String
+  sheetConfigId   String?
+  year            Int
+  month           Int
+  title           String?
+  summary         String?
+  insights        Json?
+  recommendations Json?
+  rawData         Json?
+  peiScore        Float?
+  categoryScores  Json?
+  content         String?
+  pdfUrl          String?
+  status          String          @default("GENERATING")
+  generatedAt     DateTime?
+  generatedBy     String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  clinic          Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  generator       User            @relation("PeiReportGenerator", fields: [generatedBy], references: [id])
+  sheetConfig     PeiSheetConfig? @relation(fields: [sheetConfigId], references: [id])
+
+  @@unique([clinicId, year, month])
+  @@index([clinicId, status])
+  @@index([generatedAt])
+}
+
+model ReviewConfig {
+  id         String       @id @default(cuid())
+  clinicId   String
+  source     ReviewSource
+  placeName  String?
+  placeId    String?
+  placeUrl   String?
+  isActive   Boolean      @default(true)
+  lastSyncAt DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  reviews    Review[]
+  clinic     Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, source])
+  @@index([clinicId, isActive])
+}
+
+model Review {
+  id         String       @id @default(cuid())
+  clinicId   String
+  configId   String
+  source     ReviewSource
+  reviewId   String
+  authorName String?
+  rating     Int?
+  content    String?
+  reviewDate DateTime?
+  reply      String?
+  replyDate  DateTime?
+  isPositive Boolean?
+  keywords   Json?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  clinic     Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  config     ReviewConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([configId, reviewId])
+  @@index([clinicId, source, reviewDate])
+  @@index([clinicId, rating])
+}
+
+model ReviewSummary {
+  id              String       @id @default(cuid())
+  clinicId        String
+  source          ReviewSource
+  year            Int
+  month           Int
+  totalReviews    Int          @default(0)
+  newReviews      Int          @default(0)
+  avgRating       Float?
+  positiveCount   Int          @default(0)
+  negativeCount   Int          @default(0)
+  replyRate       Float?
+  topKeywords     Json?
+  ratingDist      Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  achievementRate Float?
+  targetReviews   Int?
+  clinic          Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, source, year, month])
+  @@index([clinicId, year, month])
+}
+
+model MedicalAccessLog {
+  id             String   @id @default(cuid())
+  userId         String
+  action         String
+  resourceType   String
+  resourceId     String?
+  ipAddress      String?
+  userAgent      String?
+  timestamp      DateTime @default(now())
+  additionalData Json?
+  severity       String   @default("MEDIUM")
+
+  @@index([userId, timestamp])
+  @@index([action, timestamp])
+  @@index([resourceType, timestamp])
+  @@index([severity, timestamp])
+}
+
+model PatientConsent {
+  id          String    @id @default(cuid())
+  patientId   String
+  clinicId    String
+  consentType String
+  consented   Boolean   @default(false)
+  consentDate DateTime  @default(now())
+  expiryDate  DateTime?
+  revokedDate DateTime?
+  consentText String?
+  version     String    @default("1.0")
+  ipAddress   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  clinic      Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, clinicId, consentType])
+  @@index([clinicId, consentType])
+  @@index([expiryDate])
+}
+
+model DataProcessingRecord {
+  id                String    @id @default(cuid())
+  clinicId          String
+  processingType    String
+  dataCategory      String
+  purpose           String
+  legalBasis        String
+  dataSubject       String?
+  retentionPeriod   String?
+  thirdPartySharing Boolean   @default(false)
+  encryptionUsed    Boolean   @default(true)
+  processingDate    DateTime  @default(now())
+  completedDate     DateTime?
+  status            String    @default("ACTIVE")
+  description       String?
+  createdAt         DateTime  @default(now())
+  clinic            Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, processingType])
+  @@index([processingDate])
+  @@index([status])
+}
+
+model RevenueGoal {
+  id             String   @id @default(cuid())
+  clinicId       String
+  year           Int
+  month          Int?
+  goalType       String
+  revenueGoal    Float
+  newPatientGoal Int?
+  description    String?
+  createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  clinic         Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month])
+  @@index([clinicId, year])
+  @@index([goalType])
+}
+
+model FileUpload {
+  id           String       @id @default(cuid())
+  clinicId     String
+  category     FileCategory
+  fileName     String
+  originalName String
+  filePath     String
+  fileSize     Int
+  year         Int
+  month        Int?
+  uploadedAt   DateTime     @default(now())
+  processedAt  DateTime?
+  status       FileStatus   @default(PENDING)
+  checksum     String
+  recordCount  Int?
+  errorMessage String?
+  clinic       Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, category, year, month])
+  @@index([clinicId, year, month])
+}
+
+model UploadLog {
+  id        String       @id @default(cuid())
+  clinicId  String
+  action    String
+  fileName  String
+  category  FileCategory
+  year      Int
+  month     Int?
+  status    String
+  message   String?
+  createdAt DateTime     @default(now())
+  clinic    Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, createdAt])
 }
 
 enum UserRole {
-  MASTER
   ADMIN
   ANALYST
   VIEWER
+  MASTER
 }
 
 enum UserStatus {
@@ -48,502 +652,175 @@ enum TreatmentCategory {
   NON_INSURANCE
 }
 
-model Agency {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  plan      PlanTier @default(FREE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  users       User[]
-  clinics     Clinic[]
-}
-
-model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
-  password  String
-  name      String
-  role      UserRole   @default(VIEWER)
-  status    UserStatus @default(PENDING)
-  agencyId  String
-  lockedAt  DateTime?  // 계정 잠금 시간
-  lockUntil DateTime?  // 계정 잠금 해제 시간
-  inviteCodeId String? // 사용한 초대 코드 ID
-  approvedBy   String? // 승인자 ID
-  approvedAt   DateTime? // 승인 시간
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  agency     Agency      @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-  inviteCode InviteCode? @relation(fields: [inviteCodeId], references: [id])
-  createdInviteCodes InviteCode[] @relation("InviteCodeCreator")
-  peiSheetConfigs PeiSheetConfig[]
-  generatedPeiReports PeiReport[] @relation("PeiReportGenerator")
-}
-
-model Clinic {
-  id        String   @id @default(cuid())
-  name      String
-  code      String
-  agencyId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  agency           Agency             @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-  dailyLedgers     DailyLedger[]
-  monthlySummaries MonthlySummary[]
-  patientStats     PatientStat[]
-  treatmentStats   TreatmentStat[]
-  visitRoutes      VisitRoute[]
-  treatmentPlans   TreatmentPlan[]
-  reports          Report[]
-  implantStats     ImplantStat[]
-  consultationStats ConsultationStat[]
-  receptionRecords ReceptionRecord[]
-  ageDists         AgeDist[]
-  regionDists      RegionDist[]
-  inviteCodes      InviteCode[]
-  peiSheetConfig   PeiSheetConfig?
-  peiReports       PeiReport[]
-  reviewConfigs    ReviewConfig[]
-  reviews          Review[]
-  reviewSummaries  ReviewSummary[]
-
-  @@unique([agencyId, code])
-}
-
-model DailyLedger {
-  id             String   @id @default(cuid())
-  clinicId       String
-  date           DateTime
-  month          Int
-  year           Int
-  cashIncome     Float?
-  cardIncome     Float?
-  onlineIncome   Float?
-  receiptIssued  Float?
-  insuranceClaim Float?
-  cashExpense    Float?
-  cardExpense    Float?
-  onlineExpense  Float?
-  cardFee        Float?
-  totalIncome    Float?
-  totalExpense   Float?
-  netTotal       Float?
-  createdAt      DateTime @default(now())
-
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([clinicId, date])
-  @@index([clinicId, year, month])
-}
-
-model MonthlySummary {
-  id                    String   @id @default(cuid())
-  clinicId              String
-  year                  Int
-  month                 Int
-  totalRevenue          Float?
-  totalExpense          Float?
-  netProfit             Float?
-  cashIncome            Float?
-  cardIncome            Float?
-  insuranceClaim        Float?
-  nonInsuranceRevenue   Float?
-  newPatients           Int?
-  totalPatients         Int?
-  workingDays           Int?
-  avgDailyRevenue       Float?
-  newPatientRevenue     Float?
-  revisitRate           Float?
-  nonInsuranceRatio     Float?
-  revenueGrowth         Float?
-  newPatientGrowth      Float?
-  totalArrears          Float?
-  arrearsRate           Float?
-  treatmentCompleteRate Float?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-
-  clinic Clinic  @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  report Report?
-
-  @@unique([clinicId, year, month])
-  @@index([clinicId, year])
-}
-
-model PatientStat {
-  id                   String   @id @default(cuid())
-  clinicId             String
-  date                 DateTime
-  month                Int
-  year                 Int
-  workingDays          Float?
-  newPatients          Float?
-  totalVisits          Float?
-  totalAppointments    Float?
-  avgDailyNewPatients  Float?
-  avgDailyAppointments Float?
-  createdAt            DateTime @default(now())
-
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([clinicId, date])
-  @@index([clinicId, year, month])
-}
-
-model TreatmentStat {
-  id           String            @id @default(cuid())
-  clinicId     String
-  year         Int
-  month        Int
-  itemName     String
-  category     TreatmentCategory
-  patientCount Float?
-  visitCount   Float?
-  revenue      Float?
-  visitRatio   Float?
-  revenueRatio Float?
-  createdAt    DateTime          @default(now())
-
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([clinicId, year, month, itemName])
-  @@index([clinicId, year, month])
-}
-
-model VisitRoute {
-  id                String   @id @default(cuid())
-  clinicId          String
-  year              Int
-  month             Int
-  routeName         String
-  totalVisitors     Float?
-  returningPatients Float?
-  newPatients       Float?
-  totalVisits       Float?
-  avgRevenue        Float?
-  totalRevenue      Float?
-  acquisitionCost   Float?
-  createdAt         DateTime @default(now())
-
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([clinicId, year, month, routeName])
-  @@index([clinicId, year, month])
-}
-
-model TreatmentPlan {
-  id              String           @id @default(cuid())
-  clinicId        String
-  patientName     String
-  chartNumber     String?
-  writtenDate     DateTime?
-  lastVisit       DateTime?
-  nextAppointment DateTime?
-  status          TreatmentStatus?
-  paymentStatus   PaymentStatus?
-  doctor          String?
-  counselor       String?
-  planContent     String?
-  contractAmount  Float?
-  remainingAmount Float?
-  month           Int?
-  year            Int?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@index([clinicId, year, month])
-  @@index([clinicId, paymentStatus])
-}
-
-model Report {
-  id               String          @id @default(cuid())
-  clinicId         String
-  monthlySummaryId String?         @unique
-  year             Int
-  month            Int
-  content          String?
-  pdfUrl           String?
-  generatedAt      DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-
-  clinic         Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  monthlySummary MonthlySummary? @relation(fields: [monthlySummaryId], references: [id])
-
-  @@unique([clinicId, year, month])
-}
-
-model ImplantStat {
-  id           String   @id @default(cuid())
-  clinicId     String
-  year         Int
-  month        Int
-  fixtureName  String
-  surgeryCount Float?
-  usageCount   Float?
-  createdAt    DateTime @default(now())
-
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([clinicId, year, month, fixtureName])
-  @@index([clinicId, year, month])
-}
-
-model ConsultationStat {
-  id                   String   @id @default(cuid())
-  clinicId             String
-  year                 Int
-  month                Int
-  counselorName        String
-  planCount            Float?
-  confirmedCount       Float?
-  confirmationRate     Float?
-  patientCount         Float?
-  confirmedPatients    Float?
-  patientConfirmRate   Float?
-  confirmedAmount      Float?
-  avgDiscountRate      Float?
-  createdAt            DateTime @default(now())
-
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([clinicId, year, month, counselorName])
-  @@index([clinicId, year, month])
-}
-
-model ReceptionRecord {
-  id               String    @id @default(cuid())
-  clinicId         String
-  year             Int
-  month            Int
-  receptionTime    DateTime?
-  status           String?
-  chartNumber      String?
-  patientName      String?
-  ageGender        String?
-  insuranceType    String?
-  patientType      String?
-  doctor           String?
-  totalRevenue     Float?
-  insuranceCoverage Float?
-  patientPayment   Float?
-  nonInsurance     Float?
-  cardPayment      Float?
-  cashPayment      Float?
-  onlinePayment    Float?
-  dailyArrears     Float?
-  totalArrears     Float?
-  visitRoute       String?
-  createdAt        DateTime  @default(now())
-
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@index([clinicId, year, month])
-  @@index([clinicId, patientType])
-  @@index([clinicId, doctor])
-}
-
-model AgeDist {
-  id                String   @id @default(cuid())
-  clinicId          String
-  year              Int
-  month             Int
-  ageGroup          String
-  totalPatients     Float?
-  returningPatients Float?
-  newPatients       Float?
-  avgRevenue        Float?
-  createdAt         DateTime @default(now())
-
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([clinicId, year, month, ageGroup])
-  @@index([clinicId, year, month])
-}
-
-model RegionDist {
-  id                String   @id @default(cuid())
-  clinicId          String
-  year              Int
-  month             Int
-  region            String
-  totalPatients     Float?
-  returningPatients Float?
-  newPatients       Float?
-  totalVisits       Float?
-  avgRevenue        Float?
-  createdAt         DateTime @default(now())
-
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([clinicId, year, month, region])
-  @@index([clinicId, year, month])
-}
-
-model InviteCode {
-  id          String    @id @default(cuid())
-  code        String    @unique // 초대 코드 (8자리 랜덤)
-  clinicId    String    // 어떤 치과용 코드인지
-  createdBy   String    // 생성자 ID (마스터 계정)
-  usedBy      String?   // 사용자 ID (사용된 경우)
-  usedAt      DateTime? // 사용된 시간
-  expiresAt   DateTime? // 만료 시간 (선택적)
-  maxUses     Int       @default(1) // 최대 사용 횟수
-  currentUses Int       @default(0) // 현재 사용 횟수
-  description String?   // 코드 설명
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  clinic    Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  creator   User   @relation("InviteCodeCreator", fields: [createdBy], references: [id])
-  users     User[] // 이 코드로 가입한 사용자들
-
-  @@index([clinicId, isActive])
-  @@index([code])
-}
-
-model SecurityLog {
-  id        String   @id @default(cuid())
-  userId    String? // 사용자 ID 또는 이메일
-  event     String  // 보안 이벤트 타입 (UNAUTHORIZED_ACCESS, ACCOUNT_LOCKED, etc.)
-  clinicId  String?
-  agencyId  String?
-  ip        String?
-  details   Json?   // 추가 정보 (JSON 형태)
-  timestamp DateTime @default(now())
-  severity  String  @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
-
-  @@index([userId, timestamp])
-  @@index([event, timestamp])
-  @@index([clinicId, timestamp])
-}
-
-model PeiSheetConfig {
-  id           String   @id @default(cuid())
-  clinicId     String   @unique // 한 치과당 하나의 시트 설정
-  sheetUrl     String   // 구글 스프레드시트 URL
-  sheetId      String   // 스프레드시트 ID 추출
-  sheetName    String?  // 시트 이름 (기본: Sheet1)
-  isActive     Boolean  @default(true)
-  lastSyncAt   DateTime? // 마지막 동기화 시간
-  createdBy    String   // 설정한 사용자 ID
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  clinic    Clinic      @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  creator   User        @relation(fields: [createdBy], references: [id])
-  reports   PeiReport[] // 이 설정으로 생성된 보고서들
-
-  @@index([clinicId, isActive])
-}
-
-model PeiReport {
-  id               String         @id @default(cuid())
-  clinicId         String
-  sheetConfigId    String?        // 연결된 시트 설정
-  year             Int
-  month            Int
-  title            String?        // 보고서 제목
-  summary          String?        // AI 분석 요약
-  insights         Json?          // 상세 인사이트 (JSON)
-  recommendations  Json?          // 개선 권장사항 (JSON)
-  rawData          Json?          // 원본 스프레드시트 데이터
-  peiScore         Float?         // 전체 PEI 점수
-  categoryScores   Json?          // 영역별 점수
-  content          String?        // 전체 보고서 내용 (마크다운)
-  pdfUrl           String?        // 생성된 PDF 파일 URL
-  status           String         @default("GENERATING") // GENERATING, COMPLETED, ERROR
-  generatedAt      DateTime?      // 생성 완료 시간
-  generatedBy      String         // 생성한 사용자 ID
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-
-  clinic      Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  sheetConfig PeiSheetConfig? @relation(fields: [sheetConfigId], references: [id])
-  generator   User            @relation("PeiReportGenerator", fields: [generatedBy], references: [id])
-
-  @@unique([clinicId, year, month])
-  @@index([clinicId, status])
-  @@index([generatedAt])
-}
-
 enum ReviewSource {
   NAVER
   GOOGLE
 }
 
-model ReviewConfig {
-  id           String      @id @default(cuid())
-  clinicId     String
-  source       ReviewSource
-  placeName    String?     // 네이버/구글에서의 업체명
-  placeId      String?     // Google Place ID 또는 네이버 업체 ID
-  placeUrl     String?     // 리뷰 페이지 URL
-  isActive     Boolean     @default(true)
-  lastSyncAt   DateTime?   // 마지막 동기화 시간
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-
-  clinic   Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  reviews  Review[]
-
-  @@unique([clinicId, source])
-  @@index([clinicId, isActive])
+enum FileCategory {
+  MONTHLY_LEDGER
+  ANNUAL_LEDGER
+  TREATMENT_STATS
+  IMPLANT_STATS
+  COMPREHENSIVE_PATIENTS
+  AGE_DISTRIBUTION
+  REGION_DISTRIBUTION
+  DAILY_PATIENTS
+  VISIT_ROUTES
 }
 
-model Review {
-  id             String       @id @default(cuid())
-  clinicId       String
-  configId       String
-  source         ReviewSource
-  reviewId       String       // 플랫폼별 고유 ID
-  authorName     String?
-  rating         Int?         // 1-5점
-  content        String?      // 리뷰 내용
-  reviewDate     DateTime?    // 리뷰 작성일
-  reply          String?      // 사장님 답글
-  replyDate      DateTime?    // 답글 작성일
-  isPositive     Boolean?     // AI 감정 분석 결과
-  keywords       Json?        // 추출된 키워드
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  clinic Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  config ReviewConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
-
-  @@unique([configId, reviewId])
-  @@index([clinicId, source, reviewDate])
-  @@index([clinicId, rating])
+enum FileStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  DUPLICATE
 }
 
-model ReviewSummary {
-  id              String       @id @default(cuid())
+// ========================================
+// 새로운 6개 핵심 데이터 테이블
+// ========================================
+
+// 1. 💰 매출 데이터 (일별)
+model Revenue {
+  id            String   @id @default(cuid())
+  clinicId      String
+  date          DateTime
+  year          Int
+  month         Int
+  day           Int
+
+  cashIncome    Float    @default(0)    // 현금수입
+  cardIncome    Float    @default(0)    // 카드수입
+  onlineIncome  Float    @default(0)    // 온라인수입
+  totalIncome   Float    @default(0)    // 총수입
+  totalExpense  Float    @default(0)    // 총지출
+  netProfit     Float    @default(0)    // 순이익
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  clinic        Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, date])
+  @@index([clinicId, year, month])
+}
+
+// 2. 👥 환자정보 데이터 (방문별)
+model PatientInfo {
+  id              String   @id @default(cuid())
   clinicId        String
-  source          ReviewSource
+  chartNumber     String
+  name            String
+  age             Int?
+  gender          String?
+  region          String?
+  visitRoute      String?
+
+  visitDate       DateTime
+  visitTime       String?
+  receptionTime   DateTime?
+  visitType       String             // 신환/구환
+  ageGroup        String?            // 20대, 30대 등
+
+  waitingTime     Int      @default(0) // 대기시간(분)
+  revenue         Float    @default(0) // 진료비
+  treatmentType   String?             // 임플란트, 보철 등
+
   year            Int
   month           Int
-  totalReviews    Int          @default(0) // 총 리뷰 수
-  newReviews      Int          @default(0) // 해당 월에 새로 작성된 리뷰
-  targetReviews   Int?         // 목표 리뷰 수 (네이버만 사용)
-  achievementRate Float?       // 달성률 (계산된 값)
-  avgRating       Float?       // 평균 평점 (구글용)
-  positiveCount   Int          @default(0) // 긍정 리뷰 수
-  negativeCount   Int          @default(0) // 부정 리뷰 수
-  replyRate       Float?       // 답글 응답률
-  topKeywords     Json?        // 상위 키워드
-  ratingDist      Json?        // 평점 분포 (1점~5점)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  day             Int
 
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@unique([clinicId, source, year, month])
+  clinic          Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, chartNumber])
+  @@index([clinicId, year, month])
+  @@index([clinicId, visitType])
+  @@index([clinicId, region])
+  @@index([clinicId, visitRoute])
+}
+
+// 3. 🦷 진료별 데이터 (월별 집계)
+model TreatmentData {
+  id              String   @id @default(cuid())
+  clinicId        String
+  treatmentType   String            // 임플란트, 보철, 교정 등
+  year            Int
+  month           Int
+
+  patientCount    Int      @default(0) // 환자수
+  totalRevenue    Float    @default(0) // 총매출
+  avgRevenue      Float    @default(0) // 평균 진료비
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  clinic          Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, treatmentType, year, month])
+  @@index([clinicId, year, month])
+}
+
+// 4. 🛣️ 내원경로 데이터 (월별 집계)
+model VisitRouteData {
+  id                String   @id @default(cuid())
+  clinicId          String
+  routeName         String            // 지인소개, 인터넷 등
+  year              Int
+  month             Int
+
+  newPatients       Int      @default(0) // 신환수
+  returningPatients Int      @default(0) // 구환수
+  totalRevenue      Float    @default(0) // 총매출
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  clinic            Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, routeName, year, month])
+  @@index([clinicId, year, month])
+}
+
+// 5. 📍 지역별 데이터 (월별 집계)
+model RegionData {
+  id            String   @id @default(cuid())
+  clinicId      String
+  region        String            // 강남구, 서초구 등
+  year          Int
+  month         Int
+
+  patientCount  Int      @default(0) // 환자수
+  percentage    Float    @default(0) // 비율
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  clinic        Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, region, year, month])
+  @@index([clinicId, year, month])
+}
+
+// 6. 👶👴 연령 데이터 (월별 집계)
+model AgeData {
+  id            String   @id @default(cuid())
+  clinicId      String
+  ageGroup      String            // 20대, 30대 등
+  year          Int
+  month         Int
+
+  patientCount  Int      @default(0) // 환자수
+  percentage    Float    @default(0) // 비율
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  clinic        Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, ageGroup, year, month])
   @@index([clinicId, year, month])
 }

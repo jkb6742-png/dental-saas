@@ -11,9 +11,19 @@ interface YearMonthFilterProps {
   showMonthFilter?: boolean
 }
 
+// 기본값을 전달로 설정
+const getDefaultDate = () => {
+  const now = new Date()
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  return {
+    year: lastMonth.getFullYear(),
+    month: lastMonth.getMonth() + 1
+  }
+}
+
 export default function YearMonthFilter({
-  initialYear = new Date().getFullYear(),
-  initialMonth = new Date().getMonth() + 1,
+  initialYear = getDefaultDate().year,
+  initialMonth = getDefaultDate().month,
   onYearChange,
   onMonthChange,
   showMonthFilter = true
@@ -93,7 +103,7 @@ export default function YearMonthFilter({
 
         <div className="text-[13px] text-[#8b95a1]">
           {showMonthFilter
-            ? `${selectedYear}년 전체 추이와 ${selectedMonth}월 상세 데이터를 표시합니다`
+            ? `${selectedYear}년 ${selectedMonth}월 리뷰 현황을 조회합니다 (기본값: 전달 기준)`
             : `${selectedYear}년 전체 데이터를 표시합니다`
           }
         </div>

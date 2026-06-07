@@ -33,6 +33,7 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
   const [googleConfig, setGoogleConfig] = useState<GoogleConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<"NAVER" | "GOOGLE">("NAVER")
+  const [activeYear, setActiveYear] = useState<number>(new Date().getFullYear())
   const [editingMonth, setEditingMonth] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({
     totalReviews: "",
@@ -49,15 +50,14 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
   const currentDate = new Date()
   const currentReviews = activeTab === "NAVER" ? naverReviews : googleReviews
 
-  // 최근 12개월 데이터 생성
+  // 선택된 연도의 12개월 데이터 생성
   const generateMonths = () => {
     const months = []
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
+    for (let month = 1; month <= 12; month++) {
       months.push({
-        year: date.getFullYear(),
-        month: date.getMonth() + 1,
-        key: `${date.getFullYear()}-${date.getMonth() + 1}`
+        year: activeYear,
+        month: month,
+        key: `${activeYear}-${month}`
       })
     }
     return months
@@ -65,17 +65,23 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
 
   const months = generateMonths()
 
+  // 사용 가능한 연도 목록 (2025년부터 현재 연도까지)
+  const availableYears = []
+  for (let year = 2025; year <= currentDate.getFullYear(); year++) {
+    availableYears.push(year)
+  }
+
   const fetchAllData = async () => {
     try {
       // 네이버 리뷰 데이터
-      const naverResponse = await fetch(`/api/reviews/monthly?clinicId=${clinicId}&source=NAVER`)
+      const naverResponse = await fetch(`/api/reviews/monthly?clinicId=${clinicId}&source=NAVER&year=${activeYear}`)
       if (naverResponse.ok) {
         const naverData = await naverResponse.json()
         setNaverReviews(naverData)
       }
 
       // 구글 리뷰 데이터
-      const googleResponse = await fetch(`/api/reviews/monthly?clinicId=${clinicId}&source=GOOGLE`)
+      const googleResponse = await fetch(`/api/reviews/monthly?clinicId=${clinicId}&source=GOOGLE&year=${activeYear}`)
       if (googleResponse.ok) {
         const googleData = await googleResponse.json()
         setGoogleReviews(googleData)
@@ -280,7 +286,7 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
 
   useEffect(() => {
     fetchAllData()
-  }, [clinicId])
+  }, [clinicId, activeYear])
 
   if (loading) {
     return <div className="text-center py-8">데이터를 불러오는 중...</div>
@@ -315,7 +321,26 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
         )}
       </div>
 
-      {/* 탭 네비게이션 */}
+      {/* 연도 탭 */}
+      <div className="flex items-center space-x-4 mb-6">
+        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+          {availableYears.map(year => (
+            <button
+              key={year}
+              onClick={() => setActiveYear(year)}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeYear === year
+                  ? "bg-white text-gray-900 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              {year}년
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 플랫폼 탭 네비게이션 */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
         <button
           onClick={() => setActiveTab("NAVER")}
@@ -436,7 +461,7 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
             {months.map(({ year, month, key }) => {
               const data = getReviewData(year, month)
               const isEditing = editingMonth === key
-              const isCurrentMonth = year === currentDate.getFullYear() && month === currentDate.getMonth() + 1
+              const isCurrentMonth = activeYear === currentDate.getFullYear() && year === currentDate.getFullYear() && month === currentDate.getMonth() + 1
 
               return (
                 <tr key={key} className={`border-b border-gray-100 hover:bg-gray-50 ${isCurrentMonth ? 'bg-blue-50' : ''}`}>
@@ -537,31 +562,34 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
         <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className={`${activeTab === "NAVER" ? "bg-green-50" : "bg-blue-50"} rounded-lg p-3 text-center`}>
             <div className={`text-lg font-bold ${activeTab === "NAVER" ? "text-green-700" : "text-blue-700"}`}>
-              {currentReviews.reduce((sum, r) => sum + r.newReviews, 0)}
+              {currentReviews.filter(r => r.year === activeYear).reduce((sum, r) => sum + r.newReviews, 0)}
             </div>
-            <div className={`text-xs ${activeTab === "NAVER" ? "text-green-600" : "text-blue-600"}`}>올해 총 신규</div>
+            <div className={`text-xs ${activeTab === "NAVER" ? "text-green-600" : "text-blue-600"}`}>{activeYear}년 총 신규</div>
           </div>
           <div className="bg-green-50 rounded-lg p-3 text-center">
             <div className="text-lg font-bold text-green-700">
-              {currentReviews.filter(r => r.achievementRate && r.achievementRate >= 100).length}
+              {currentReviews.filter(r => r.year === activeYear && r.achievementRate && r.achievementRate >= 100).length}
             </div>
             <div className="text-xs text-green-600">목표 달성 월</div>
           </div>
           <div className="bg-yellow-50 rounded-lg p-3 text-center">
             <div className="text-lg font-bold text-yellow-700">
-              {currentReviews.length > 0
-                ? (currentReviews.reduce((sum, r) => sum + (r.achievementRate || 0), 0) / currentReviews.length).toFixed(0)
-                : 0}%
+              {(() => {
+                const yearReviews = currentReviews.filter(r => r.year === activeYear && r.achievementRate)
+                return yearReviews.length > 0
+                  ? (yearReviews.reduce((sum, r) => sum + (r.achievementRate || 0), 0) / yearReviews.length).toFixed(0)
+                  : 0
+              })()}%
             </div>
             <div className="text-xs text-yellow-600">평균 달성률</div>
           </div>
           <div className="bg-gray-50 rounded-lg p-3 text-center">
             <div className="text-lg font-bold text-gray-700">
-              {currentDate.getFullYear() === 2026
+              {activeYear === currentDate.getFullYear()
                 ? calculateTotalReviews(currentDate.getFullYear(), currentDate.getMonth() + 1)
-                : 0}
+                : currentReviews.filter(r => r.year === activeYear).reduce((sum, r) => sum + r.totalReviews, 0)}
             </div>
-            <div className="text-xs text-gray-600">현재 총 리뷰</div>
+            <div className="text-xs text-gray-600">{activeYear}년 총 리뷰</div>
           </div>
         </div>
       </div>

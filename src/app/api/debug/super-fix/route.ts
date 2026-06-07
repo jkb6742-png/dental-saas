@@ -43,15 +43,19 @@ export async function POST(req: NextRequest) {
     // 1. 모든 관련 데이터 삭제 후 재생성
     await prisma.$transaction(async (tx) => {
       // 평촌이생각치과 전용 에이전시 생성/업데이트
-      const pyeongchonAgency = await tx.agency.upsert({
-        where: { name: "평촌이생각치과 에이전시" },
-        update: {},
-        create: {
-          name: "평촌이생각치과 에이전시",
-          slug: `pyeongchon-${Date.now()}`,
-          plan: "PROFESSIONAL"
-        }
+      let pyeongchonAgency = await tx.agency.findFirst({
+        where: { name: "평촌이생각치과 에이전시" }
       })
+
+      if (!pyeongchonAgency) {
+        pyeongchonAgency = await tx.agency.create({
+          data: {
+            name: "평촌이생각치과 에이전시",
+            slug: `pyeongchon-${Date.now()}`,
+            plan: "PRO"
+          }
+        })
+      }
 
       // ethinkdent 사용자 강제 업데이트
       await tx.user.updateMany({
@@ -101,7 +105,7 @@ export async function POST(req: NextRequest) {
     console.error('[SUPER_FIX] 실패:', error)
     return NextResponse.json({
       error: "슈퍼 수정 실패",
-      details: error.message
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
   }
 }

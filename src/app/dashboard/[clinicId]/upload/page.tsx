@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import UploadClient from "./UploadClient"
+import SimpleUpload from "./SimpleUpload"
 
 export default async function UploadPage({ params }: { params: Promise<{ clinicId: string }> }) {
   const session = await auth()
@@ -11,5 +11,5 @@ export default async function UploadPage({ params }: { params: Promise<{ clinicI
     redirect(`/dashboard/${clinicId}`)
   }
 
-  return <UploadClient clinicId={clinicId} />
+  return <SimpleUpload clinicId={clinicId} />
 }

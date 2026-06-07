@@ -7,27 +7,20 @@ import Button from "@/components/ui/Button"
 import Badge from "@/components/ui/Badge"
 
 const FILE_TYPE_LABELS: Record<string, string> = {
-  monthly_ledger: "월간장부",
-  annual_ledger: "연간장부",
-  patient_stats: "일별접수환자수",
-  treatment_stats: "진료항목통계",
-  visit_routes: "내원경로",
-  treatment_plans: "치료비용계획",
-  implant_stats: "임플란트통계",
-  consultation_stats: "상담통계",
-  reception_records: "접수수납목록",
-  age_dist: "연령별분포",
-  region_dist: "지역별분포",
+  MONTHLY_LEDGER: "월간장부",
+  ANNUAL_LEDGER: "연간장부 📅",
+  TREATMENT_STATS: "진료항목통계",
+  IMPLANT_STATS: "임플란트통계",
+  COMPREHENSIVE_PATIENTS: "전체접수수납목록 📅", // 신환+구환 통합
+  AGE_DISTRIBUTION: "연령별분포",
+  REGION_DISTRIBUTION: "지역별분포",
+  DAILY_PATIENTS: "일별접수환자수",
+  VISIT_ROUTES: "내원경로분포",
 }
 
-type UploadResult = {
+type FileItem = {
   filename: string
-  type: string
-  total: number
-  created: number
-  skipped: number
-  errors: string[]
-  status: "success" | "error" | "skip"
+  status: "대기 중" | "업로드 중" | "업로드 완료" | "오류"
 }
 
 export default function UploadClient({ clinicId }: { clinicId: string }) {
@@ -36,77 +29,71 @@ export default function UploadClient({ clinicId }: { clinicId: string }) {
   const folderInputRef = useRef<HTMLInputElement>(null)
 
   const [dragging, setDragging] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [progress, setProgress] = useState({ current: 0, total: 0, filename: "" })
-  const [results, setResults] = useState<UploadResult[]>([])
+  const [fileList, setFileList] = useState<FileItem[]>([])
   const [latestPeriod, setLatestPeriod] = useState<{ year: number; month: number } | null>(null)
   const [generating, setGenerating] = useState(false)
   const [generationResult, setGenerationResult] = useState<string | null>(null)
 
-  const processFiles = useCallback(async (fileList: File[]) => {
-    // xlsx/xls/zip만 필터, 임시파일(~$) 제외
-    const files = fileList.filter(
-      (f) => (f.name.endsWith(".xlsx") || f.name.endsWith(".xls") || f.name.endsWith(".zip")) && !f.name.startsWith("~$")
+  const processFiles = useCallback(async (fileArray: File[]) => {
+    const files = fileArray.filter(f =>
+      (f.name.endsWith(".xlsx") || f.name.endsWith(".xls") || f.name.endsWith(".zip")) &&
+      !f.name.startsWith("~$")
     )
     if (!files.length) return
 
-    setUploading(true)
-    setProgress({ current: 0, total: files.length, filename: "" })
-    const newResults: UploadResult[] = []
-    let bestYear = 0
-    let bestMonth = 0
+    // 파일 목록 생성
+    const items: FileItem[] = files.map(f => ({ filename: f.name, status: "대기 중" }))
+    setFileList(items)
 
+    // 순차적으로 업로드
     for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      setProgress({ current: i + 1, total: files.length, filename: file.name })
+      // 현재 파일 상태를 "업로드 중"으로 변경
+      setFileList(prev => prev.map((item, idx) =>
+        idx === i ? { ...item, status: "업로드 중" } : item
+      ))
 
       const form = new FormData()
-      form.append("file", file)
+      form.append("file", files[i])
       form.append("clinicId", clinicId)
 
       try {
-        const res = await fetch("/api/upload", { method: "POST", body: form })
-        const data = await res.json()
+        console.log(`[클라이언트] ${files[i].name} 업로드 시작`)
+        console.log(`[클라이언트] clinicId: ${clinicId}`)
+        console.log(`[클라이언트] 파일 크기: ${files[i].size} bytes`)
 
-        if (res.ok) {
-          // ZIP 파일 응답 처리
-          if (data.fileType === 'zip') {
-            newResults.push({
-              filename: file.name,
-              type: `ZIP (${data.processedTypes?.join(', ') || 'unknown'})`,
-              total: data.total || 0,
-              created: data.created || 0,
-              skipped: data.skipped || 0,
-              errors: data.errors || [],
-              status: "success"
-            })
-          } else {
-            // 단일 파일 응답 처리 (기존 로직)
-            newResults.push({ filename: file.name, ...data, status: "success" })
-          }
+        const res = await fetch("/api/uploads", { method: "POST", body: form })
+        console.log(`[클라이언트] 응답 상태: ${res.status} ${res.statusText}`)
 
-          // 가장 최근 연월 추적
-          const ym = file.name.match(/(\d{4})년?(\d{1,2})월?/)
-          if (ym) {
-            const y = parseInt(ym[1]), m = parseInt(ym[2])
-            if (y > bestYear || (y === bestYear && m > bestMonth)) {
-              bestYear = y; bestMonth = m
-            }
-          }
-        } else if (data.error?.includes("판별 실패")) {
-          newResults.push({ filename: file.name, type: "unknown", total: 0, created: 0, skipped: 0, errors: [], status: "skip" })
-        } else {
-          newResults.push({ filename: file.name, type: "unknown", total: 0, created: 0, skipped: 0, errors: [data.error ?? "오류"], status: "error" })
+        if (!res.ok) {
+          const errorText = await res.text()
+          console.error(`[클라이언트] HTTP 오류: ${errorText}`)
+          setFileList(prev => prev.map((item, idx) =>
+            idx === i ? { ...item, status: "오류" } : item
+          ))
+          continue
         }
-      } catch (e) {
-        newResults.push({ filename: file.name, type: "unknown", total: 0, created: 0, skipped: 0, errors: [String(e)], status: "error" })
+
+        const data = await res.json()
+        console.log(`[클라이언트] ${files[i].name} 응답:`, data)
+
+        if (data.success) {
+          console.log(`[클라이언트] ${files[i].name} 성공: ${data.created}건 생성`)
+          setFileList(prev => prev.map((item, idx) =>
+            idx === i ? { ...item, status: "업로드 완료" } : item
+          ))
+        } else {
+          console.error(`[클라이언트] ${files[i].name} 실패:`, data.error)
+          setFileList(prev => prev.map((item, idx) =>
+            idx === i ? { ...item, status: "오류" } : item
+          ))
+        }
+      } catch (error) {
+        console.error(`[클라이언트] ${files[i].name} 네트워크 오류:`, error)
+        setFileList(prev => prev.map((item, idx) =>
+          idx === i ? { ...item, status: "오류" } : item
+        ))
       }
     }
-
-    setResults(newResults)
-    if (bestYear > 0) setLatestPeriod({ year: bestYear, month: bestMonth })
-    setUploading(false)
-    setProgress({ current: 0, total: 0, filename: "" })
   }, [clinicId])
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -132,12 +119,20 @@ export default function UploadClient({ clinicId }: { clinicId: string }) {
 
       if (data.success) {
         setGenerationResult(`✅ 환자 통계 생성 완료: ${data.result.created}건 생성`)
-        // 페이지 새로고침하여 결과 반영
+        console.log(`[PATIENT_STATS] 자동 생성 완료: ${data.result.created}건`)
+
+        // 즉시 페이지 새로고침
+        router.refresh()
+
+        // 추가적으로 강제 새로고침도 시도
         setTimeout(() => {
-          router.refresh()
+          if (typeof window !== 'undefined') {
+            window.location.reload()
+          }
         }, 1000)
       } else {
         setGenerationResult(`❌ 생성 실패: ${data.error}`)
+        console.error(`[PATIENT_STATS] 생성 실패:`, data.error)
       }
     } catch (error) {
       setGenerationResult(`❌ 요청 실패: ${error}`)
@@ -146,10 +141,8 @@ export default function UploadClient({ clinicId }: { clinicId: string }) {
     }
   }, [clinicId, router])
 
-  const successResults = results.filter((r) => r.status === "success")
-  const errorResults = results.filter((r) => r.status === "error")
-  const totalCreated = successResults.reduce((s, r) => s + r.created, 0)
-  const totalSkipped = successResults.reduce((s, r) => s + r.skipped, 0)
+  const completedFiles = fileList.filter(f => f.status === "업로드 완료")
+  const errorFiles = fileList.filter(f => f.status === "오류")
 
   return (
     <div className="max-w-2xl space-y-5">
@@ -210,27 +203,31 @@ export default function UploadClient({ clinicId }: { clinicId: string }) {
         </div>
       </div>
 
-      {/* 진행 상황 */}
-      {uploading && (
-        <div className="bg-white rounded-2xl p-5 border border-[#e5e8eb]">
-          <div className="flex items-center gap-3 mb-3">
-            <Loader2 className="w-5 h-5 text-[#3182f6] animate-spin" />
-            <span className="text-[14px] font-semibold text-[#191f28]">
-              업로드 중... ({progress.current}/{progress.total})
-            </span>
+      {/* 업로드 파일 목록 */}
+      {fileList.length > 0 && (
+        <div className="bg-white rounded-2xl border border-[#e5e8eb] p-5">
+          <h3 className="text-[15px] font-semibold text-[#191f28] mb-4">업로드 파일 목록</h3>
+          <div className="space-y-2">
+            {fileList.map((item, index) => (
+              <div key={index} className="flex items-center gap-3 py-2">
+                <span className="text-[14px] font-medium text-[#6b7684] w-8">{index + 1}.</span>
+                <span className="text-[14px] text-[#191f28] flex-1">{item.filename}</span>
+                <span className={`text-[13px] font-medium px-3 py-1 rounded ${
+                  item.status === "업로드 완료" ? "bg-green-100 text-green-700" :
+                  item.status === "업로드 중" ? "bg-blue-100 text-blue-700" :
+                  item.status === "오류" ? "bg-red-100 text-red-700" :
+                  "bg-gray-100 text-gray-600"
+                }`}>
+                  {item.status}
+                </span>
+              </div>
+            ))}
           </div>
-          <div className="w-full h-2 bg-[#f2f4f6] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#3182f6] rounded-full transition-all duration-300"
-              style={{ width: `${progress.total > 0 ? (progress.current / progress.total) * 100 : 0}%` }}
-            />
-          </div>
-          <p className="text-[12px] text-[#8b95a1] mt-2 truncate">{progress.filename}</p>
         </div>
       )}
 
       {/* 완료 배너 */}
-      {!uploading && successResults.length > 0 && (
+      {completedFiles.length > 0 && (
         <div className="bg-[#e5f9f0] border border-[#a7f3d0] rounded-2xl p-5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#05c072] rounded-xl flex items-center justify-center shrink-0">
@@ -238,23 +235,13 @@ export default function UploadClient({ clinicId }: { clinicId: string }) {
             </div>
             <div>
               <p className="text-[15px] font-bold text-[#191f28]">
-                {successResults.length}개 파일 완료 · {totalCreated.toLocaleString()}건 신규 입력
-                {totalSkipped > 0 && <span className="text-[#8b95a1] font-normal"> · {totalSkipped.toLocaleString()}건 중복</span>}
+                {completedFiles.length}개 파일 업로드 완료
               </p>
-              {latestPeriod && (
-                <p className="text-[13px] text-[#6b7684] mt-0.5">
-                  최근 데이터: {latestPeriod.year}년 {latestPeriod.month}월
-                </p>
-              )}
             </div>
           </div>
           <Button
             size="md"
-            onClick={() => {
-              router.refresh()
-              const q = latestPeriod ? `?year=${latestPeriod.year}&month=${latestPeriod.month}` : ""
-              router.push(`/dashboard/${clinicId}${q}`)
-            }}
+            onClick={() => router.push(`/dashboard/${clinicId}`)}
           >
             대시보드 확인
             <ArrowRight className="w-4 h-4" />
@@ -262,42 +249,6 @@ export default function UploadClient({ clinicId }: { clinicId: string }) {
         </div>
       )}
 
-      {/* 결과 목록 */}
-      {results.length > 0 && !uploading && (
-        <div className="bg-white rounded-2xl border border-[#e5e8eb] overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#f2f4f6] flex items-center justify-between">
-            <span className="text-[15px] font-semibold text-[#191f28]">처리 결과</span>
-            <div className="flex gap-2">
-              {successResults.length > 0 && <Badge variant="green">{successResults.length}개 성공</Badge>}
-              {errorResults.length > 0 && <Badge variant="red">{errorResults.length}개 오류</Badge>}
-            </div>
-          </div>
-          <div className="divide-y divide-[#f2f4f6] max-h-80 overflow-y-auto">
-            {results
-              .filter((r) => r.status !== "skip")
-              .map((r, i) => (
-                <div key={i} className="px-5 py-3 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {r.status === "success"
-                      ? <CheckCircle className="w-4 h-4 text-[#05c072] shrink-0" />
-                      : <XCircle className="w-4 h-4 text-[#f04452] shrink-0" />}
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-medium text-[#191f28] truncate">{r.filename}</p>
-                      {r.status === "success"
-                        ? <p className="text-[12px] text-[#8b95a1]">신규 {r.created}건 · 중복 {r.skipped}건</p>
-                        : <p className="text-[12px] text-[#f04452]">{r.errors[0]}</p>}
-                    </div>
-                  </div>
-                  {r.type !== "unknown" && (
-                    <Badge variant={r.status === "success" ? "blue" : "red"}>
-                      {FILE_TYPE_LABELS[r.type] ?? r.type}
-                    </Badge>
-                  )}
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
 
       {/* 환자 통계 자동 생성 */}
       <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
@@ -305,8 +256,8 @@ export default function UploadClient({ clinicId }: { clinicId: string }) {
           <div>
             <h3 className="text-[16px] font-semibold text-[#191f28] mb-2">환자 통계 자동 생성</h3>
             <p className="text-[13px] text-[#6b7684] mb-3">
-              접수수납목록에서 환자 통계를 자동으로 생성합니다.<br/>
-              일별 신환수, 총방문수 등의 데이터가 생성됩니다.
+              전체접수수납목록에서 환자 통계를 자동으로 생성합니다.<br/>
+              일별 환자수, 총방문수, 신환/구환 분석 등의 데이터가 생성됩니다.
             </p>
             {generationResult && (
               <p className={`text-[14px] font-medium ${

@@ -1,0 +1,226 @@
+# NAS 환경용 Docker Compose 설정
+version: '3.8'
+
+services:
+  # 메인 애플리케이션 (NAS 최적화)
+  dental-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.nas
+      args:
+        - NODE_ENV=production
+    container_name: dental-saas-app
+    restart: unless-stopped
+
+    # NAS 리소스 제한
+    deploy:
+      resources:
+        limits:
+          memory: 1G      # NAS 메모리 절약
+          cpus: '0.5'     # CPU 제한
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://dental_user:${DB_PASSWORD}@dental-db:5432/dental_db
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+
+      # NAS 특화 설정
+      - CACHE_DIR=/app/cache
+      - MAX_PAGE_SIZE=50
+      - DEFAULT_PAGE_SIZE=20
+      - ENABLE_FILE_CACHE=true
+      - COMPRESSION_ENABLED=true
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      # NAS 스토리지 활용
+      - /volume1/docker/dental-saas/cache:/app/cache
+      - /volume1/docker/dental-saas/uploads:/app/uploads
+      - /volume1/docker/dental-saas/logs:/app/logs
+
+    depends_on:
+      dental-db:
+        condition: service_healthy
+
+    networks:
+      - dental-network
+
+    # 헬스체크 (NAS 안정성)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # PostgreSQL (NAS 최적화)
+  dental-db:
+    image: postgres:15-alpine  # 경량 Alpine 이미지
+    container_name: dental-db
+    restart: unless-stopped
+
+    # 메모리 최적화
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.3'
+        reservations:
+          memory: 256M
+
+    environment:
+      - POSTGRES_DB=dental_db
+      - POSTGRES_USER=dental_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
+
+      # PostgreSQL NAS 최적화
+      - POSTGRES_SHARED_BUFFERS=128MB      # NAS 메모리에 맞춤
+      - POSTGRES_EFFECTIVE_CACHE_SIZE=256MB
+      - POSTGRES_WORK_MEM=4MB
+      - POSTGRES_MAINTENANCE_WORK_MEM=32MB
+      - POSTGRES_MAX_CONNECTIONS=20        # 연결 수 제한
+      - POSTGRES_CHECKPOINT_COMPLETION_TARGET=0.9
+      - POSTGRES_WAL_BUFFERS=16MB
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      # NAS 영구 스토리지
+      - /volume1/docker/dental-saas/postgres-data:/var/lib/postgresql/data
+      - /volume1/docker/dental-saas/postgres-backup:/backup
+      - ./postgres-nas.conf:/etc/postgresql/postgresql.conf:ro
+
+    networks:
+      - dental-network
+
+    # 헬스체크
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dental_user -d dental_db"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+    # 로그 제한 (NAS 스토리지 절약)
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 경량 Redis (선택적 - 메모리 여유 있을 때만)
+  dental-redis:
+    image: redis:7-alpine
+    container_name: dental-redis
+    restart: unless-stopped
+    profiles: ["with-redis"]  # 선택적 실행
+
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+    command: >
+      redis-server
+      --maxmemory 64mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --appendonly yes
+      --appendfsync everysec
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - /volume1/docker/dental-saas/redis-data:/data
+
+    networks:
+      - dental-network
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # 백업 서비스 (NAS 스케줄링 활용)
+  dental-backup:
+    image: postgres:15-alpine
+    container_name: dental-backup
+    restart: "no"
+    profiles: ["backup"]
+
+    environment:
+      - PGPASSWORD=${DB_PASSWORD}
+
+    volumes:
+      - /volume1/docker/dental-saas/postgres-backup:/backup
+
+    networks:
+      - dental-network
+
+    entrypoint: |
+      sh -c '
+        echo "Starting backup at $$(date)"
+        pg_dump -h dental-db -U dental_user -d dental_db -f /backup/backup_$$(date +%Y%m%d_%H%M%S).sql
+        echo "Backup completed at $$(date)"
+
+        # 7일 이상 된 백업 삭제
+        find /backup -name "backup_*.sql" -mtime +7 -delete
+        echo "Old backups cleaned up"
+      '
+
+    depends_on:
+      dental-db:
+        condition: service_healthy
+
+  # 로그 수집기 (선택적)
+  dental-logs:
+    image: fluent/fluent-bit:latest
+    container_name: dental-logs
+    restart: unless-stopped
+    profiles: ["monitoring"]
+
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.05'
+
+    volumes:
+      - /volume1/docker/dental-saas/logs:/logs:ro
+      - /volume1/docker/dental-saas/fluent-bit:/fluent-bit/etc:ro
+
+    networks:
+      - dental-network
+
+networks:
+  dental-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres-data:
+    external: true
+    external_name: dental-postgres-data
+  redis-data:
+    external: true
+    external_name: dental-redis-data
+
+# NAS 환경 실행 방법:
+# 1. 기본 실행: docker-compose -f docker-compose.nas.yml up -d
+# 2. Redis 포함: docker-compose -f docker-compose.nas.yml --profile with-redis up -d
+# 3. 백업 실행: docker-compose -f docker-compose.nas.yml --profile backup run --rm dental-backup
+# 4. 모니터링 포함: docker-compose -f docker-compose.nas.yml --profile monitoring up -d

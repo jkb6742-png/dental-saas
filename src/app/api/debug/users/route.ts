@@ -49,7 +49,7 @@ export async function GET() {
     console.error("Error fetching debug users:", error)
     return NextResponse.json({
       error: "사용자 정보를 가져오는 중 오류가 발생했습니다.",
-      detail: error.message
+      detail: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
   }
 }

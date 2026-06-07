@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
     console.error("사용자 정보 조회 실패:", error)
     return NextResponse.json({
       error: "조회 중 오류가 발생했습니다",
-      details: error.message
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
   }
 }

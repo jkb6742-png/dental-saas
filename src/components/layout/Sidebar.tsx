@@ -21,6 +21,8 @@ import {
   Crown,
   Shield,
   Code,
+  Database,
+  Target,
 } from "lucide-react"
 
 type NavItem = {
@@ -42,13 +44,18 @@ const baseNavItems: NavItem[] = [
 
   { href: "/dashboard/treatments", label: "진료항목", icon: <Stethoscope className="w-4 h-4" />, group: "진료" },
   { href: "/dashboard/implants", label: "임플란트 통계", icon: <Stethoscope className="w-4 h-4" />, group: "진료" },
-  { href: "/dashboard/pei", label: "PEI 통계", icon: <UserCheck className="w-4 h-4" />, group: "진료" },
 
   { href: "/dashboard/routes", label: "내원경로 ROI", icon: <MapPin className="w-4 h-4" />, group: "마케팅" },
   { href: "/dashboard/consultations", label: "상담 성과", icon: <MessageSquare className="w-4 h-4" />, group: "마케팅" },
   { href: "/dashboard/reviews", label: "온라인 리뷰", icon: <MessageCircle className="w-4 h-4" />, group: "마케팅" },
 
-  { href: "/dashboard/reports", label: "월간 리포트", icon: <FileText className="w-4 h-4" /> },
+  { href: "/dashboard/reports", label: "월간 리포트", icon: <FileText className="w-4 h-4" />, group: "리포트" },
+  { href: "/dashboard/pei", label: "PEI 리포트", icon: <UserCheck className="w-4 h-4" />, group: "리포트" },
+
+  { href: "/dashboard/action-plans", label: "실행계획", icon: <Target className="w-4 h-4" />, group: "관리" },
+
+  { href: "/dashboard/uploads", label: "파일 업로드", icon: <Upload className="w-4 h-4" />, group: "데이터" },
+  { href: "/dashboard/database", label: "데이터베이스 관리", icon: <Database className="w-4 h-4" />, group: "데이터" },
 ]
 
 type Props = {
@@ -63,9 +70,9 @@ export default function Sidebar({ clinicName, agencyName, clinicId, userRole }: 
 
   // 마스터 계정 전용 메뉴 (컴포넌트 내부에서 정의)
   const adminNavItems: NavItem[] = userRole === 'MASTER' ? [
-    { href: "/dashboard/upload", label: "엑셀 업로드", icon: <Upload className="w-4 h-4" />, group: "관리자" },
     { href: "/admin/users", label: "사용자 관리", icon: <Shield className="w-4 h-4" />, group: "관리자" },
     { href: "/admin/invite-codes", label: "초대 코드", icon: <Code className="w-4 h-4" />, group: "관리자" },
+    { href: "/admin/reset", label: "데이터 초기화", icon: <Database className="w-4 h-4" />, group: "관리자" },
   ] : []
 
   const navItems = [...baseNavItems, ...adminNavItems]

@@ -13,17 +13,24 @@ export async function GET(request: Request) {
     const url = new URL(request.url)
     const clinicId = url.searchParams.get("clinicId")
     const source = url.searchParams.get("source") as "NAVER" | "GOOGLE" | null
+    const year = url.searchParams.get("year")
 
     if (!clinicId) {
       return NextResponse.json({ error: "Missing clinicId" }, { status: 400 })
     }
 
-    // 소스별 최근 12개월 데이터 조회
+    // 연도가 지정된 경우 해당 연도 데이터만, 아니면 최근 12개월 데이터 조회
+    const whereClause: any = {
+      clinicId,
+      ...(source && { source })
+    }
+
+    if (year) {
+      whereClause.year = parseInt(year)
+    }
+
     const reviews = await prisma.reviewSummary.findMany({
-      where: {
-        clinicId,
-        ...(source && { source })
-      },
+      where: whereClause,
       select: {
         id: true,
         year: true,
@@ -38,7 +45,7 @@ export async function GET(request: Request) {
         { year: "desc" },
         { month: "desc" }
       ],
-      take: 12
+      ...(year ? {} : { take: 12 }) // 특정 연도가 아니면 12개 제한
     })
 
     return NextResponse.json(reviews)

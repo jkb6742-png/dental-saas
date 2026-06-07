@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import SectionCard from "@/components/ui/SectionCard"
 import KpiCard from "@/components/ui/KpiCard"
 import YearMonthFilter from "@/components/ui/YearMonthFilter"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, ComposedChart, Area, AreaChart } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, ComposedChart, Area, AreaChart, Tooltip } from "recharts"
 import { TrendingUp, TrendingDown, Target, Activity, DollarSign, Calendar, AlertCircle } from "lucide-react"
 
 type MonthlySummaryData = {
@@ -138,13 +138,36 @@ export default function RevenuePageClient({
     const ytdGrowth = lastYearToDateRevenue > 0 ?
       ((yearToDateRevenue - lastYearToDateRevenue) / lastYearToDateRevenue) * 100 : 0
 
+    // 분기별 누적 매출 계산
+    const getQuarter = (month: number) => Math.ceil(month / 3)
+    const currentQuarter = getQuarter(selectedMonth)
+    const quarterStartMonth = (currentQuarter - 1) * 3 + 1
+    const quarterEndMonth = Math.min(currentQuarter * 3, selectedMonth)
+
+    const quarterToDateRevenue = monthlySummaries
+      .filter(s => s.year === selectedYear && s.month >= quarterStartMonth && s.month <= quarterEndMonth)
+      .reduce((sum, s) => sum + (s.totalRevenue || 0), 0)
+
+    const lastYearQuarterRevenue = monthlySummaries
+      .filter(s => s.year === selectedYear - 1 && s.month >= quarterStartMonth && s.month <= quarterEndMonth)
+      .reduce((sum, s) => sum + (s.totalRevenue || 0), 0)
+
+    const quarterGrowth = lastYearQuarterRevenue > 0 ?
+      ((quarterToDateRevenue - lastYearQuarterRevenue) / lastYearQuarterRevenue) * 100 : 0
+
     return {
       currentRevenue,
       momGrowth,
       yoyGrowth,
       ytdGrowth,
       yearToDateRevenue,
-      lastYearToDateRevenue
+      lastYearToDateRevenue,
+      quarterToDateRevenue,
+      lastYearQuarterRevenue,
+      quarterGrowth,
+      currentQuarter,
+      quarterStartMonth,
+      quarterEndMonth
     }
   }
 
@@ -197,13 +220,34 @@ export default function RevenuePageClient({
 
   // 제거됨: 예측 모델링 및 ARPU 분석 기능 (사용자 요청에 따라 제거)
 
-  // 5. 목표 관리 (실제 설정된 목표값 사용)
+  // 5. 매출 목표 관리 (월별 목표만 유지)
   const [revenueGoals, setRevenueGoals] = useState<{
     monthlyGoal: number | null
     yearlyGoal: number | null
   }>({
     monthlyGoal: null,
     yearlyGoal: null
+  })
+
+  // 6. 전년 대비 매출 분석
+  const [previousYearData, setPreviousYearData] = useState<{
+    currentYearTotal: number
+    previousYearTotal: number
+    growthAmount: number
+    growthRate: number
+    currentMonthRevenue: number
+    previousYearSameMonth: number
+    monthlyGrowthAmount: number
+    monthlyGrowthRate: number
+  }>({
+    currentYearTotal: 0,
+    previousYearTotal: 0,
+    growthAmount: 0,
+    growthRate: 0,
+    currentMonthRevenue: 0,
+    previousYearSameMonth: 0,
+    monthlyGrowthAmount: 0,
+    monthlyGrowthRate: 0
   })
 
   // 목표 데이터 로드
@@ -257,41 +301,106 @@ export default function RevenuePageClient({
     fetchGoals()
   }, [clinicId, selectedYear, selectedMonth])
 
-  const getGoalAnalysis = () => {
-    const monthlyRevenueGoal = revenueGoals.monthlyGoal || 50000000 // 기본값 5천만원
-    const yearlyRevenueGoal = revenueGoals.yearlyGoal || 600000000 // 기본값 6억원
+  // 전년 대비 데이터 계산
+  useEffect(() => {
+    const calculateYearOverYearGrowth = () => {
+      // 현재 년도 데이터 (1월 ~ 현재 월까지)
+      const currentYearData = monthlySummaries.filter(s =>
+        s.year === selectedYear && s.month <= selectedMonth
+      )
 
+      // 전년 같은 기간 데이터 (1월 ~ 현재 월까지)
+      const previousYearData = monthlySummaries.filter(s =>
+        s.year === selectedYear - 1 && s.month <= selectedMonth
+      )
+
+      // 현재 월 매출
+      const currentMonthRevenue = monthlySummaries.find(s =>
+        s.year === selectedYear && s.month === selectedMonth
+      )?.totalRevenue || 0
+
+      // 전년 동월 매출
+      const previousYearSameMonth = monthlySummaries.find(s =>
+        s.year === selectedYear - 1 && s.month === selectedMonth
+      )?.totalRevenue || 0
+
+      // 누적 매출 계산
+      const currentYearTotal = currentYearData.reduce((sum, s) =>
+        sum + (s.totalRevenue || 0), 0
+      )
+
+      const previousYearTotal = previousYearData.reduce((sum, s) =>
+        sum + (s.totalRevenue || 0), 0
+      )
+
+      // 증감액과 증감률 계산
+      const growthAmount = currentYearTotal - previousYearTotal
+      const growthRate = previousYearTotal > 0
+        ? (growthAmount / previousYearTotal) * 100
+        : 0
+
+      // 월별 증감 계산
+      const monthlyGrowthAmount = currentMonthRevenue - previousYearSameMonth
+      const monthlyGrowthRate = previousYearSameMonth > 0
+        ? (monthlyGrowthAmount / previousYearSameMonth) * 100
+        : 0
+
+      console.log('[전년대비] 계산 결과:', {
+        currentYearTotal,
+        previousYearTotal,
+        growthAmount,
+        growthRate,
+        currentMonthRevenue,
+        previousYearSameMonth,
+        monthlyGrowthAmount,
+        monthlyGrowthRate
+      })
+
+      setPreviousYearData({
+        currentYearTotal,
+        previousYearTotal,
+        growthAmount,
+        growthRate,
+        currentMonthRevenue,
+        previousYearSameMonth,
+        monthlyGrowthAmount,
+        monthlyGrowthRate
+      })
+    }
+
+    calculateYearOverYearGrowth()
+  }, [monthlySummaries, selectedYear, selectedMonth])
+
+  const getMonthlyComparisonAnalysis = () => {
+    // 월별 목표는 유지 (사용자가 월별 목표만 제거하라고 하지 않았으므로)
+    const monthlyRevenueGoal = revenueGoals.monthlyGoal || 50000000 // 기본값 5천만원
     const currentRevenue = currentMonthData?.totalRevenue || 0
     const monthlyAchievementRate = (currentRevenue / monthlyRevenueGoal) * 100
 
-    const ytdRevenue = monthlySummaries
-      .filter(s => s.year === selectedYear && s.month <= selectedMonth)
-      .reduce((sum, s) => sum + (s.totalRevenue || 0), 0)
+    // 전년 동월과의 비교
+    const previousYearSameMonth = monthlySummaries.find(s =>
+      s.year === selectedYear - 1 && s.month === selectedMonth
+    )?.totalRevenue || 0
 
-    const yearlyAchievementRate = (ytdRevenue / yearlyRevenueGoal) * 100
-
-    // 연말까지 필요한 월평균 매출
-    const remainingMonths = Math.max(0, 12 - selectedMonth)
-    const requiredMonthlyAverage = remainingMonths > 0 ?
-      (yearlyRevenueGoal - ytdRevenue) / remainingMonths : 0
+    const monthlyGrowthAmount = currentRevenue - previousYearSameMonth
+    const monthlyGrowthRate = previousYearSameMonth > 0 ?
+      (monthlyGrowthAmount / previousYearSameMonth) * 100 : 0
 
     return {
       monthlyRevenueGoal,
-      yearlyRevenueGoal,
       currentRevenue,
-      ytdRevenue,
       monthlyAchievementRate,
-      yearlyAchievementRate,
-      remainingMonths,
-      requiredMonthlyAverage,
+      previousYearSameMonth,
+      monthlyGrowthAmount,
+      monthlyGrowthRate,
       hasMonthlyGoal: !!revenueGoals.monthlyGoal,
-      hasYearlyGoal: !!revenueGoals.yearlyGoal
+      remainingMonths: Math.max(0, 12 - selectedMonth)
     }
   }
 
-  // 연간 트렌드 데이터 생성
+  // 연간 트렌드 데이터 생성 (선택한 월까지만)
   const createYearlyTrendData = () => {
-    const months = Array.from({ length: 12 }, (_, i) => i + 1)
+    const months = Array.from({ length: selectedMonth }, (_, i) => i + 1)
 
     return months.map(month => {
       const currentYearData = monthlySummaries.find(s => s.year === selectedYear && s.month === month)
@@ -310,7 +419,7 @@ export default function RevenuePageClient({
   // 분석 결과 계산
   const growthAnalysis = getGrowthAnalysis()
   const trendAnalysis = getTrendAnalysis()
-  const goalAnalysis = getGoalAnalysis()
+  const monthlyAnalysis = getMonthlyComparisonAnalysis()
   const yearlyTrendData = createYearlyTrendData()
 
   // 제거된 기능들을 위한 더미 객체 (에러 방지)
@@ -353,160 +462,319 @@ export default function RevenuePageClient({
             color={growthAnalysis.yoyGrowth >= 0 ? "green" : "red"}
           />
           <KpiCard
-            label="누적 성장률"
-            value={growthAnalysis.ytdGrowth.toFixed(1)}
-            unit="%"
+            label="연간 누적 금액"
+            value={formatAmount(growthAnalysis.yearToDateRevenue)}
+            unit=""
             icon={<Activity className="w-4 h-4" />}
-            color={growthAnalysis.ytdGrowth >= 0 ? "green" : "red"}
+            color="purple"
           />
           {/* ARPU 분석 카드 제거됨 */}
         </div>
 
-        {/* 성장률 상세 분석 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className={`rounded-xl p-6 border-l-4 ${
-            growthAnalysis.momGrowth >= 5 ? 'bg-green-50 border-green-500' :
-            growthAnalysis.momGrowth >= 0 ? 'bg-blue-50 border-blue-500' :
-            growthAnalysis.momGrowth >= -5 ? 'bg-yellow-50 border-yellow-500' :
-            'bg-red-50 border-red-500'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className={`text-[14px] font-medium ${
-                  growthAnalysis.momGrowth >= 5 ? 'text-green-600' :
-                  growthAnalysis.momGrowth >= 0 ? 'text-blue-600' :
-                  growthAnalysis.momGrowth >= -5 ? 'text-yellow-600' :
-                  'text-red-600'
-                }`}>월대월 성장률</div>
-                <div className={`text-[24px] font-bold mt-1 ${
-                  growthAnalysis.momGrowth >= 5 ? 'text-green-700' :
-                  growthAnalysis.momGrowth >= 0 ? 'text-blue-700' :
-                  growthAnalysis.momGrowth >= -5 ? 'text-yellow-700' :
-                  'text-red-700'
-                }`}>
-                  {growthAnalysis.momGrowth >= 0 ? '+' : ''}{growthAnalysis.momGrowth.toFixed(1)}%
-                </div>
-                <div className={`text-[12px] mt-1 ${
-                  growthAnalysis.momGrowth >= 5 ? 'text-green-600' :
-                  growthAnalysis.momGrowth >= 0 ? 'text-blue-600' :
-                  growthAnalysis.momGrowth >= -5 ? 'text-yellow-600' :
-                  'text-red-600'
-                }`}>
-                  {growthAnalysis.momGrowth >= 5 ? '🚀 급성장' :
-                   growthAnalysis.momGrowth >= 0 ? '📈 성장' :
-                   growthAnalysis.momGrowth >= -5 ? '⚠️ 소폭 하락' :
-                   '📉 큰 폭 하락'}
-                </div>
+
+        {/* 분기별/연간 누적 매출 상세 분석 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          {/* 분기별 누적 매출 상세 분석 */}
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-200">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                <span className="text-white text-lg font-bold">Q{growthAnalysis.currentQuarter}</span>
               </div>
-              <div className="text-[32px]">
-                {growthAnalysis.momGrowth >= 5 ? '🚀' :
-                 growthAnalysis.momGrowth >= 0 ? '📈' :
-                 growthAnalysis.momGrowth >= -5 ? '⚠️' : '📉'}
+              <div>
+                <h4 className="text-[18px] font-bold text-slate-900">{growthAnalysis.currentQuarter}분기 누적 매출 분석</h4>
+                <p className="text-[12px] text-slate-600">{growthAnalysis.quarterStartMonth}월~{selectedMonth}월 누적</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] text-slate-600">올해 {growthAnalysis.currentQuarter}분기</span>
+                <span className="text-[18px] font-bold text-purple-700">
+                  {formatAmount(growthAnalysis.quarterToDateRevenue)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] text-slate-600">작년 동분기</span>
+                <span className="text-[16px] font-semibold text-slate-700">
+                  {formatAmount(growthAnalysis.lastYearQuarterRevenue)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] text-slate-600">증감액</span>
+                <span className={`text-[16px] font-bold ${
+                  (growthAnalysis.quarterToDateRevenue - growthAnalysis.lastYearQuarterRevenue) >= 0 ? 'text-emerald-600' : 'text-red-600'
+                }`}>
+                  {(growthAnalysis.quarterToDateRevenue - growthAnalysis.lastYearQuarterRevenue) >= 0 ? '+' : ''}
+                  {formatAmount(growthAnalysis.quarterToDateRevenue - growthAnalysis.lastYearQuarterRevenue)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] text-slate-600">증감률</span>
+                <span className={`text-[20px] font-bold ${
+                  growthAnalysis.quarterGrowth >= 0 ? 'text-emerald-600' : 'text-red-600'
+                }`}>
+                  {growthAnalysis.quarterGrowth >= 0 ? '+' : ''}{growthAnalysis.quarterGrowth.toFixed(1)}%
+                </span>
+              </div>
+
+              {/* 성장률 프로그레스 바 */}
+              <div className="mt-4">
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all duration-300 ${
+                      growthAnalysis.quarterGrowth >= 20 ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
+                      growthAnalysis.quarterGrowth >= 10 ? 'bg-gradient-to-r from-blue-500 to-indigo-500' :
+                      growthAnalysis.quarterGrowth >= 0 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
+                      'bg-gradient-to-r from-red-500 to-pink-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(100, Math.max(10, Math.abs(growthAnalysis.quarterGrowth) * 2))}%`
+                    }}
+                  ></div>
+                </div>
+                <p className="text-[12px] text-slate-500 mt-2 text-center">
+                  {growthAnalysis.quarterGrowth >= 20 ? '🚀 매우 높은 성장!' :
+                   growthAnalysis.quarterGrowth >= 10 ? '📈 양호한 성장세' :
+                   growthAnalysis.quarterGrowth >= 0 ? '📊 안정적 성장' :
+                   growthAnalysis.quarterGrowth >= -10 ? '⚠️ 소폭 감소' :
+                   '🔴 성장 전략 필요'}
+                </p>
               </div>
             </div>
           </div>
 
-          <div className={`rounded-xl p-6 border-l-4 ${
-            growthAnalysis.yoyGrowth >= 10 ? 'bg-green-50 border-green-500' :
-            growthAnalysis.yoyGrowth >= 0 ? 'bg-blue-50 border-blue-500' :
-            'bg-red-50 border-red-500'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className={`text-[14px] font-medium ${
-                  growthAnalysis.yoyGrowth >= 10 ? 'text-green-600' :
-                  growthAnalysis.yoyGrowth >= 0 ? 'text-blue-600' :
-                  'text-red-600'
-                }`}>년대년 성장률</div>
-                <div className={`text-[24px] font-bold mt-1 ${
-                  growthAnalysis.yoyGrowth >= 10 ? 'text-green-700' :
-                  growthAnalysis.yoyGrowth >= 0 ? 'text-blue-700' :
-                  'text-red-700'
-                }`}>
-                  {growthAnalysis.yoyGrowth >= 0 ? '+' : ''}{growthAnalysis.yoyGrowth.toFixed(1)}%
-                </div>
-                <div className={`text-[12px] mt-1 ${
-                  growthAnalysis.yoyGrowth >= 10 ? 'text-green-600' :
-                  growthAnalysis.yoyGrowth >= 0 ? 'text-blue-600' :
-                  'text-red-600'
-                }`}>전년 동월 대비</div>
+          {/* 연간 누적 매출 상세 분석 */}
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
+                <span className="text-white text-lg font-bold">{selectedYear.toString().slice(-2)}</span>
               </div>
-              <div className="text-[32px]">📅</div>
-            </div>
-          </div>
-
-          <div className="bg-purple-50 rounded-xl p-6 border-l-4 border-purple-500">
-            <div className="flex items-center justify-between">
               <div>
-                <div className="text-[14px] text-purple-600 font-medium">누적 매출</div>
-                <div className="text-[24px] font-bold text-purple-700 mt-1">
+                <h4 className="text-[18px] font-bold text-slate-900">연간 누적 매출 분석</h4>
+                <p className="text-[12px] text-slate-600">1월~{selectedMonth}월 누적</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] text-slate-600">올해 누적 ({selectedYear}년)</span>
+                <span className="text-[18px] font-bold text-emerald-700">
                   {formatAmount(growthAnalysis.yearToDateRevenue)}
-                </div>
-                <div className="text-[12px] text-purple-600 mt-1">
-                  전년 대비 {growthAnalysis.ytdGrowth >= 0 ? '+' : ''}{growthAnalysis.ytdGrowth.toFixed(1)}%
-                </div>
+                </span>
               </div>
-              <div className="text-[32px] text-purple-500">💰</div>
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] text-slate-600">작년 동기간 ({selectedYear-1}년)</span>
+                <span className="text-[16px] font-semibold text-slate-700">
+                  {formatAmount(growthAnalysis.lastYearToDateRevenue)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] text-slate-600">증감액</span>
+                <span className={`text-[16px] font-bold ${
+                  (growthAnalysis.yearToDateRevenue - growthAnalysis.lastYearToDateRevenue) >= 0 ? 'text-emerald-600' : 'text-red-600'
+                }`}>
+                  {(growthAnalysis.yearToDateRevenue - growthAnalysis.lastYearToDateRevenue) >= 0 ? '+' : ''}
+                  {formatAmount(growthAnalysis.yearToDateRevenue - growthAnalysis.lastYearToDateRevenue)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[14px] text-slate-600">증감률</span>
+                <span className={`text-[20px] font-bold ${
+                  growthAnalysis.ytdGrowth >= 0 ? 'text-emerald-600' : 'text-red-600'
+                }`}>
+                  {growthAnalysis.ytdGrowth >= 0 ? '+' : ''}{growthAnalysis.ytdGrowth.toFixed(1)}%
+                </span>
+              </div>
+
+              {/* 성장률 프로그레스 바 */}
+              <div className="mt-4">
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all duration-300 ${
+                      growthAnalysis.ytdGrowth >= 20 ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
+                      growthAnalysis.ytdGrowth >= 10 ? 'bg-gradient-to-r from-blue-500 to-indigo-500' :
+                      growthAnalysis.ytdGrowth >= 0 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
+                      'bg-gradient-to-r from-red-500 to-pink-500'
+                    }`}
+                    style={{
+                      width: `${Math.min(100, Math.max(10, Math.abs(growthAnalysis.ytdGrowth) * 2))}%`
+                    }}
+                  ></div>
+                </div>
+                <p className="text-[12px] text-slate-500 mt-2 text-center">
+                  {growthAnalysis.ytdGrowth >= 20 ? '🚀 매우 높은 성장!' :
+                   growthAnalysis.ytdGrowth >= 10 ? '📈 양호한 성장세' :
+                   growthAnalysis.ytdGrowth >= 0 ? '📊 안정적 성장' :
+                   growthAnalysis.ytdGrowth >= -10 ? '⚠️ 소폭 감소' :
+                   '🔴 성장 전략 필요'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </SectionCard>
 
       {/* 연간 매출 추이 및 성장 트렌드 */}
-      <SectionCard title={`${selectedYear}년 매출 추이 분석`} description="월별 성장 패턴 및 전년 대비">
-        {chartsReady ? (
-          <div className="w-full" style={{ width: '100%', height: '450px' }}>
-            <ResponsiveContainer width="100%" height={450}>
-            <ComposedChart data={yearlyTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 12, fill: "#6b7280" }}
-                stroke="#9ca3af"
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: "#6b7280" }}
-                stroke="#9ca3af"
-                tickFormatter={(value) => formatAmount(value)}
-              />
-              <Legend />
-
-              {/* 면적 차트 - 전년도 */}
-              <Area
-                dataKey="전년도"
-                fill="#e5e8eb"
-                stroke="#9ca3af"
-                strokeWidth={2}
-                name="전년도 매출"
-                fillOpacity={0.3}
-              />
-
-              {/* 막대 차트 - 현재년도 */}
-              <Bar
-                dataKey="현재년도"
-                fill="#3182f6"
-                name="현재년도 매출"
-                radius={[4, 4, 0, 0]}
-              />
-
-              {/* 선 차트 - 순이익 */}
-              <Line
-                type="monotone"
-                dataKey="순이익"
-                stroke="#10b981"
-                strokeWidth={3}
-                dot={{ fill: '#10b981', strokeWidth: 2, r: 5 }}
-                name="순이익"
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+      <div className="space-y-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <DollarSign className="w-6 h-6 text-blue-600" />
+            <h3 className="text-xl font-bold text-slate-900">매출 추이 분석</h3>
+            <span className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+              {selectedYear}년
+            </span>
           </div>
-        ) : (
-          <div className="h-[450px] flex items-center justify-center">
-            <div className="text-gray-500">차트를 로딩 중...</div>
+          <p className="text-slate-600">
+            {selectedYear}년 1월부터 {selectedMonth}월까지의 매출 성장 패턴을 확인하세요
+          </p>
+        </div>
+
+        {/* 현재년도 매출 추이 */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                {selectedYear}년 1~{selectedMonth}월 매출 추이
+              </h3>
+              <p className="text-sm text-slate-600">
+                {selectedMonth}월까지 누적 매출: {formatAmount(growthAnalysis.yearToDateRevenue)}
+              </p>
+            </div>
           </div>
-        )}
-      </SectionCard>
+
+          <div className="h-64 mb-4 w-full min-h-[256px] min-w-0">
+            {chartsReady ? (
+              <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                <AreaChart data={yearlyTrendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="gradient-current-year" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.05}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 12, fill: "#64748b" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: "#64748b" }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(value) => `${(value / 100000000).toFixed(0)}억`}
+                    width={50}
+                  />
+                  <Tooltip
+                    formatter={(value: any) => [`${formatAmount(value)}`, '매출']}
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: 'none',
+                      boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                      fontSize: 13,
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(8px)'
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="현재년도"
+                    stroke="#3b82f6"
+                    strokeWidth={3}
+                    fill="url(#gradient-current-year)"
+                    dot={{ fill: '#3b82f6', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
+                    activeDot={{ r: 6, fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 3 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[256px] flex items-center justify-center">
+                <div className="text-gray-500">차트를 로딩 중...</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 전년도 대비 추이 */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                전년도 대비 매출 추이 (1~{selectedMonth}월)
+              </h3>
+              <p className="text-sm text-slate-600">
+                {selectedYear - 1}년 vs {selectedYear}년 동기간 비교
+              </p>
+            </div>
+          </div>
+
+          <div className="h-64 mb-4 w-full min-h-[256px] min-w-0">
+            {chartsReady ? (
+              <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                <AreaChart data={yearlyTrendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="gradient-current" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.3}/>
+                      <stop offset="100%" stopColor="#10b981" stopOpacity={0.05}/>
+                    </linearGradient>
+                    <linearGradient id="gradient-previous" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#64748b" stopOpacity={0.2}/>
+                      <stop offset="100%" stopColor="#64748b" stopOpacity={0.05}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 12, fill: "#64748b" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: "#64748b" }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(value) => `${(value / 100000000).toFixed(0)}억`}
+                    width={50}
+                  />
+                  <Tooltip
+                    formatter={(value: any, name: any) => [`${formatAmount(value)}`, name]}
+                    contentStyle={{
+                      borderRadius: 12,
+                      border: 'none',
+                      boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                      fontSize: 13,
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(8px)'
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="전년도"
+                    stroke="#64748b"
+                    strokeWidth={2}
+                    fill="url(#gradient-previous)"
+                    dot={{ fill: '#64748b', strokeWidth: 2, stroke: '#ffffff', r: 3 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="현재년도"
+                    stroke="#10b981"
+                    strokeWidth={3}
+                    fill="url(#gradient-current)"
+                    dot={{ fill: '#10b981', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
+                    activeDot={{ r: 6, fill: '#10b981', stroke: '#ffffff', strokeWidth: 3 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[256px] flex items-center justify-center">
+                <div className="text-gray-500">차트를 로딩 중...</div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* 예측 분석 섹션 제거됨 (사용자 요청) */}
       {predictionAnalysis && (
@@ -659,12 +927,8 @@ export default function RevenuePageClient({
 
       {/* 목표 관리 및 성과 추적 */}
       <SectionCard
-        title="목표 관리 및 달성 현황"
-        description={
-          (!revenueGoals.monthlyGoal && !revenueGoals.yearlyGoal)
-            ? "매출 목표를 설정하여 성과를 추적하세요"
-            : "매출 목표 대비 실적 추적"
-        }
+        title="매출 성과 분석 & 전년 대비"
+        description="월별 목표 달성률과 전년 동기 대비 매출 성장률을 확인하세요"
       >
         {(!revenueGoals.monthlyGoal && !revenueGoals.yearlyGoal) ? (
           // 목표가 설정되지 않은 경우
@@ -687,117 +951,142 @@ export default function RevenuePageClient({
               </div>
             </div>
           </div>
-        ) : goalAnalysis ? (
+        ) : monthlyAnalysis ? (
           // 목표가 설정된 경우 기존 UI
           <div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
               <KpiCard
                 label="월 목표 달성률"
-                value={goalAnalysis.monthlyAchievementRate.toFixed(1)}
+                value={monthlyAnalysis.monthlyAchievementRate.toFixed(1)}
                 unit="%"
                 icon={<Target className="w-4 h-4" />}
                 color="blue"
               />
               <KpiCard
-                label="연간 목표 달성률"
-                value={goalAnalysis.yearlyAchievementRate.toFixed(1)}
+                label="전년 동월 대비"
+                value={(monthlyAnalysis.monthlyGrowthRate || 0).toFixed(1)}
                 unit="%"
                 icon={<Activity className="w-4 h-4" />}
-                color="green"
+                color={monthlyAnalysis.monthlyGrowthRate >= 0 ? "green" : "red"}
               />
               <KpiCard
-                label="연말까지 남은 달"
-                value={goalAnalysis.remainingMonths.toString()}
-                unit="개월"
-                icon={<Calendar className="w-4 h-4" />}
-                color="yellow"
-              />
-              <KpiCard
-                label="필요 월평균 매출"
-                value={formatAmount(goalAnalysis.requiredMonthlyAverage)}
-                unit=""
+                label="전년 누적 대비"
+                value={(previousYearData.growthRate || 0).toFixed(1)}
+                unit="%"
                 icon={<TrendingUp className="w-4 h-4" />}
-                color="red"
+                color={previousYearData.growthRate >= 0 ? "green" : "red"}
+              />
+              <KpiCard
+                label="현재 누적 매출"
+                value={formatAmount(previousYearData.currentYearTotal)}
+                unit=""
+                icon={<DollarSign className="w-4 h-4" />}
+                color="purple"
               />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* 월 목표 달성 현황 */}
+            {/* 월별 목표 달성 & 전년 대비 현황 */}
             <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-              <h4 className="text-[16px] font-semibold text-[#191f28] mb-6">월별 목표 달성 현황</h4>
+              <h4 className="text-[16px] font-semibold text-[#191f28] mb-6">월별 목표 달성 & 전년 대비</h4>
 
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-[14px] text-[#6b7280]">목표</span>
-                  <span className="text-[16px] font-bold text-blue-700">{formatAmount(goalAnalysis.monthlyRevenueGoal)}</span>
+                  <span className="text-[14px] text-[#6b7280]">월 목표</span>
+                  <span className="text-[16px] font-bold text-blue-700">{formatAmount(monthlyAnalysis.monthlyRevenueGoal)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[14px] text-[#6b7280]">현재 달성</span>
-                  <span className="text-[16px] font-bold text-green-700">{formatAmount(goalAnalysis.currentRevenue)}</span>
+                  <span className="text-[16px] font-bold text-green-700">{formatAmount(monthlyAnalysis.currentRevenue)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[14px] text-[#6b7280]">남은 목표</span>
-                  <span className="text-[16px] font-bold text-red-700">
-                    {formatAmount(Math.max(0, goalAnalysis.monthlyRevenueGoal - goalAnalysis.currentRevenue))}
+                  <span className="text-[14px] text-[#6b7280]">전년 동월</span>
+                  <span className="text-[16px] font-bold text-gray-700">{formatAmount(monthlyAnalysis.previousYearSameMonth)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[14px] text-[#6b7280]">전년 대비</span>
+                  <span className={`text-[16px] font-bold ${
+                    monthlyAnalysis.monthlyGrowthRate >= 0 ? 'text-green-700' : 'text-red-700'
+                  }`}>
+                    {monthlyAnalysis.monthlyGrowthRate >= 0 ? '+' : ''}{monthlyAnalysis.monthlyGrowthRate.toFixed(1)}%
                   </span>
                 </div>
 
                 <div className="w-full bg-gray-200 rounded-full h-4 mt-4">
                   <div
                     className={`h-4 rounded-full transition-all duration-300 ${
-                      goalAnalysis.monthlyAchievementRate >= 100 ? 'bg-green-500' :
-                      goalAnalysis.monthlyAchievementRate >= 80 ? 'bg-blue-500' :
-                      goalAnalysis.monthlyAchievementRate >= 60 ? 'bg-yellow-500' :
+                      monthlyAnalysis.monthlyAchievementRate >= 100 ? 'bg-green-500' :
+                      monthlyAnalysis.monthlyAchievementRate >= 80 ? 'bg-blue-500' :
+                      monthlyAnalysis.monthlyAchievementRate >= 60 ? 'bg-yellow-500' :
                       'bg-red-500'
                     }`}
-                    style={{width: `${Math.min(100, goalAnalysis.monthlyAchievementRate)}%`}}
+                    style={{width: `${Math.min(100, monthlyAnalysis.monthlyAchievementRate)}%`}}
                   ></div>
                 </div>
 
                 <p className="text-[12px] text-[#6b7280] mt-2 text-center">
-                  {goalAnalysis.monthlyAchievementRate >= 100 ? '🎉 월 목표 달성!' :
-                   goalAnalysis.monthlyAchievementRate >= 80 ? '🔥 목표 달성 임박' :
-                   goalAnalysis.monthlyAchievementRate >= 60 ? '💪 목표 달성 진행 중' :
+                  {monthlyAnalysis.monthlyAchievementRate >= 100 ? '🎉 월 목표 달성!' :
+                   monthlyAnalysis.monthlyAchievementRate >= 80 ? '🔥 목표 달성 임박' :
+                   monthlyAnalysis.monthlyAchievementRate >= 60 ? '💪 목표 달성 진행 중' :
                    '⚠️ 목표 달성 노력 필요'}
                 </p>
               </div>
             </div>
 
-            {/* 연간 목표 달성 현황 */}
-            <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
-              <h4 className="text-[16px] font-semibold text-[#191f28] mb-6">연간 목표 달성 현황</h4>
+            {/* 전년 대비 매출 현황 */}
+            <div className={`bg-gradient-to-r rounded-xl p-6 border ${
+              previousYearData.growthRate >= 0
+                ? 'from-blue-50 to-green-100 border-blue-200'
+                : 'from-red-50 to-orange-100 border-red-200'
+            }`}>
+              <h4 className="text-[16px] font-semibold text-[#191f28] mb-6">전년 총매출 대비 현황</h4>
 
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-[14px] text-[#6b7280]">연간 목표</span>
-                  <span className="text-[16px] font-bold text-green-700">{formatAmount(goalAnalysis.yearlyRevenueGoal)}</span>
+                  <span className="text-[14px] text-[#6b7280]">전년 누적매출 ({selectedYear - 1}년 1~{selectedMonth}월)</span>
+                  <span className="text-[16px] font-bold text-gray-700">{formatAmount(previousYearData.previousYearTotal)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[14px] text-[#6b7280]">현재 누적</span>
-                  <span className="text-[16px] font-bold text-blue-700">{formatAmount(goalAnalysis.ytdRevenue)}</span>
+                  <span className="text-[14px] text-[#6b7280]">현재 누적매출 ({selectedYear}년 1~{selectedMonth}월)</span>
+                  <span className="text-[16px] font-bold text-blue-700">{formatAmount(previousYearData.currentYearTotal)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[14px] text-[#6b7280]">필요 월평균</span>
-                  <span className="text-[16px] font-bold text-purple-700">
-                    {formatAmount(goalAnalysis.requiredMonthlyAverage)}
+                  <span className="text-[14px] text-[#6b7280]">증감액</span>
+                  <span className={`text-[16px] font-bold ${
+                    previousYearData.growthAmount >= 0 ? 'text-green-700' : 'text-red-700'
+                  }`}>
+                    {previousYearData.growthAmount >= 0 ? '+' : ''}{formatAmount(previousYearData.growthAmount)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[14px] text-[#6b7280]">증감률</span>
+                  <span className={`text-[18px] font-bold ${
+                    previousYearData.growthRate >= 0 ? 'text-green-700' : 'text-red-700'
+                  }`}>
+                    {previousYearData.growthRate >= 0 ? '+' : ''}{previousYearData.growthRate.toFixed(1)}%
                   </span>
                 </div>
 
                 <div className="w-full bg-gray-200 rounded-full h-4 mt-4">
                   <div
                     className={`h-4 rounded-full transition-all duration-300 ${
-                      goalAnalysis.yearlyAchievementRate >= 100 ? 'bg-green-500' :
-                      goalAnalysis.yearlyAchievementRate >= (selectedMonth / 12 * 100) ? 'bg-blue-500' :
-                      'bg-yellow-500'
+                      previousYearData.growthRate >= 20 ? 'bg-green-500' :
+                      previousYearData.growthRate >= 10 ? 'bg-blue-500' :
+                      previousYearData.growthRate >= 0 ? 'bg-yellow-500' :
+                      'bg-red-500'
                     }`}
-                    style={{width: `${Math.min(100, goalAnalysis.yearlyAchievementRate)}%`}}
+                    style={{
+                      width: `${Math.min(100, Math.max(10, Math.abs(previousYearData.growthRate) * 2))}%`
+                    }}
                   ></div>
                 </div>
 
                 <p className="text-[12px] text-[#6b7280] mt-2 text-center">
-                  {goalAnalysis.yearlyAchievementRate >= 100 ? '🎊 연간 목표 달성!' :
-                   goalAnalysis.yearlyAchievementRate >= (selectedMonth / 12 * 100) ? '📈 목표 대비 순조로운 진행' :
-                   '📊 추가 성장 전략 필요'}
+                  {previousYearData.growthRate >= 20 ? '🚀 매우 높은 성장!' :
+                   previousYearData.growthRate >= 10 ? '📈 양호한 성장세' :
+                   previousYearData.growthRate >= 0 ? '📊 안정적 성장' :
+                   previousYearData.growthRate >= -10 ? '⚠️ 소폭 감소' :
+                   '🔴 성장 전략 필요'}
                 </p>
               </div>
             </div>

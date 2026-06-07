@@ -42,8 +42,13 @@ async function createMasterUser() {
       where: { role: 'MASTER' }
     })
 
-    const newEmail = 'thinklabmedi@gmail.com'
-    const newPassword = 'dltodrkr13!'
+    const newEmail = process.env.ADMIN_EMAIL
+    const newPassword = process.env.ADMIN_DEFAULT_PASSWORD
+
+    if (!newEmail || !newPassword) {
+      console.error('❌ ADMIN_EMAIL 또는 ADMIN_DEFAULT_PASSWORD 환경변수가 설정되지 않았습니다.')
+      return
+    }
 
     if (existingMaster) {
       console.log('⚠️ 기존 마스터 계정을 업데이트합니다:', existingMaster.email, '→', newEmail)

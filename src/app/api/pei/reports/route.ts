@@ -1,61 +1,86 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
+import { requireClinicAccess, logSecurityEvent } from "@/lib/security"
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth()
-    if (!session) {
-      return NextResponse.json({ error: "인증이 필요합니다" }, { status: 401 })
-    }
-
     const { searchParams } = new URL(req.url)
     const clinicId = searchParams.get('clinicId')
 
     if (!clinicId) {
-      return NextResponse.json({ error: "clinicId가 필요합니다" }, { status: 400 })
+      return NextResponse.json({ error: "Clinic ID is required" }, { status: 400 })
     }
 
-    // 해당 치과의 보고서 목록 조회
+    // 🔒 보안 검증: 클리닉 접근 및 READ 권한 확인
+    const user = await requireClinicAccess(clinicId, 'read')
+
+    // 보안 이벤트 로깅
+    await logSecurityEvent({
+      userId: user.id!,
+      event: "PEI_REPORT_LIST_ACCESS",
+      clinicId,
+      timestamp: new Date()
+    })
+
+    // PEI 보고서 목록 조회 (HTML 콘텐츠가 있는 것만, 최신순)
     const reports = await prisma.peiReport.findMany({
-      where: { clinicId },
+      where: {
+        clinicId,
+        content: {
+          not: null
+        }
+      },
       include: {
         clinic: {
           select: { name: true }
-        },
-        generator: {
-          select: { name: true, email: true }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: [
+        { year: 'desc' },
+        { month: 'desc' }
+      ]
     })
 
-    const reportList = reports.map(report => ({
-      id: report.id,
-      title: report.title,
-      year: report.year,
-      month: report.month,
-      period: `${report.year}년 ${report.month}월`,
-      peiScore: report.peiScore,
-      status: report.status,
-      generatedAt: report.generatedAt,
-      createdAt: report.createdAt,
-      clinicName: report.clinic.name,
-      generatedBy: report.generator?.name || '시스템',
-      hasContent: !!report.content,
-      hasPdf: !!report.pdfUrl
-    }))
+    // 응답 데이터 포맷팅
+    const path = require('path')
+    const formattedReports = reports.map(report => {
+      const fileName = `[${report.clinic.name}] ${report.year}년 ${report.month}월 PEI리포트.html`
+      const newFilePath = path.join(process.cwd(), 'uploads', 'pei', clinicId, report.year.toString(), report.month.toString().padStart(2, '0'), fileName)
+
+      return {
+        id: report.id,
+        clinicId: report.clinicId,
+        clinicName: report.clinic.name,
+        year: report.year,
+        month: report.month,
+        generatedAt: report.generatedAt,
+        fileName: fileName,
+        filePath: newFilePath
+      }
+    })
 
     return NextResponse.json({
       success: true,
-      reports: reportList,
-      totalCount: reports.length
+      reports: formattedReports
     })
 
   } catch (error) {
-    console.error("보고서 목록 조회 실패:", error)
+    console.error("Error fetching PEI reports:", error)
+
+    if (error instanceof Error) {
+      // 인증 관련 오류인 경우
+      if (error.message.includes("인증되지 않은") || error.message.includes("접근 권한이")) {
+        return NextResponse.json({
+          error: error.message,
+          code: "AUTH_ERROR"
+        }, { status: 401 })
+      }
+    }
+
     return NextResponse.json({
-      error: "보고서 목록 조회 중 오류가 발생했습니다"
+      error: "PEI 리포트 목록 조회 중 오류가 발생했습니다.",
+      details: error instanceof Error ? error.message : "Unknown error"
     }, { status: 500 })
   }
 }

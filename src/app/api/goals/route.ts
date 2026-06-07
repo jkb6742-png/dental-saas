@@ -4,6 +4,10 @@ import { prisma } from "@/lib/db"
 
 // 목표 조회
 export async function GET(req: NextRequest) {
+  let clinicId: string | null = null
+  let year: number = new Date().getFullYear()
+  let month: number | null = null
+
   try {
     const session = await auth()
     if (!session) {
@@ -11,9 +15,9 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url)
-    const clinicId = searchParams.get('clinicId')
-    const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString())
-    const month = searchParams.get('month') ? parseInt(searchParams.get('month')) : null
+    clinicId = searchParams.get('clinicId')
+    year = parseInt(searchParams.get('year') || new Date().getFullYear().toString())
+    month = searchParams.get('month') ? parseInt(searchParams.get('month')) : null
 
     if (!clinicId) {
       return NextResponse.json({ error: "clinicId가 필요합니다" }, { status: 400 })
@@ -63,6 +67,13 @@ export async function GET(req: NextRequest) {
 
 // 목표 설정/수정
 export async function POST(req: NextRequest) {
+  let clinicId: string | undefined
+  let year: number | undefined
+  let month: number | null = null
+  let revenueGoal: number | undefined
+  let newPatientGoal: number | undefined
+  let description: string | undefined
+
   try {
     const session = await auth()
     if (!session) {
@@ -77,19 +88,25 @@ export async function POST(req: NextRequest) {
       }, { status: 403 })
     }
 
-    const {
-      clinicId,
-      year,
-      month, // null이면 연간 목표
-      revenueGoal,
-      newPatientGoal,
-      description
-    } = await req.json()
+    const requestBody = await req.json()
+    clinicId = requestBody.clinicId
+    year = requestBody.year
+    month = requestBody.month // null이면 연간 목표
+    revenueGoal = requestBody.revenueGoal
+    newPatientGoal = requestBody.newPatientGoal
+    description = requestBody.description
 
     // 필수 필드 검증
-    if (!clinicId || !year || !revenueGoal) {
+    if (!clinicId || !year) {
       return NextResponse.json({
-        error: "clinicId, year, revenueGoal은 필수입니다"
+        error: "clinicId, year는 필수입니다"
+      }, { status: 400 })
+    }
+
+    // 매출 목표나 신환 목표 중 최소 하나는 있어야 함
+    if (!revenueGoal && !newPatientGoal) {
+      return NextResponse.json({
+        error: "매출 목표 또는 신환 목표 중 최소 하나는 설정해야 합니다"
       }, { status: 400 })
     }
 
@@ -140,15 +157,26 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error) {
-    console.error('목표 설정 실패:', error)
+    console.error('목표 설정 실패 상세:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      clinicId,
+      year,
+      month,
+      revenueGoal,
+      newPatientGoal
+    })
     return NextResponse.json({
-      error: "목표 설정 중 오류가 발생했습니다"
+      error: "목표 설정 중 오류가 발생했습니다",
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
   }
 }
 
 // 목표 삭제
 export async function DELETE(req: NextRequest) {
+  let goalId: string | null = null
+
   try {
     const session = await auth()
     if (!session) {
@@ -164,7 +192,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url)
-    const goalId = searchParams.get('goalId')
+    goalId = searchParams.get('goalId')
 
     if (!goalId) {
       return NextResponse.json({ error: "goalId가 필요합니다" }, { status: 400 })
@@ -192,9 +220,14 @@ export async function DELETE(req: NextRequest) {
     })
 
   } catch (error) {
-    console.error('목표 삭제 실패:', error)
+    console.error('목표 삭제 실패 상세:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      goalId
+    })
     return NextResponse.json({
-      error: "목표 삭제 중 오류가 발생했습니다"
+      error: "목표 삭제 중 오류가 발생했습니다",
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
   }
 }

@@ -40,9 +40,24 @@ export async function validateClinicAccess(clinicId: string, userId?: string): P
 }
 
 /**
+ * 권한 타입 정의
+ */
+export type PermissionType = 'READ' | 'WRITE' | 'DELETE' | 'ADMIN'
+
+/**
+ * 사용자 역할별 권한 매핑
+ */
+const ROLE_PERMISSIONS: Record<string, PermissionType[]> = {
+  'MASTER': ['READ', 'WRITE', 'DELETE', 'ADMIN'],
+  'ADMIN': ['READ', 'WRITE', 'DELETE'],
+  'MANAGER': ['READ', 'WRITE'],
+  'USER': ['READ']
+}
+
+/**
  * API 요청에서 클리닉 접근 권한을 검증하는 미들웨어
  */
-export async function requireClinicAccess(clinicId: string) {
+export async function requireClinicAccess(clinicId: string, permission?: PermissionType) {
   const session = await auth()
 
   if (!session?.user?.id) {
@@ -64,7 +79,83 @@ export async function requireClinicAccess(clinicId: string) {
     throw new Error("해당 클리닉에 접근 권한이 없습니다.")
   }
 
+  // 특정 권한이 요구되는 경우 추가 검증
+  if (permission) {
+    const hasPermission = await validateUserPermission(session.user, permission)
+    if (!hasPermission) {
+      await logSecurityEvent({
+        userId: session.user.id,
+        event: "INSUFFICIENT_PERMISSION",
+        clinicId,
+        timestamp: new Date(),
+        details: {
+          requiredPermission: permission,
+          userRole: (session.user as any).role
+        }
+      })
+
+      throw new Error(`이 작업에 필요한 권한(${permission})이 없습니다.`)
+    }
+  }
+
   return session.user
+}
+
+/**
+ * 사용자 권한 검증
+ */
+export async function validateUserPermission(user: any, requiredPermission: PermissionType): Promise<boolean> {
+  const userRole = user.role || 'USER'
+  const userPermissions = ROLE_PERMISSIONS[userRole] || ['READ']
+
+  // MASTER는 모든 권한 보유
+  if (userRole === 'MASTER') {
+    return true
+  }
+
+  // 요구되는 권한이 사용자 권한에 포함되어 있는지 확인
+  return userPermissions.some(permission =>
+    permission.toLowerCase() === requiredPermission.toLowerCase()
+  )
+}
+
+/**
+ * 리포트별 세부 권한 체크
+ */
+export async function validateReportAccess(
+  reportId: string,
+  userId: string,
+  permission: PermissionType
+): Promise<boolean> {
+  try {
+    // 리포트 정보 조회
+    const report = await prisma.report.findUnique({
+      where: { id: reportId },
+      include: {
+        clinic: {
+          include: {
+            agency: {
+              include: {
+                users: {
+                  where: { id: userId }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    if (!report || report.clinic.agency.users.length === 0) {
+      return false
+    }
+
+    const user = report.clinic.agency.users[0]
+    return await validateUserPermission(user, permission)
+  } catch (error) {
+    console.error("리포트 권한 검증 오류:", error)
+    return false
+  }
 }
 
 /**

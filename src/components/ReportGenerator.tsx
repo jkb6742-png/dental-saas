@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import Button from "@/components/ui/Button"
-import { FileText, Loader2, Calendar } from "lucide-react"
+import { FileText, Loader2, Calendar, AlertCircle } from "lucide-react"
 
 interface ReportGeneratorProps {
   clinicId: string
@@ -10,10 +11,21 @@ interface ReportGeneratorProps {
 }
 
 export default function ReportGenerator({ clinicId, onReportGenerated }: ReportGeneratorProps) {
+  const { data: session, status } = useSession()
   const [isGenerating, setIsGenerating] = useState(false)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [message, setMessage] = useState("")
+
+  // 세션 상태 확인
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      setMessage("로그인이 필요합니다. 로그인 페이지로 이동합니다...")
+      setTimeout(() => {
+        window.location.href = "/login"
+      }, 2000)
+    }
+  }, [status])
 
   const currentYear = new Date().getFullYear()
   const years = Array.from({ length: 3 }, (_, i) => currentYear - i)
@@ -23,6 +35,12 @@ export default function ReportGenerator({ clinicId, onReportGenerated }: ReportG
   }))
 
   const handleGenerate = async () => {
+    // 세션 확인
+    if (status !== "authenticated" || !session) {
+      setMessage("로그인이 필요합니다.")
+      return
+    }
+
     setIsGenerating(true)
     setMessage("")
 
@@ -45,7 +63,16 @@ export default function ReportGenerator({ clinicId, onReportGenerated }: ReportG
         setMessage("리포트가 성공적으로 생성되었습니다!")
         onReportGenerated()
       } else {
-        setMessage(result.error || "리포트 생성에 실패했습니다.")
+        // 인증 오류인 경우 로그인 페이지로 리다이렉트
+        if (response.status === 401 || result.code === "AUTH_ERROR") {
+          setMessage("세션이 만료되었습니다. 다시 로그인해주세요.")
+          // 3초 후 로그인 페이지로 리다이렉트
+          setTimeout(() => {
+            window.location.href = "/login"
+          }, 3000)
+        } else {
+          setMessage(result.error || "리포트 생성에 실패했습니다.")
+        }
       }
     } catch (error) {
       setMessage("네트워크 오류가 발생했습니다.")
@@ -100,10 +127,20 @@ export default function ReportGenerator({ clinicId, onReportGenerated }: ReportG
 
         <Button
           onClick={handleGenerate}
-          disabled={isGenerating}
+          disabled={isGenerating || status === "loading" || status === "unauthenticated"}
           className="w-full bg-[#3182f6] hover:bg-[#2563eb] text-white text-[14px] font-medium rounded-xl h-11 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isGenerating ? (
+          {status === "loading" ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              로딩 중...
+            </>
+          ) : status === "unauthenticated" ? (
+            <>
+              <AlertCircle className="w-4 h-4" />
+              로그인 필요
+            </>
+          ) : isGenerating ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
               리포트 생성 중...

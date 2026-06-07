@@ -287,11 +287,16 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
 
       // HTML 내용을 새 창에서 열기
       const htmlContent = await response.text()
-      const newWindow = window.open('', '_blank')
-      if (newWindow) {
-        newWindow.document.write(htmlContent)
-        newWindow.document.close()
-      } else {
+      // XSS 방지를 위해 Blob URL 사용
+      const sanitizedHtml = htmlContent
+        .replace(/<script[\s\S]*?<\/script>/gi, '') // 스크립트 태그 제거
+        .replace(/on\w+\s*=/gi, '') // 이벤트 핸들러 제거
+
+      const blob = new Blob([sanitizedHtml], { type: 'text/html' })
+      const url = URL.createObjectURL(blob)
+      const newWindow = window.open(url, '_blank')
+
+      if (!newWindow) {
         alert("팝업이 차단되었습니다. 팝업 차단을 해제하고 다시 시도해주세요.")
       }
     } catch (error: any) {

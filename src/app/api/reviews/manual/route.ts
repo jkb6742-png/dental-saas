@@ -9,24 +9,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { clinicId, source, totalReviews, monthlyReviews, averageRating, feedbackComments } = await request.json()
+    const { clinicId, source, year, month, totalReviews, monthlyReviews, averageRating, feedbackComments } = await request.json()
 
     if (!clinicId || !source) {
       return NextResponse.json({ error: "clinicId와 source는 필수입니다" }, { status: 400 })
     }
 
+    // year, month가 제공되지 않으면 현재 날짜 사용
     const now = new Date()
-    const year = now.getFullYear()
-    const month = now.getMonth() + 1
+    const targetYear = year || now.getFullYear()
+    const targetMonth = month || (now.getMonth() + 1)
 
     // 월별 요약 업데이트/생성
     const reviewSummary = await prisma.reviewSummary.upsert({
-      where: { clinicId_source_year_month: { clinicId, source, year, month } },
+      where: { clinicId_source_year_month: { clinicId, source, year: targetYear, month: targetMonth } },
       create: {
         clinicId,
         source,
-        year,
-        month,
+        year: targetYear,
+        month: targetMonth,
         totalReviews: totalReviews || 0,
         newReviews: monthlyReviews || 0,
         avgRating: averageRating || null,

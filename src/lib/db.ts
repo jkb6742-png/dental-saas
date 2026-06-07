@@ -1,24 +1,13 @@
 import { PrismaClient } from "@prisma/client"
-import { PrismaPg } from "@prisma/adapter-pg"
-import pg from "pg"
 
 declare global {
   // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined
 }
 
+// Prisma 5 - 간단한 설정
 function createPrismaClient() {
-  const pool = new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.DATABASE_URL?.includes("supabase")
-      ? { rejectUnauthorized: false }
-      : process.env.DATABASE_SSL === "true"
-      ? { rejectUnauthorized: false }
-      : undefined,
-  })
-  const adapter = new PrismaPg(pool)
   return new PrismaClient({
-    adapter,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   })
 }

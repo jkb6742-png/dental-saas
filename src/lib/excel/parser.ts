@@ -6,7 +6,7 @@ import * as XLSX from "xlsx"
 
 function cleanNum(v: unknown): number | null {
   if (v == null || v === "" || v === "-") return null
-  const s = String(v).replace(/,/g, "").replace(/%/g, "").trim()
+  const s = String(v).replace(/,/g, "").replace(/%/g, "").replace(/분/g, "").replace(/시간/g, "").replace(/초/g, "").trim()
   const n = parseFloat(s)
   return isNaN(n) ? null : n
 }
@@ -16,7 +16,12 @@ function cleanDate(v: unknown): string | null {
   try {
     const d = new Date(v as any)
     if (isNaN(d.getTime())) return null
-    return d.toISOString().split("T")[0]
+
+    // UTC 대신 로컬 시간 기준으로 날짜 생성 (타임존 문제 방지)
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   } catch {
     return null
   }
@@ -439,7 +444,17 @@ export function parseReceptionRecords(buffer: ArrayBuffer, filename: string): Pa
         patientName: String(r["이름"] ?? "").trim() || null,
         ageGender: String(r["연령성별"] ?? "").trim() || null,
         insuranceType: String(r["보험구분"] ?? "").trim() || null,
-        patientType: String(r["신구"] ?? "").trim() || null,
+        patientType: (() => {
+          // 다양한 컬럼명에서 환자 유형 추출
+          const type = String(r["신구"] ?? r["환자유형"] ?? r["환자구분"] ?? r["구분"] ?? "").trim()
+          if (!type) return null
+
+          // 신환 패턴 정규화
+          if (type.includes("신") || type.toLowerCase().includes("new")) return "신환"
+          if (type.includes("구") || type.includes("재") || type.toLowerCase().includes("returning") || type.toLowerCase().includes("revisit")) return "구환"
+
+          return type
+        })(),
         doctor: String(r["담당의사"] ?? "").trim() || null,
         totalRevenue: cleanNum(r["총진료비"]),
         insuranceCoverage: cleanNum(r["공단부담"]),
@@ -451,6 +466,20 @@ export function parseReceptionRecords(buffer: ArrayBuffer, filename: string): Pa
         dailyArrears: cleanNum(r["당일미수"]),
         totalArrears: cleanNum(r["총미수금"]),
         visitRoute: String(r["내원경로"] ?? "").trim() || null,
+        waitingTime: (() => {
+          // 다양한 대기시간 컬럼명 지원
+          const waitTime = cleanNum(
+            r["대기시간"] ??
+            r["대기"] ??
+            r["대기분"] ??
+            r["waiting"] ??
+            r["wait_time"] ??
+            r["대기 시간"] ??
+            r["대기(분)"] ??
+            null
+          )
+          return waitTime
+        })(),
       } as ParsedRow
     })
 }
@@ -525,37 +554,131 @@ export type FileType =
   | "implant_stats"
   | "consultation_stats"
   | "reception_records"
+  | "new_patient_records"
+  | "all_patient_records"
   | "age_dist"
   | "region_dist"
   | "unknown"
 
 export function detectFileType(filename: string): FileType {
-  if (filename.includes("월간장부")) return "monthly_ledger"
-  if (filename.includes("연간장부")) return "annual_ledger"
+  console.log(`🔍 [PARSER] 파일 타입 판별 시작: "${filename}"`)
+
+  // 🔥 강화된 월간장부 패턴 (더 관대하게)
+  if (filename.includes("월간장부") ||
+      filename.includes("장부") ||
+      filename.includes("월간") ||
+      filename.match(/\d+월.*장부/) ||
+      filename.match(/장부.*\d+월/) ||
+      filename.includes("monthly") ||
+      filename.includes("ledger")) {
+    console.log(`✅ [PARSER] 타입 판별 결과: monthly_ledger (강화된 패턴)`)
+    return "monthly_ledger"
+  }
+
+  // 🔥 연간장부 강화된 패턴 (우선순위 최고)
+  if (filename.includes("연간장부") ||
+      filename.match(/\d{4}연간장부/) ||
+      filename.match(/연간.*장부/) ||
+      filename.toLowerCase().includes("annual")) {
+    console.log(`✅ [PARSER] 연간장부 확실 감지: "${filename}" → annual_ledger`)
+    return "annual_ledger"
+  }
 
   // 환자 통계 관련 파일명 패턴 확장
   if (filename.includes("일별접수환자수") ||
       filename.includes("환자통계") ||
       filename.includes("환자현황") ||
       filename.includes("일별환자") ||
-      filename.includes("접수환자") ||
+      filename.includes("접수환자수") ||  // 추가
       filename.includes("신환통계") ||
       filename.includes("환자수통계") ||
       filename.includes("patient_stats") ||
       filename.includes("PatientStats") ||
       (filename.includes("환자") && filename.includes("일별")) ||
       (filename.includes("신환") && filename.includes("수"))) {
+    console.log(`[PARSER] 타입 판별 결과: patient_stats`)
     return "patient_stats"
   }
 
-  if (filename.includes("진료항목별통계") || filename.includes("진료항목통계")) return "treatment_stats"
-  if (filename.includes("내원경로분포") || filename.includes("내원환자내원경로분포")) return "visit_routes"
-  if (filename.includes("치료비용계획")) return "treatment_plans"
-  if (filename.includes("임플란트수술통계")) return "implant_stats"
-  if (filename.includes("상담자별상담통계") || filename.includes("상담통계")) return "consultation_stats"
-  if (filename.includes("접수수납목록")) return "reception_records"
-  if (filename.includes("연령분포") || filename.includes("연령별")) return "age_dist"
-  if (filename.includes("지역별분포") || filename.includes("지역별")) return "region_dist"
+  // 진료항목별통계 패턴
+  if (filename.includes("진료항목별통계") || filename.includes("진료항목통계") || filename.includes("수가별")) {
+    console.log(`[PARSER] 타입 판별 결과: treatment_stats`)
+    return "treatment_stats"
+  }
+
+  // 내원경로분포 패턴
+  if (filename.includes("내원경로분포") || filename.includes("내원환자내원경로분포") || filename.includes("내원경로")) {
+    console.log(`[PARSER] 타입 판별 결과: visit_routes`)
+    return "visit_routes"
+  }
+
+  // 치료비용계획 패턴
+  if (filename.includes("치료비용계획")) {
+    console.log(`[PARSER] 타입 판별 결과: treatment_plans`)
+    return "treatment_plans"
+  }
+
+  // 임플란트수술통계 패턴
+  if (filename.includes("임플란트수술통계") || filename.includes("임플란트 수술 통계")) {
+    console.log(`[PARSER] 타입 판별 결과: implant_stats`)
+    return "implant_stats"
+  }
+
+  // 상담통계 패턴
+  if (filename.includes("상담자별상담통계") || filename.includes("상담통계") || filename.includes("상담동의율")) {
+    console.log(`[PARSER] 타입 판별 결과: consultation_stats`)
+    return "consultation_stats"
+  }
+
+  // 접수수납목록 패턴 구분
+  if (filename.includes("접수수납목록") || (filename.includes("접수수납") && filename.includes("목록"))) {
+    // 신환구환 접수수납목록 (파일명이 그냥 "접수수납목록.xlsx" 또는 "전체접수수납목록.xlsx")
+    if (filename === "접수수납목록.xlsx" ||
+        filename === "전체접수수납목록.xlsx" ||
+        filename.includes("신환,구환") ||
+        filename.includes("신환구환") ||
+        filename.includes("전체접수")) {
+      console.log(`[PARSER] 타입 판별 결과: all_patient_records (전체/신환구환)`)
+      return "all_patient_records"
+    }
+    // 신환 접수수납목록 ("5월 접수수납목록.xlsx" 등)
+    else if (filename.match(/\d+월 접수수납목록/) || filename.includes("신환")) {
+      console.log(`[PARSER] 타입 판별 결과: new_patient_records (신환)`)
+      return "new_patient_records"
+    }
+    // 기타 접수수납목록
+    else {
+      console.log(`[PARSER] 타입 판별 결과: reception_records (일반)`)
+      return "reception_records"
+    }
+  }
+  // 연령분포 패턴
+  if (filename.includes("연령분포") || filename.includes("연령별") || filename.includes("내원환자연령분포")) {
+    console.log(`✅ [PARSER] 연령별분포 감지 성공!`)
+    console.log(`   - 연령분포: ${filename.includes("연령분포")}`)
+    console.log(`   - 연령별: ${filename.includes("연령별")}`)
+    console.log(`   - 내원환자연령분포: ${filename.includes("내원환자연령분포")}`)
+    console.log(`✅ [PARSER] 타입 판별 결과: age_dist`)
+    return "age_dist"
+  }
+
+  // 지역분포 패턴
+  if (filename.includes("지역별분포") || filename.includes("지역별") || filename.includes("내원환자지역별분포")) {
+    console.log(`[PARSER] 타입 판별 결과: region_dist`)
+    return "region_dist"
+  }
+
+  // 🔥 최후 안전망: 년도+월이 있으면 월간장부로 처리
+  const hasYear = filename.match(/\d{4}년?/)
+  const hasMonth = filename.match(/\d{1,2}월/)
+
+  if (hasYear && hasMonth && filename.includes(".xlsx")) {
+    console.log(`[PARSER] 안전망 발동: 년도+월 패턴으로 monthly_ledger 처리`)
+    return "monthly_ledger"
+  }
+
+  console.log(`❌ [PARSER] 타입 판별 실패: unknown`)
+  console.log(`❌ [PARSER] 파일명에서 지원하는 패턴을 찾을 수 없음: "${filename}"`)
   return "unknown"
 }
 
@@ -574,6 +697,8 @@ export function parseExcel(
     case "implant_stats":       return { type, rows: parseImplantStats(buffer, filename) }
     case "consultation_stats":  return { type, rows: parseConsultationStats(buffer, filename) }
     case "reception_records":   return { type, rows: parseReceptionRecords(buffer, filename) }
+    case "new_patient_records": return { type, rows: parseReceptionRecords(buffer, filename) }
+    case "all_patient_records": return { type, rows: parseReceptionRecords(buffer, filename) }
     case "age_dist":            return { type, rows: parseAgeDist(buffer, filename) }
     case "region_dist":         return { type, rows: parseRegionDist(buffer, filename) }
     default:                    return { type: "unknown", rows: [] }

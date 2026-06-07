@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Star, MessageCircle, TrendingUp, RefreshCw } from "lucide-react"
+import { Star, MessageCircle, TrendingUp, RefreshCw, Edit } from "lucide-react"
 import KpiCard from "@/components/ui/KpiCard"
 import SectionCard from "@/components/ui/SectionCard"
+import ReviewManualInput from "./ReviewManualInput"
 
 interface ReviewSummary {
   id: string
@@ -28,6 +29,12 @@ interface RecentReview {
   isPositive: boolean | null
 }
 
+interface MonthlyTarget {
+  source: "NAVER" | "GOOGLE"
+  targetReviews: number | null
+  achievementRate: number | null
+}
+
 interface ReviewDashboardProps {
   clinicId: string
   year: number
@@ -37,16 +44,33 @@ interface ReviewDashboardProps {
 export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboardProps) {
   const [summaries, setSummaries] = useState<ReviewSummary[]>([])
   const [recentReviews, setRecentReviews] = useState<RecentReview[]>([])
+  const [monthlyTargets, setMonthlyTargets] = useState<MonthlyTarget[]>([])
   const [loading, setLoading] = useState(true)
   const [crawling, setCrawling] = useState<string | null>(null)
+  const [showManualInput, setShowManualInput] = useState<"NAVER" | "GOOGLE" | null>(null)
 
   const fetchReviewData = async () => {
     try {
-      const response = await fetch(`/api/reviews/summary?clinicId=${clinicId}&year=${year}&month=${month}`)
-      if (response.ok) {
-        const data = await response.json()
-        setSummaries(data.currentMonth || [])
-        setRecentReviews(data.recentReviews || [])
+      // 요약 데이터 가져오기
+      const summaryResponse = await fetch(`/api/reviews/summary?clinicId=${clinicId}&year=${year}&month=${month}`)
+      if (summaryResponse.ok) {
+        const summaryData = await summaryResponse.json()
+        setSummaries(summaryData.currentMonth || [])
+        setRecentReviews(summaryData.recentReviews || [])
+      }
+
+      // 월별 목표 데이터 가져오기
+      const monthlyResponse = await fetch(`/api/reviews/monthly?clinicId=${clinicId}&year=${year}`)
+      if (monthlyResponse.ok) {
+        const monthlyData = await monthlyResponse.json()
+        const currentMonthTargets = monthlyData
+          .filter((item: any) => item.year === year && item.month === month)
+          .map((item: any) => ({
+            source: item.source,
+            targetReviews: item.targetReviews,
+            achievementRate: item.achievementRate
+          }))
+        setMonthlyTargets(currentMonthTargets)
       }
     } catch (error) {
       console.error("Failed to fetch review data:", error)
@@ -79,6 +103,36 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
     }
   }
 
+  const handleManualSave = async (stats: any) => {
+    try {
+      const response = await fetch("/api/reviews/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clinicId,
+          source: stats.source,
+          year,
+          month,
+          totalReviews: stats.totalReviews,
+          newReviews: stats.monthlyReviews,
+          avgRating: stats.averageRating,
+          feedbackComments: stats.feedbackComments
+        }),
+      })
+
+      if (response.ok) {
+        alert(`${stats.source === 'NAVER' ? '네이버' : '구글'} 리뷰가 저장되었습니다.`)
+        setShowManualInput(null)
+        await fetchReviewData()
+      } else {
+        const error = await response.json()
+        alert(`저장 실패: ${error.error}`)
+      }
+    } catch (error) {
+      alert("저장 중 오류가 발생했습니다.")
+    }
+  }
+
   useEffect(() => {
     fetchReviewData()
   }, [clinicId, year, month])
@@ -89,6 +143,8 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
 
   const naverSummary = summaries.find(s => s.source === "NAVER")
   const googleSummary = summaries.find(s => s.source === "GOOGLE")
+  const naverTarget = monthlyTargets.find(t => t.source === "NAVER")
+  const googleTarget = monthlyTargets.find(t => t.source === "GOOGLE")
 
   const totalReviews = (naverSummary?.totalReviews || 0) + (googleSummary?.totalReviews || 0)
   const totalNewReviews = (naverSummary?.newReviews || 0) + (googleSummary?.newReviews || 0)
@@ -141,13 +197,13 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
                 </div>
                 <h3 className="text-lg font-semibold text-green-800">네이버 리뷰</h3>
               </div>
-              <a
-                href={`/dashboard/${clinicId}/reviews?tab=settings`}
+              <button
+                onClick={() => setShowManualInput("NAVER")}
                 className="px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm font-medium flex items-center space-x-1"
               >
-                <span>📝</span>
+                <Edit className="w-4 h-4" />
                 <span>입력</span>
-              </a>
+              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -158,12 +214,6 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
                 <div className="text-sm text-green-600">전체 리뷰</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-green-700">
-                  {naverSummary?.avgRating?.toFixed(1) || "—"}
-                </div>
-                <div className="text-sm text-green-600">평균 평점</div>
-              </div>
-              <div>
                 <div className="text-lg font-semibold text-green-700">
                   {naverSummary?.newReviews || 0}
                 </div>
@@ -171,9 +221,15 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
               </div>
               <div>
                 <div className="text-lg font-semibold text-green-700">
-                  {naverSummary?.replyRate?.toFixed(0) || "0"}%
+                  {naverTarget?.targetReviews || "—"}
                 </div>
-                <div className="text-sm text-green-600">답글 응답률</div>
+                <div className="text-sm text-green-600">이번달 목표</div>
+              </div>
+              <div>
+                <div className="text-lg font-semibold text-green-700">
+                  {naverTarget?.achievementRate ? `${naverTarget.achievementRate.toFixed(0)}%` : "—"}
+                </div>
+                <div className="text-sm text-green-600">달성률</div>
               </div>
             </div>
           </div>
@@ -187,14 +243,23 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
                 </div>
                 <h3 className="text-lg font-semibold text-blue-800">구글 리뷰</h3>
               </div>
-              <button
-                onClick={() => handleCrawl("GOOGLE")}
-                disabled={crawling === "GOOGLE"}
-                className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium disabled:opacity-50 flex items-center space-x-1"
-              >
-                <RefreshCw className={`w-4 h-4 ${crawling === "GOOGLE" ? "animate-spin" : ""}`} />
-                <span>{crawling === "GOOGLE" ? "수집중..." : "수집"}</span>
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setShowManualInput("GOOGLE")}
+                  className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium flex items-center space-x-1"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>입력</span>
+                </button>
+                <button
+                  onClick={() => handleCrawl("GOOGLE")}
+                  disabled={crawling === "GOOGLE"}
+                  className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium disabled:opacity-50 flex items-center space-x-1"
+                >
+                  <RefreshCw className={`w-4 h-4 ${crawling === "GOOGLE" ? "animate-spin" : ""}`} />
+                  <span>{crawling === "GOOGLE" ? "수집중..." : "자동수집"}</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -205,12 +270,6 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
                 <div className="text-sm text-blue-600">전체 리뷰</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-blue-700">
-                  {googleSummary?.avgRating?.toFixed(1) || "—"}
-                </div>
-                <div className="text-sm text-blue-600">평균 평점</div>
-              </div>
-              <div>
                 <div className="text-lg font-semibold text-blue-700">
                   {googleSummary?.newReviews || 0}
                 </div>
@@ -218,9 +277,15 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
               </div>
               <div>
                 <div className="text-lg font-semibold text-blue-700">
-                  {googleSummary?.replyRate?.toFixed(0) || "0"}%
+                  {googleTarget?.targetReviews || "—"}
                 </div>
-                <div className="text-sm text-blue-600">답글 응답률</div>
+                <div className="text-sm text-blue-600">이번달 목표</div>
+              </div>
+              <div>
+                <div className="text-lg font-semibold text-blue-700">
+                  {googleTarget?.achievementRate ? `${googleTarget.achievementRate.toFixed(0)}%` : "—"}
+                </div>
+                <div className="text-sm text-blue-600">달성률</div>
               </div>
             </div>
           </div>
@@ -309,6 +374,34 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
             ))}
           </div>
         </SectionCard>
+      )}
+
+      {/* 수동 입력 모달 */}
+      {showManualInput && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">
+                {showManualInput === 'NAVER' ? '네이버' : '구글'} 리뷰 수동 입력
+              </h2>
+              <button
+                onClick={() => setShowManualInput(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <ReviewManualInput
+                clinicId={clinicId}
+                source={showManualInput}
+                onSave={handleManualSave}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

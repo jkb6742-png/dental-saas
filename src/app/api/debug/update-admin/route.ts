@@ -4,8 +4,16 @@ import bcrypt from "bcryptjs"
 
 export async function POST() {
   try {
-    const newEmail = 'thinklabmedi@gmail.com'
-    const newPassword = 'dltodrkr13!'
+    const newEmail = process.env.ADMIN_EMAIL
+    const newPassword = process.env.ADMIN_DEFAULT_PASSWORD
+
+    if (!newEmail || !newPassword) {
+      return NextResponse.json({
+        success: false,
+        error: "ADMIN_EMAIL 또는 ADMIN_DEFAULT_PASSWORD 환경변수가 설정되지 않았습니다."
+      }, { status: 500 })
+    }
+
     const hashedPassword = await bcrypt.hash(newPassword, 12)
 
     // 기존 관리자 계정 업데이트
@@ -38,7 +46,7 @@ export async function POST() {
     console.error("Error updating admin:", error)
 
     // 이메일이 이미 존재하는 경우 처리
-    if (error.code === 'P2002') {
+    if (error instanceof Error && 'code' in error && (error as any).code === 'P2002') {
       return NextResponse.json({
         success: false,
         error: "해당 이메일이 이미 존재합니다. 기존 계정을 확인하거나 다른 이메일을 사용해주세요.",
@@ -49,7 +57,7 @@ export async function POST() {
     return NextResponse.json({
       success: false,
       error: "관리자 계정 업데이트 중 오류가 발생했습니다.",
-      detail: error.message
+      detail: error instanceof Error ? error.message : String(error)
     }, { status: 500 })
   }
 }

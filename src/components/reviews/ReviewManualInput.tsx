@@ -13,11 +13,12 @@ interface ReviewStats {
 
 interface ReviewManualInputProps {
   clinicId: string
+  source: "NAVER" | "GOOGLE"
   onSave: (stats: ReviewStats) => void
 }
 
-export default function ReviewManualInput({ clinicId, onSave }: ReviewManualInputProps) {
-  const [naverStats, setNaverStats] = useState({
+export default function ReviewManualInput({ clinicId, source, onSave }: ReviewManualInputProps) {
+  const [reviewStats, setReviewStats] = useState({
     totalReviews: 0,
     monthlyReviews: 0,
     averageRating: 0,
@@ -28,7 +29,7 @@ export default function ReviewManualInput({ clinicId, onSave }: ReviewManualInpu
 
   const addFeedback = () => {
     if (feedbackInput.trim()) {
-      setNaverStats(prev => ({
+      setReviewStats(prev => ({
         ...prev,
         feedbackComments: [...prev.feedbackComments, feedbackInput.trim()]
       }))
@@ -37,7 +38,7 @@ export default function ReviewManualInput({ clinicId, onSave }: ReviewManualInpu
   }
 
   const removeFeedback = (index: number) => {
-    setNaverStats(prev => ({
+    setReviewStats(prev => ({
       ...prev,
       feedbackComments: prev.feedbackComments.filter((_, i) => i !== index)
     }))
@@ -45,19 +46,41 @@ export default function ReviewManualInput({ clinicId, onSave }: ReviewManualInpu
 
   const handleSave = () => {
     const stats: ReviewStats = {
-      source: "NAVER",
-      ...naverStats
+      source,
+      ...reviewStats
     }
     onSave(stats)
   }
 
+  // 소스별 스타일링 설정
+  const sourceConfig = {
+    NAVER: {
+      name: "네이버",
+      bgColor: "bg-green-500",
+      borderColor: "border-green-200",
+      focusColor: "focus:ring-green-500",
+      hoverColor: "hover:bg-green-600",
+      icon: "N"
+    },
+    GOOGLE: {
+      name: "구글",
+      bgColor: "bg-blue-500",
+      borderColor: "border-blue-200",
+      focusColor: "focus:ring-blue-500",
+      hoverColor: "hover:bg-blue-600",
+      icon: "G"
+    }
+  }
+
+  const config = sourceConfig[source]
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6">
       <div className="flex items-center space-x-3 mb-6">
-        <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-          N
+        <div className={`w-8 h-8 ${config.bgColor} rounded-lg flex items-center justify-center text-white font-bold text-sm`}>
+          {config.icon}
         </div>
-        <h3 className="text-lg font-semibold">네이버 리뷰 현황 입력</h3>
+        <h3 className="text-lg font-semibold">{config.name} 리뷰 현황 입력</h3>
       </div>
 
       {/* 기본 통계 입력 */}
@@ -69,12 +92,12 @@ export default function ReviewManualInput({ clinicId, onSave }: ReviewManualInpu
           </label>
           <input
             type="number"
-            value={naverStats.totalReviews}
-            onChange={(e) => setNaverStats(prev => ({
+            value={reviewStats.totalReviews}
+            onChange={(e) => setReviewStats(prev => ({
               ...prev,
               totalReviews: parseInt(e.target.value) || 0
             }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ${config.focusColor}`}
             placeholder="총 리뷰 개수"
           />
         </div>
@@ -86,12 +109,12 @@ export default function ReviewManualInput({ clinicId, onSave }: ReviewManualInpu
           </label>
           <input
             type="number"
-            value={naverStats.monthlyReviews}
-            onChange={(e) => setNaverStats(prev => ({
+            value={reviewStats.monthlyReviews}
+            onChange={(e) => setReviewStats(prev => ({
               ...prev,
               monthlyReviews: parseInt(e.target.value) || 0
             }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ${config.focusColor}`}
             placeholder="이번달 리뷰 수"
           />
         </div>
@@ -106,12 +129,12 @@ export default function ReviewManualInput({ clinicId, onSave }: ReviewManualInpu
             step="0.1"
             min="1"
             max="5"
-            value={naverStats.averageRating}
-            onChange={(e) => setNaverStats(prev => ({
+            value={reviewStats.averageRating}
+            onChange={(e) => setReviewStats(prev => ({
               ...prev,
               averageRating: parseFloat(e.target.value) || 0
             }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ${config.focusColor}`}
             placeholder="평균 평점 (1-5)"
           />
         </div>
@@ -129,12 +152,12 @@ export default function ReviewManualInput({ clinicId, onSave }: ReviewManualInpu
             value={feedbackInput}
             onChange={(e) => setFeedbackInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && addFeedback()}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            className={`flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 ${config.focusColor}`}
             placeholder="개선이 필요한 부분이나 중요한 피드백 입력..."
           />
           <button
             onClick={addFeedback}
-            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+            className={`px-4 py-2 ${config.bgColor} text-white rounded-md ${config.hoverColor}`}
           >
             추가
           </button>
@@ -145,11 +168,11 @@ export default function ReviewManualInput({ clinicId, onSave }: ReviewManualInpu
       </div>
 
       {/* 피드백 목록 */}
-      {naverStats.feedbackComments.length > 0 && (
+      {reviewStats.feedbackComments.length > 0 && (
         <div className="mb-6">
           <h4 className="text-sm font-medium text-gray-700 mb-3">등록된 피드백</h4>
           <div className="space-y-2">
-            {naverStats.feedbackComments.map((comment, index) => (
+            {reviewStats.feedbackComments.map((comment, index) => (
               <div key={index} className="flex items-center justify-between bg-yellow-50 px-3 py-2 rounded-lg border border-yellow-200">
                 <span className="text-sm text-gray-700">{comment}</span>
                 <button
@@ -167,20 +190,32 @@ export default function ReviewManualInput({ clinicId, onSave }: ReviewManualInpu
       {/* 저장 버튼 */}
       <button
         onClick={handleSave}
-        disabled={!naverStats.totalReviews}
-        className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={!reviewStats.totalReviews}
+        className={`w-full px-4 py-3 ${config.bgColor} ${config.hoverColor} text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed`}
       >
-        네이버 리뷰 현황 저장
+        {config.name} 리뷰 현황 저장
       </button>
 
       {/* 사용 안내 */}
       <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
         <h5 className="text-sm font-medium text-blue-800 mb-2">📋 입력 방법</h5>
         <ul className="text-xs text-blue-700 space-y-1">
-          <li>• 네이버 지도에서 치과를 검색하고 리뷰 탭을 확인</li>
-          <li>• 총 리뷰 수와 이번달 작성된 리뷰 수를 직접 확인하여 입력</li>
-          <li>• 개선이 필요한 피드백이나 부정적 댓글만 따로 기록</li>
-          <li>• 월 1회 정도 업데이트하면 충분합니다</li>
+          {source === "NAVER" ? (
+            <>
+              <li>• 네이버 지도에서 치과를 검색하고 리뷰 탭을 확인</li>
+              <li>• 총 리뷰 수와 이번달 작성된 리뷰 수를 직접 확인하여 입력</li>
+              <li>• 개선이 필요한 피드백이나 부정적 댓글만 따로 기록</li>
+              <li>• 월 1회 정도 업데이트하면 충분합니다</li>
+            </>
+          ) : (
+            <>
+              <li>• 구글 마이비즈니스 또는 구글 지도에서 치과를 검색하고 리뷰 확인</li>
+              <li>• 총 리뷰 수와 이번달 작성된 리뷰 수를 직접 확인하여 입력</li>
+              <li>• 구글 비즈니스 프로필에서 평균 별점 확인</li>
+              <li>• 개선이 필요한 피드백이나 부정적 댓글만 따로 기록</li>
+              <li>• 월 1회 정도 업데이트하면 충분합니다</li>
+            </>
+          )}
         </ul>
       </div>
     </div>

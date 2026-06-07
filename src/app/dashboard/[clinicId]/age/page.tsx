@@ -18,8 +18,14 @@ export default async function AgePage({
   const { clinicId } = await params
   const sp = await searchParams
 
-  const year = sp.year ? parseInt(sp.year) : new Date().getFullYear()
-  const month = sp.month ? parseInt(sp.month) : new Date().getMonth() + 1
+  // 기본값을 전달로 설정 (월초에 전달 지표를 정리하므로)
+  const now = new Date()
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const defaultYear = lastMonth.getFullYear()
+  const defaultMonth = lastMonth.getMonth() + 1
+
+  const year = sp.year ? parseInt(sp.year) : defaultYear
+  const month = sp.month ? parseInt(sp.month) : defaultMonth
 
   // 해당 년도 전체 데이터
   const yearlyData = await prisma.ageDist.findMany({

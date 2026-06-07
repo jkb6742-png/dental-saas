@@ -1,0 +1,879 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import SectionCard from "@/components/ui/SectionCard"
+import KpiCard from "@/components/ui/KpiCard"
+import YearMonthFilter from "@/components/ui/YearMonthFilter"
+import { XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar, LabelList, ComposedChart, Area, AreaChart, Tooltip } from "recharts"
+import { MapPin, TrendingUp, DollarSign, Users, Calendar } from "lucide-react"
+
+interface RegionData {
+  id: string
+  region: string
+  year: number
+  month: number
+  totalPatients?: number | null
+  newPatients?: number | null
+  returningPatients?: number | null
+  totalVisits?: number | null
+  avgRevenue?: number | null
+}
+
+interface RegionsPageClientProps {
+  clinicId: string
+  initialYear: number
+  initialMonth: number
+  yearlyData: RegionData[]
+  monthlyData: RegionData[]
+  availableData: Array<{ year: number; month: number }>
+}
+
+export default function RegionsPageClient({
+  clinicId,
+  initialYear,
+  initialMonth,
+  yearlyData,
+  monthlyData,
+  availableData
+}: RegionsPageClientProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // 사용 가능한 지역 목록 (실제 데이터가 있는 것만, 평균 제외)
+  const availableRegions = [...new Set(yearlyData.map(d => d.region))]
+    .filter(region => {
+      // "평균" 항목 제외
+      if (region === "평균" || region === "average" || region === "Average" || region.includes("평균")) {
+        return false
+      }
+      // 해당 지역에 실제 데이터가 있는지 확인
+      return yearlyData.some(d =>
+        d.region === region &&
+        ((d.newPatients || 0) > 0 || (d.returningPatients || 0) > 0 || (d.avgRevenue || 0) > 0)
+      )
+    })
+    .sort((a, b) => {
+      const totalA = yearlyData.filter(d => d.region === a).reduce((sum, d) => sum + (d.totalPatients || 0), 0)
+      const totalB = yearlyData.filter(d => d.region === b).reduce((sum, d) => sum + (d.totalPatients || 0), 0)
+      return totalB - totalA // 총 환자 수 많은 순서로 정렬
+    })
+
+  const [selectedYear, setSelectedYear] = useState(initialYear)
+  const [selectedMonth, setSelectedMonth] = useState(initialMonth)
+  const [selectedRegion, setSelectedRegion] = useState<string>("")
+
+  // URL 업데이트
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('year', selectedYear.toString())
+    params.set('month', selectedMonth.toString())
+    router.push(`/dashboard/${clinicId}/regions?${params.toString()}`)
+  }, [selectedYear, selectedMonth, clinicId, router, searchParams])
+
+  // 사용 가능한 지역이 변경되면 첫 번째 지역으로 설정
+  useEffect(() => {
+    if (availableRegions.length > 0) {
+      if (!selectedRegion || !availableRegions.includes(selectedRegion)) {
+        setSelectedRegion(availableRegions[0])
+      }
+    }
+  }, [availableRegions, selectedRegion])
+
+
+  // 선택된 지역의 월별 데이터
+  const selectedRegionData = selectedRegion ?
+    yearlyData.filter(d => d.region === selectedRegion)
+      .filter(d => (d.newPatients || 0) > 0 || (d.returningPatients || 0) > 0 || (d.avgRevenue || 0) > 0)
+      .sort((a, b) => a.month - b.month)
+      .map(d => ({
+        month: `${d.month}월`,
+        newPatients: d.newPatients || 0,
+        returningPatients: d.returningPatients || 0,
+        totalPatients: d.totalPatients || 0,
+        avgRevenue: d.avgRevenue || 0
+      })) : []
+
+  // 선택된 월의 지역별 데이터 (평균 제외)
+  const monthlyChartData = monthlyData
+    .filter(item => {
+      // "평균" 항목 제외
+      return !(item.region === "평균" || item.region === "average" || item.region === "Average" || item.region.includes("평균"))
+    })
+    .sort((a, b) => (b.totalPatients || 0) - (a.totalPatients || 0)) // 환자 수 많은 순으로 정렬
+    .map(item => ({
+      name: item.region,
+      newPatients: item.newPatients || 0,
+      returningPatients: item.returningPatients || 0,
+      totalPatients: item.totalPatients || 0,
+      avgRevenue: item.avgRevenue || 0
+    }))
+
+  // 통계 계산
+  const totalPatients = monthlyData.reduce((sum, item) => sum + (item.totalPatients || 0), 0)
+  const totalNewPatients = monthlyData.reduce((sum, item) => sum + (item.newPatients || 0), 0)
+  const totalReturningPatients = monthlyData.reduce((sum, item) => sum + (item.returningPatients || 0), 0)
+
+  const topRegion = monthlyData.sort((a, b) => (b.totalPatients || 0) - (a.totalPatients || 0))[0]
+  const highestAvgRevenueRegion = monthlyData.sort((a, b) => (b.avgRevenue || 0) - (a.avgRevenue || 0))[0]
+
+  // 신환률 계산
+  const newPatientRate = totalPatients > 0 ? (totalNewPatients / totalPatients * 100) : 0
+
+
+  // 선택된 지역 통계 (월별)
+  const regionMonthlyStats = selectedRegionData.length > 0 ? {
+    totalPatients: selectedRegionData.reduce((sum, d) => sum + d.totalPatients, 0),
+    newPatients: selectedRegionData.reduce((sum, d) => sum + d.newPatients, 0),
+    returningPatients: selectedRegionData.reduce((sum, d) => sum + d.returningPatients, 0),
+    avgRevenue: selectedRegionData.length > 0 ? selectedRegionData.reduce((sum, d) => sum + d.avgRevenue, 0) / selectedRegionData.length : 0
+  } : { totalPatients: 0, newPatients: 0, returningPatients: 0, avgRevenue: 0 }
+
+  // 선택된 지역의 월별 통계
+  const selectedRegionCurrentMonth = yearlyData.find(d => d.region === selectedRegion && d.month === selectedMonth)
+  const selectedRegionPrevMonth = yearlyData.find(d => d.region === selectedRegion && d.month === (selectedMonth === 1 ? 12 : selectedMonth - 1))
+
+  // 월대월 변화율 계산
+  const regionMoM = selectedRegionCurrentMonth && selectedRegionPrevMonth ? {
+    patientsChange: selectedRegionPrevMonth.totalPatients ?
+      ((selectedRegionCurrentMonth.totalPatients || 0) - (selectedRegionPrevMonth.totalPatients || 0)) / (selectedRegionPrevMonth.totalPatients || 1) * 100 : 0,
+    revenueChange: selectedRegionPrevMonth.avgRevenue ?
+      ((selectedRegionCurrentMonth.avgRevenue || 0) - (selectedRegionPrevMonth.avgRevenue || 0)) / (selectedRegionPrevMonth.avgRevenue || 1) * 100 : 0
+  } : { patientsChange: 0, revenueChange: 0 }
+
+  // 지역별 연간 데이터 생성 (데이터가 있는 월만)
+  const createRegionYearlyData = (region: string) => {
+    const monthsWithData = yearlyData
+      .filter(d => d.region === region)
+      .filter(d => (d.newPatients || 0) > 0 || (d.returningPatients || 0) > 0 || (d.avgRevenue || 0) > 0)
+      .sort((a, b) => a.month - b.month)
+
+    return monthsWithData.map(data => ({
+      month: `${data.month}월`,
+      newPatients: data.newPatients || 0,
+      returningPatients: data.returningPatients || 0,
+      totalPatients: data.totalPatients || 0,
+      avgRevenue: data.avgRevenue || 0
+    }))
+  }
+
+  // 지역별 통계 계산
+  const calculateRegionStats = (region: string) => {
+    const regionData = yearlyData.filter(d => d.region === region)
+    const totalPatients = regionData.reduce((sum, d) => sum + (d.totalPatients || 0), 0)
+    const totalNewPatients = regionData.reduce((sum, d) => sum + (d.newPatients || 0), 0)
+    const totalReturningPatients = regionData.reduce((sum, d) => sum + (d.returningPatients || 0), 0)
+    const avgRevenue = regionData.length > 0 ? regionData.reduce((sum, d) => sum + (d.avgRevenue || 0), 0) / regionData.length : 0
+    const newPatientRate = totalPatients > 0 ? (totalNewPatients / totalPatients * 100) : 0
+
+    return {
+      totalPatients,
+      totalNewPatients,
+      totalReturningPatients,
+      avgRevenue,
+      newPatientRate
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
+      <div className="space-y-8 p-6">
+        {/* 헤더 섹션 */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 mb-2">지역별 환자 분석</h1>
+              <p className="text-slate-600">지역별 신환, 구환, 전체 환자 현황을 확인하세요.</p>
+            </div>
+
+            {/* 기간 선택 */}
+            <div className="flex items-center gap-4">
+              <Calendar className="w-5 h-5 text-slate-500" />
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                className="px-4 py-2 bg-white/90 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+              >
+                <option value={2025}>2025년</option>
+                <option value={2026}>2026년</option>
+              </select>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="px-4 py-2 bg-white/90 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+              >
+                {Array.from({length: 12}, (_, i) => (
+                  <option key={i + 1} value={i + 1}>{i + 1}월</option>
+                ))}
+              </select>
+              <span className="text-slate-600 font-medium bg-slate-100/50 px-3 py-2 rounded-lg">
+                {selectedYear}년 {selectedMonth}월
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 메인 지역별 통계 카드 */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* 총 환자 */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-slate-600">총 환자</p>
+              <p className="text-2xl font-bold text-slate-900">{totalPatients.toLocaleString()}</p>
+              <p className="text-xs text-slate-500">명</p>
+            </div>
+          </div>
+
+          {/* 신환 */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-slate-600">신환</p>
+              <p className="text-2xl font-bold text-slate-900">{totalNewPatients.toLocaleString()}</p>
+              <p className="text-xs text-slate-500">명</p>
+            </div>
+          </div>
+
+          {/* 구환 */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center">
+                <MapPin className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-slate-600">구환</p>
+              <p className="text-2xl font-bold text-slate-900">{totalReturningPatients.toLocaleString()}</p>
+              <p className="text-xs text-slate-500">명</p>
+            </div>
+          </div>
+
+          {/* 신환 비율 */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-slate-600">신환 비율</p>
+              <p className="text-2xl font-bold text-slate-900">{newPatientRate.toFixed(1)}</p>
+              <p className="text-xs text-slate-500">%</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 데이터 없음 알림 */}
+        {totalPatients === 0 && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 rounded-2xl p-6 backdrop-blur-sm mt-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
+                <span className="text-white text-lg">📊</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-amber-800 mb-1">데이터가 없습니다</h3>
+                <p className="text-sm text-amber-700">
+                  {selectedYear}년 {selectedMonth}월에 대한 지역별 데이터가 없습니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 지역별 환자 분포 차트 */}
+        {monthlyChartData.length > 0 && (
+          <div className="space-y-6">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <MapPin className="w-6 h-6 text-emerald-600" />
+                <h3 className="text-xl font-bold text-slate-900">지역별 환자 분포</h3>
+                <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                  {selectedYear}년 {selectedMonth}월
+                </span>
+              </div>
+              <p className="text-slate-600">
+                지역별 총환자, 신환, 구환 분포를 각각 확인하세요 (상위 10개 지역)
+              </p>
+            </div>
+
+            {/* 총 환자 분포 */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">총 환자 분포</h3>
+                  <p className="text-sm text-slate-600">
+                    지역별 전체 환자 수
+                  </p>
+                </div>
+              </div>
+
+              <div className="h-64 mb-4 w-full min-h-[256px] min-w-0">
+                <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                  <AreaChart data={monthlyChartData.slice(0, 10)} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="gradient-region-total" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.3}/>
+                        <stop offset="100%" stopColor="#10b981" stopOpacity={0.05}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 12, fill: "#64748b" }}
+                      axisLine={false}
+                      tickLine={false}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: "#64748b" }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) => `${value}명`}
+                      width={50}
+                    />
+                    <Tooltip
+                      formatter={(value: any) => [`${value}명`, '총 환자']}
+                      contentStyle={{
+                        borderRadius: 12,
+                        border: 'none',
+                        boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                        fontSize: 13,
+                        background: 'rgba(255, 255, 255, 0.95)',
+                        backdropFilter: 'blur(8px)'
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="totalPatients"
+                      stroke="#10b981"
+                      strokeWidth={3}
+                      fill="url(#gradient-region-total)"
+                      dot={{ fill: '#10b981', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
+                      activeDot={{ r: 6, fill: '#10b981', stroke: '#ffffff', strokeWidth: 3 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* 신환 분포 */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">신환 분포</h3>
+                  <p className="text-sm text-slate-600">
+                    지역별 새로운 환자 수
+                  </p>
+                </div>
+              </div>
+
+              <div className="h-64 mb-4 w-full min-h-[256px] min-w-0">
+                <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                  <AreaChart data={monthlyChartData.slice(0, 10)} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="gradient-region-new" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.05}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 12, fill: "#64748b" }}
+                      axisLine={false}
+                      tickLine={false}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: "#64748b" }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) => `${value}명`}
+                      width={50}
+                    />
+                    <Tooltip
+                      formatter={(value: any) => [`${value}명`, '신환']}
+                      contentStyle={{
+                        borderRadius: 12,
+                        border: 'none',
+                        boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                        fontSize: 13,
+                        background: 'rgba(255, 255, 255, 0.95)',
+                        backdropFilter: 'blur(8px)'
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="newPatients"
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                      fill="url(#gradient-region-new)"
+                      dot={{ fill: '#3b82f6', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
+                      activeDot={{ r: 6, fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 3 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* 구환 분포 */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">구환 분포</h3>
+                  <p className="text-sm text-slate-600">
+                    지역별 기존 환자 수
+                  </p>
+                </div>
+              </div>
+
+              <div className="h-64 mb-4 w-full min-h-[256px] min-w-0">
+                <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                  <AreaChart data={monthlyChartData.slice(0, 10)} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="gradient-region-returning" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3}/>
+                        <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.05}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 12, fill: "#64748b" }}
+                      axisLine={false}
+                      tickLine={false}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12, fill: "#64748b" }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) => `${value}명`}
+                      width={50}
+                    />
+                    <Tooltip
+                      formatter={(value: any) => [`${value}명`, '구환']}
+                      contentStyle={{
+                        borderRadius: 12,
+                        border: 'none',
+                        boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                        fontSize: 13,
+                        background: 'rgba(255, 255, 255, 0.95)',
+                        backdropFilter: 'blur(8px)'
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="returningPatients"
+                      stroke="#f59e0b"
+                      strokeWidth={3}
+                      fill="url(#gradient-region-returning)"
+                      dot={{ fill: '#f59e0b', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
+                      activeDot={{ r: 6, fill: '#f59e0b', stroke: '#ffffff', strokeWidth: 3 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
+        </div>
+
+        {/* 지역별 상세 분석 */}
+        {availableRegions.length > 0 && (
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <MapPin className="w-6 h-6 text-blue-600" />
+              <h3 className="text-xl font-bold text-slate-900">지역별 상세 분석</h3>
+              {selectedRegion && (
+                <span className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                  {selectedRegion}
+                </span>
+              )}
+            </div>
+
+            {/* 지역 선택 토글 - 반응형 그리드 */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 mb-8">
+              {availableRegions.map((region, index) => (
+                <button
+                  key={region}
+                  onClick={() => setSelectedRegion(region)}
+                  className={`px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
+                    selectedRegion === region
+                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-500 shadow-lg scale-105'
+                      : 'bg-white/80 text-slate-700 hover:bg-slate-50 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span className={`text-xs ${selectedRegion === region ? 'text-blue-100' : 'text-blue-600'}`}>
+                      {index + 1}
+                    </span>
+                    <span className="truncate">{region}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {selectedRegion && (
+              <>
+                {/* 선택된 지역 월별 KPI */}
+                <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 border border-slate-200 rounded-xl p-6 mb-8">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-sm font-bold">{selectedMonth}</span>
+                    </div>
+                    <h4 className="text-lg font-bold text-slate-900">{selectedMonth}월 {selectedRegion} 현황</h4>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-white/50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600 mb-1">
+                        {(selectedRegionCurrentMonth?.totalPatients || 0).toLocaleString()}
+                      </div>
+                      <div className="text-sm text-slate-600">총 환자</div>
+                      <div className={`text-xs mt-1 ${regionMoM.patientsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {regionMoM.patientsChange >= 0 ? '↗' : '↘'} {Math.abs(regionMoM.patientsChange).toFixed(1)}%
+                      </div>
+                    </div>
+
+                    <div className="text-center p-4 bg-white/50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600 mb-1">
+                        {(selectedRegionCurrentMonth?.newPatients || 0).toLocaleString()}
+                      </div>
+                      <div className="text-sm text-slate-600">신환</div>
+                    </div>
+
+                    <div className="text-center p-4 bg-white/50 rounded-lg">
+                      <div className="text-2xl font-bold text-amber-600 mb-1">
+                        {(selectedRegionCurrentMonth?.returningPatients || 0).toLocaleString()}
+                      </div>
+                      <div className="text-sm text-slate-600">구환</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 연간 요약 통계 */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 mb-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <TrendingUp className="w-6 h-6 text-emerald-600" />
+                    <h4 className="text-xl font-bold text-slate-900">{selectedYear}년 {selectedRegion} 연간 요약</h4>
+                    <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                      전체통계
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-blue-600 mb-2">
+                        {calculateRegionStats(selectedRegion).totalPatients.toLocaleString()}
+                      </div>
+                      <div className="text-sm text-slate-600">연간 총 환자</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-green-600 mb-2">
+                        {calculateRegionStats(selectedRegion).totalNewPatients.toLocaleString()}
+                      </div>
+                      <div className="text-sm text-slate-600">연간 신환</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-amber-600 mb-2">
+                        {calculateRegionStats(selectedRegion).newPatientRate.toFixed(1)}%
+                      </div>
+                      <div className="text-sm text-slate-600">신환 비율</div>
+                    </div>
+                  </div>
+                </div>
+
+              {/* 선택된 지역 월별 추이 차트 */}
+              <div className="space-y-6">
+                {/* 총 환자 추이 */}
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2">
+                        {selectedRegion} 총 환자 월별 추이
+                      </h3>
+                      <p className="text-sm text-slate-600">
+                        월별 총 환자 수 변화
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="h-64 mb-4 w-full min-h-[256px] min-w-0">
+                    <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                      <AreaChart data={selectedRegionData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <defs>
+                          <linearGradient id="gradient-region-total-detail" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.3}/>
+                            <stop offset="100%" stopColor="#10b981" stopOpacity={0.05}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis
+                          dataKey="month"
+                          tick={{ fontSize: 12, fill: "#64748b" }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 12, fill: "#64748b" }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(value) => `${value}명`}
+                          width={50}
+                        />
+                        <Tooltip
+                          formatter={(value: any) => [`${value}명`, '총 환자']}
+                          contentStyle={{
+                            borderRadius: 12,
+                            border: 'none',
+                            boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                            fontSize: 13,
+                            background: 'rgba(255, 255, 255, 0.95)',
+                            backdropFilter: 'blur(8px)'
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="totalPatients"
+                          stroke="#10b981"
+                          strokeWidth={3}
+                          fill="url(#gradient-region-total-detail)"
+                          dot={{ fill: '#10b981', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
+                          activeDot={{ r: 6, fill: '#10b981', stroke: '#ffffff', strokeWidth: 3 }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* 신환 추이 */}
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2">
+                        {selectedRegion} 신환 월별 추이
+                      </h3>
+                      <p className="text-sm text-slate-600">
+                        월별 신환 수 변화
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="h-64 mb-4 w-full min-h-[256px] min-w-0">
+                    <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                      <AreaChart data={selectedRegionData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <defs>
+                          <linearGradient id="gradient-region-new" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.05}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis
+                          dataKey="month"
+                          tick={{ fontSize: 12, fill: "#64748b" }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 12, fill: "#64748b" }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(value) => `${value}명`}
+                          width={50}
+                        />
+                        <Tooltip
+                          formatter={(value: any) => [`${value}명`, '신환']}
+                          contentStyle={{
+                            borderRadius: 12,
+                            border: 'none',
+                            boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                            fontSize: 13,
+                            background: 'rgba(255, 255, 255, 0.95)',
+                            backdropFilter: 'blur(8px)'
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="newPatients"
+                          stroke="#3b82f6"
+                          strokeWidth={3}
+                          fill="url(#gradient-region-new)"
+                          dot={{ fill: '#3b82f6', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
+                          activeDot={{ r: 6, fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 3 }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* 구환 추이 */}
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start justify-between mb-6">
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-900 mb-2">
+                        {selectedRegion} 구환 월별 추이
+                      </h3>
+                      <p className="text-sm text-slate-600">
+                        월별 구환 수 변화
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="h-64 mb-4 w-full min-h-[256px] min-w-0">
+                    <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                      <AreaChart data={selectedRegionData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <defs>
+                          <linearGradient id="gradient-region-returning" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3}/>
+                            <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.05}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis
+                          dataKey="month"
+                          tick={{ fontSize: 12, fill: "#64748b" }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 12, fill: "#64748b" }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(value) => `${value}명`}
+                          width={50}
+                        />
+                        <Tooltip
+                          formatter={(value: any) => [`${value}명`, '구환']}
+                          contentStyle={{
+                            borderRadius: 12,
+                            border: 'none',
+                            boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                            fontSize: 13,
+                            background: 'rgba(255, 255, 255, 0.95)',
+                            backdropFilter: 'blur(8px)'
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="returningPatients"
+                          stroke="#f59e0b"
+                          strokeWidth={3}
+                          fill="url(#gradient-region-returning)"
+                          dot={{ fill: '#f59e0b', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
+                          activeDot={{ r: 6, fill: '#f59e0b', stroke: '#ffffff', strokeWidth: 3 }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+              </>
+            )}
+          </div>
+        )}
+
+
+        {/* 월별 상세 데이터 테이블 */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <TrendingUp className="w-6 h-6 text-emerald-600" />
+            <h3 className="text-xl font-bold text-slate-900">{selectedYear}년 {selectedMonth}월 지역별 상세 데이터</h3>
+            <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+              월간통계
+            </span>
+          </div>
+
+          {monthlyData.length === 0 ? (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 rounded-2xl p-6 backdrop-blur-sm">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
+                  <span className="text-white text-lg">📊</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-amber-800 mb-1">데이터가 없습니다</h3>
+                  <p className="text-sm text-amber-700">
+                    {selectedYear}년 {selectedMonth}월 지역별 데이터가 없습니다.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-[14px]">
+              <thead>
+                <tr className="border-b border-[#e5e8eb] bg-[#f8f9fa]">
+                  <th className="text-left p-4 font-semibold text-[#495057]">지역</th>
+                  <th className="text-center p-4 font-semibold text-[#495057]">총 환자</th>
+                  <th className="text-center p-4 font-semibold text-[#495057]">신환</th>
+                  <th className="text-center p-4 font-semibold text-[#495057]">구환</th>
+                  <th className="text-center p-4 font-semibold text-[#495057]">신환률</th>
+                  <th className="text-center p-4 font-semibold text-[#495057]">총 방문</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlyData
+                  .filter(item => {
+                    // "평균" 항목 제외
+                    return !(item.region === "평균" || item.region === "average" || item.region === "Average" || item.region.includes("평균"))
+                  })
+                  .sort((a, b) => (b.totalPatients || 0) - (a.totalPatients || 0))
+                  .map((region, index) => {
+                    const newPatientRate = (region.totalPatients || 0) > 0 ?
+                      ((region.newPatients || 0) / (region.totalPatients || 0) * 100) : 0
+
+                    return (
+                      <tr key={region.region} className="border-b border-[#e5e8eb] hover:bg-[#f8f9fa]">
+                        <td className="p-4 font-medium text-[#191f28]">
+                          <div className="flex items-center gap-2">
+                            <span className="w-6 h-6 bg-[#3182f6] text-white rounded-full text-[12px] flex items-center justify-center font-bold">
+                              {index + 1}
+                            </span>
+                            {region.region}
+                          </div>
+                        </td>
+                        <td className="text-center p-4 tabular-nums font-semibold text-[#191f28]">
+                          {(region.totalPatients || 0).toLocaleString()}
+                        </td>
+                        <td className="text-center p-4 tabular-nums text-[#3182f6] font-medium">
+                          {(region.newPatients || 0).toLocaleString()}
+                        </td>
+                        <td className="text-center p-4 tabular-nums text-[#10b981] font-medium">
+                          {(region.returningPatients || 0).toLocaleString()}
+                        </td>
+                        <td className="text-center p-4 tabular-nums text-[#6b7280]">
+                          {newPatientRate.toFixed(1)}%
+                        </td>
+                        <td className="text-center p-4 tabular-nums text-[#6b7280]">
+                          {(region.totalVisits || 0).toLocaleString()}
+                        </td>
+                      </tr>
+                    )
+                  })
+                }
+              </tbody>
+            </table>
+          </div>
+          )}
+        </div>
+
+      </div>
+    </div>
+  )
+}

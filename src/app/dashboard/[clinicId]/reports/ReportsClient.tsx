@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import SectionCard from "@/components/ui/SectionCard"
-import ReportGenerator from "@/components/ReportGenerator"
+import ReportDashboard from "@/components/ReportDashboard"
 import { FileText } from "lucide-react"
 
 interface Report {
@@ -41,8 +41,8 @@ export default function ReportsClient({ clinicId, initialReports }: ReportsClien
 
   return (
     <div className="space-y-6">
-      {/* 리포트 생성 섹션 */}
-      <ReportGenerator clinicId={clinicId} onReportGenerated={handleReportGenerated} />
+      {/* 리포트 생성 및 관리 섹션 */}
+      <ReportDashboard clinicId={clinicId} />
 
       {/* 기존 리포트 목록 */}
       <SectionCard title="월간 분석 리포트" description="AI가 자동 생성하는 경영 인사이트">

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026년 5월 PEI 보고서 - 중산사과나무치과</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --ink:#16181d;--muted:#5b616e;--line:#e4e6eb;--line-soft:#eef0f4;
+    --blue:#2433e0;--blue-soft:#eef0ff;--bg:#f6f7f9;
+    --good:#1d9e6f;--good-bg:#e7f6ef;--ok:#2e6fd6;--ok-bg:#e8f0fd;--warn:#d9822b;--warn-bg:#fcf1e3;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum";}
+  .page{width:210mm;min-height:297mm;margin:18px auto;background:#fff;padding:26mm 20mm;box-shadow:0 1px 24px rgba(20,24,40,.08);position:relative;}
+  .logo{font-weight:800;font-size:34px;letter-spacing:1px;display:inline-block;}
+  .cover{display:flex;flex-direction:column;justify-content:center;text-align:center;}
+  .cover .logo{font-size:52px;margin-bottom:64px;}
+  .cover h1{font-size:30px;font-weight:800;line-height:1.4;}
+  .cover h1 .en{display:block;font-size:24px;margin-top:4px;}
+  .cover .meta{margin-top:150px;display:flex;flex-direction:column;gap:14px;font-weight:600;}
+  .cover .meta .client{font-size:20px;} .cover .meta .date{font-size:18px;} .cover .meta .who{font-size:15px;color:var(--muted);}
+  h2.sec{font-size:21px;font-weight:800;margin:0 0 18px;padding-bottom:10px;border-bottom:2.5px solid var(--ink);display:flex;align-items:center;gap:8px;}
+  h2.sec .n{color:var(--blue);}
+  h3{font-size:15.5px;font-weight:700;margin:26px 0 10px;color:var(--ink);}
+  h3 .tag{color:var(--blue);font-weight:800;margin-right:6px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:6px;}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:center;vertical-align:middle;}
+  th{background:#f3f4f7;font-weight:700;color:#3a3f4a;}
+  td.l,th.l{text-align:left;}
+  tbody tr:nth-child(even) td{background:#fafbfc;}
+  .num{font-variant-numeric:tabular-nums;font-weight:700;}
+  .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+  .b-good{color:var(--good);background:var(--good-bg);} .b-ok{color:var(--ok);background:var(--ok-bg);} .b-warn{color:var(--warn);background:var(--warn-bg);}
+  .delta-up{color:var(--good);font-weight:700;} .delta-down{color:#d23f3f;font-weight:700;} .delta-flat{color:var(--muted);font-weight:700;}
+  .ov{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;}
+  .ov .card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+  .ov .card.hl{border-color:var(--blue);background:var(--blue-soft);}
+  .ov .card .k{font-size:11px;color:var(--muted);font-weight:600;}
+  .ov .card .v{font-size:26px;font-weight:800;margin-top:2px;} .ov .card .v.sm{font-size:17px;}
+  .ov .card .s{font-size:11.5px;color:var(--muted);margin-top:4px;}
+  .summary th:first-child{width:120px;} .summary td.l{font-size:12px;line-height:1.55;}
+  ul.op{list-style:none;margin:4px 0 14px;padding:0;}
+  ul.op li{position:relative;padding:7px 12px 7px 28px;font-size:12.5px;line-height:1.55;border-left:3px solid var(--line);margin-bottom:6px;background:#fafbfc;border-radius:0 6px 6px 0;}
+  ul.op li::before{content:"";position:absolute;left:11px;top:14px;width:6px;height:6px;border-radius:50%;background:var(--muted);}
+  ul.op.pos li{border-left-color:var(--good);} ul.op.pos li::before{background:var(--good);}
+  ul.op.neg li{border-left-color:#d9822b;} ul.op.neg li::before{background:#d9822b;}
+  .none{font-size:12.5px;color:var(--muted);font-style:italic;padding:6px 0;}
+  .pos-h,.neg-h{font-size:13px;font-weight:700;margin:14px 0 6px;display:flex;align-items:center;gap:6px;}
+  .pos-h{color:var(--good);} .neg-h{color:#d9822b;}
+  .doc-block{border:1px solid var(--line-soft);border-radius:12px;padding:16px 18px;margin-bottom:16px;}
+  .doc-block h3{margin-top:0;} .role{font-size:11.5px;color:var(--muted);font-weight:500;}
+  .summary-box{background:#fafbfc;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:0 10px 10px 0;padding:14px 18px;font-size:12.5px;line-height:1.7;margin:14px 0 4px;}
+  .summary-box p{margin-bottom:8px;} .summary-box p:last-child{margin-bottom:0;}
+  .link{font-size:11px;color:var(--muted);margin-top:14px;word-break:break-all;} .link a{color:var(--blue);text-decoration:none;}
+  .named{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px;}
+  .named .chip{font-size:11.5px;background:var(--blue-soft);color:var(--blue);padding:3px 10px;border-radius:6px;font-weight:600;}
+  .note{font-size:11px;color:var(--muted);margin-top:2px;font-style:italic;}
+  @media print{body{background:#fff;}.page{margin:0;box-shadow:none;width:auto;min-height:auto;padding:18mm 16mm;page-break-after:always;}.page:last-child{page-break-after:auto;}a{color:var(--ink);}}
+  @media (max-width:800px){.page{width:auto;padding:24px 18px;}.ov{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- 표지 -->
+<section class="page cover">
+  <div class="logo">THINKLAB</div>
+  <h1>2026년 5월 PEI 보고서<span class="en">[Patient Experience Index]</span></h1>
+  <div class="meta">
+    <div class="client">CLIENT : 중산사과나무치과</div>
+    <div class="date">Wednesday, June 3, 2026</div>
+    <div class="who">Kiyoung. Kim &nbsp;·&nbsp; Gyubok. Jang</div>
+    <div class="who">thinklabmedi@gmail.com</div>
+  </div>
+</section>
+
+<!-- 1. 개요 -->
+<section class="page">
+  <h2 class="sec"><span class="n">1.</span> 개요</h2>
+  <div class="ov">
+    <div class="card hl">
+      <div class="k">금월 평균 점수 (2026.05)</div>
+      <div class="v">4.72<span style="font-size:14px;color:var(--muted);font-weight:600;"> / 5.0</span></div>
+      <div class="s">응답 66명 · 남38 / 여27 · 50대~40대 중심</div>
+    </div>
+    <div class="card">
+      <div class="k">조사 기간</div>
+      <div class="v">2026.05</div>
+      <div class="s">첫 조사(베이스라인)</div>
+    </div>
+    <div class="card">
+      <div class="k">전월 대비</div>
+      <div class="v delta-flat">기준점</div>
+      <div class="s">응답 수 신규</div>
+    </div>
+  </div>
+
+  <h3><span class="tag">(1-1)</span>평가 항목</h3>
+  <table>
+    <thead><tr><th class="l">구분</th><th>평균 점수 (5.0)</th><th>상태 진단</th><th class="l">평가 요약</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="l">전화 및 온라인 응대</td>
+        <td class="num">4.86</td>
+        <td><span class="badge b-good">매우 양호</span></td>
+        <td class="l">환자 만족도가 매우 높은 우수한 영역</td>
+      </tr>
+      <tr>
+        <td class="l">접수 수납 응대</td>
+        <td class="num">4.85</td>
+        <td><span class="badge b-good">매우 양호</span></td>
+        <td class="l">환자 만족도가 매우 높은 우수한 영역</td>
+      </tr>
+      <tr>
+        <td class="l">치료 상담 응대</td>
+        <td class="num">4.86</td>
+        <td><span class="badge b-good">매우 양호</span></td>
+        <td class="l">환자 만족도가 매우 높은 우수한 영역</td>
+      </tr>
+      <tr>
+        <td class="l">의료진 진료 상담</td>
+        <td class="num">4.91</td>
+        <td><span class="badge b-good">매우 양호</span></td>
+        <td class="l">환자 만족도가 매우 높은 우수한 영역</td>
+      </tr>
+      <tr>
+        <td class="l">진료실 직원 만족도</td>
+        <td class="num">4.86</td>
+        <td><span class="badge b-good">매우 양호</span></td>
+        <td class="l">환자 만족도가 매우 높은 우수한 영역</td>
+      </tr>
+      <tr>
+        <td class="l">의료진 진료 응대</td>
+        <td class="num">4.92</td>
+        <td><span class="badge b-good">매우 양호</span></td>
+        <td class="l">환자 만족도가 매우 높은 우수한 영역</td>
+      </tr>
+      <tr>
+        <td class="l">시설 만족도</td>
+        <td class="num">4.48</td>
+        <td><span class="badge b-warn">개선 필요</span></td>
+        <td class="l">보통 수준이지만 개선 여지 존재</td>
+      </tr>
+      <tr>
+        <td class="l">주차 시설</td>
+        <td class="num">4.48</td>
+        <td><span class="badge b-warn">개선 필요</span></td>
+        <td class="l">보통 수준이지만 개선 여지 존재</td>
+      </tr>
+      <tr>
+        <td class="l">홈페이지</td>
+        <td class="num">4.46</td>
+        <td><span class="badge b-warn">개선 필요</span></td>
+        <td class="l">보통 수준이지만 개선 여지 존재</td>
+      </tr>
+      <tr>
+        <td class="l">진료 대기시간</td>
+        <td class="num">4.57</td>
+        <td><span class="badge b-ok">양호</span></td>
+        <td class="l">전반적으로 양호한 만족도를 보임</td>
+      </tr>
+      <tr>
+        <td class="l">지인 권유 의향</td>
+        <td class="num">4.70</td>
+        <td><span class="badge b-ok">양호</span></td>
+        <td class="l">전반적으로 양호한 만족도를 보임</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="note">※ 5점 만점, 무응답/경험없음 제외, 추천의향 10점→5점 환산</div>
+
+  <h3><span class="tag">(1-2)</span>세부 요약</h3>
+  <table class="summary">
+    <thead><tr><th>구분</th><th class="l">강점 요약</th><th class="l">개선 요약</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>원장 의료진</td>
+        <td class="l">친절하고 전문적인 진료, 자세한 설명</td>
+        <td class="l">진료 시간 확보, 추가 설명 필요</td>
+      </tr>
+      <tr>
+        <td>데스크 / 진료실</td>
+        <td class="l">친절한 응대, 신속한 업무 처리</td>
+        <td class="l">응대 매뉴얼 보완, 대기시간 단축</td>
+      </tr>
+      <tr>
+        <td>시설 및 환경</td>
+        <td class="l">수집된 긍정 피드백 없음</td>
+        <td class="l">주차 공간 확보, 대기 공간 개선</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="summary-box">
+    <p><strong>월 종합 평가 의견</strong></p>
+        <p>2026년 5월 총 66명이 응답하여 전체 평균 4.72점을 기록했습니다. 이번이 첫 조사로 향후 비교 기준점이 됩니다.</p>
+    <p>주요 강점은 의료진 진료 응대, 의료진 진료 상담로 나타났습니다.</p>
+    <p>홈페이지, 시설 만족도에 대한 개선이 필요하며, 지속적인 응답 수 증가를 통해 더욱 정확한 분석이 가능할 것입니다.</p>
+  </div>
+
+
+</section>
+
+<!-- 1-4 주요 개선 (첫 조사) -->
+<section class="page">
+  <h3 style="margin-top:0;"><span class="tag">(1-3)</span>주요 개선 의견</h3>
+  <table>
+    <thead><tr><th style="width:130px;">항목</th><th class="l">개선 의견</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>홈페이지</td>
+        <td class="l">웹사이트 사용성 개선, 정보 업데이트</td>
+      </tr>
+      <tr>
+        <td>시설 만족도</td>
+        <td class="l">시설 현대화, 청결도 관리 강화</td>
+      </tr>
+      <tr>
+        <td>주차 시설</td>
+        <td class="l">주차 공간 확보, 안내 표시 개선</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="link">링크 참조 : <a href="#">Google Sheets 원본 데이터</a></div>
+</section>
+
+<!-- 2. 의료진별 의견 -->
+<section class="page">
+  <h2 class="sec"><span class="n">2.</span> 의료진별 의견</h2>
+  <div class="doc-block">
+    <h3><span class="tag">(2-1)</span>김보라 대표원장 (구강악안면외과, 통합치의학 전문의) <span class="role">· 치과의사 · 응답 34명</span></h3>
+    <div class="pos-h">▲ 긍정적 의견</div>
+    <ul class="op pos">
+<li>성은 생각나지 않고 이름은 은혜였습니다 친절한 안내 감사드립니다^^</li>
+<li>1. 모든 직원 분들이 친절하심
+2. 설명을 정확하고 이해하기 쉽게 해주심
+3. 과잉 진료를 안하시고 필요한 치료만 해주심
+4. 모든 치료가 아프지 않았음😀</li>
+<li>중산 사과나무 모두 친절하시지만 김윤지 선생님이 밝은 미소와
+차분한 목소리로 치과치료의 불안을 
+ 안정 시켜 주셔 마음에 치료까지 받아
+고맙습니다
+원장님도 데스크 선생님들도 모두 최고예요</li>
+<li>김보람</li>
+<li>친절하다</li>
+<li>친절해요</li>
+<li>김보라원장님 치료과정 중 자세한 설명</li>
+<li>무난하고 괜찮다. 잘해 주신다.</li>
+<li>박수연간호사쌤께서 스케일링 할때 친절하게 설명 해 주시고 또 꼼꼼하게 해 주셔서 너무 고마웠습니다</li>
+<li>다들 친절하심</li>
+<li>친절하셔서 좋았습니다. 직원분들 이름은 모르겠고 다들 친절하셨어요.</li>
+<li>김보라 원장님과 데스크 선생님들과 치료 도와주는 모든 선생님들이 친절합니다.</li>
+<li>담당의사분, 간호사분 두분 모두 표정도 밝으시고  설명도 친절하고 명쾌하게 해주셔서 매우 만족합니다.</li>
+<li>체계적인 치료와 모든 직원들이 친절하게 대해줘서 원장님과 모든직원분들을 칭찬합니다</li>
+<li>만나는 모든 분들이 다 친절하고 다 좋으셨습니다.</li>
+<li>나의 치아상태를 정확하게 알수있어 좋았습니다. 원장선생님 이하 모든 선생님들의 친절하고 명확한 설명에 감사 드림니다.</li>
+</ul>
+    <div class="neg-h">▼ 부정적 / 개선 의견</div>
+    <ul class="op neg">
+<li>사랑니 발치 과정과 처치가 매우 훌륭합니다 감사합니다^^</li>
+<li>없습니다~~!</li>
+<li>휴지통2개정도</li>
+<li>친절하고 불편한 점이 없다</li>
+<li>기다리는 대기시간 힘들어요</li>
+<li>지금까지 다녀본 치과 중에 가장 괜찮은 치과같다.
+집에서도 가깝다.</li>
+<li>모든 직원분들께서 친절하게 응대해 주셔서 개선할 부분은 없는듯합니다</li>
+<li>주차장 불편...</li>
+<li>운영시간이 좀더 길었으면 좋겠어요</li>
+<li>없슴</li>
+<li>건물 안에 약국이 없어서 처음에 매우 당황했음, 주차 자리가 너무 좁네요.</li>
+<li>불편한 사항이 별로 없는것 같습니다.</li>
+<li>예약시간보다 더 기다려야 했고 늦은것도 속상한데 자꾸 무얼 하라고 하니 짜증났습니다.</li>
+</ul>
+  </div>
+  <div class="doc-block">
+    <h3><span class="tag">(2-2)</span>서치원 원장 (치과보철과 전문의) <span class="role">· 치과의사 · 응답 24명</span></h3>
+    <div class="pos-h">▲ 긍정적 의견</div>
+    <ul class="op pos">
+<li>사람이 많지만 예약시간을 잘 지켜줘서 아주 좋습니다</li>
+<li>서치원 원장님과 함께 일하시는 간호사님 친찬합니다 참 친절합니다</li>
+<li>모든 직원여러분 친절하고 좋으십니다!</li>
+<li>친절하게  해주셔서 좋아요~^^</li>
+<li>친절한 설명과 치료</li>
+<li>원장님과  직원 분  다 최고이십니다.항상 감사합니다.</li>
+<li>서원장님 과 안내데스크 왕친절</li>
+<li>이름 기억안남</li>
+<li>친절하심</li>
+<li>전부다 친절해요</li>
+<li>자세한 설명 친절함</li>
+<li>친절해요</li>
+<li>접수직원(들어와서 오른쪽), 담당치위생사, 치과의사 모두 모두 친절함</li>
+<li>서치원원장님 뿐만 아니라 모든 직원분들이 너무너무 친절하고 다정하였습니다.
+전 직원 칭찬하고 싶습니다.</li>
+</ul>
+    <div class="neg-h">▼ 부정적 / 개선 의견</div>
+    <ul class="op neg">
+<li>불편한점없습니다!</li>
+<li>...</li>
+<li>없습니다.</li>
+<li>..</li>
+<li>다좋은데 주차가협소하고 불편해요</li>
+<li>비용..</li>
+<li>좋아요</li>
+<li>없믐</li>
+<li>치과쪽은 전혀없었고
+주차장이 자주 만차가 되어  조금 불편한점이라고하면 주차 개선 이라고 하겠습니다.</li>
+</ul>
+  </div>
+  <div class="doc-block">
+    <h3><span class="tag">(2-3)</span>기타 <span class="role">· 치과의사 · 응답 3명</span></h3>
+    <div class="pos-h">▲ 긍정적 의견</div>
+    <ul class="op pos">
+<li>전체직원을칭찬합니다,</li>
+</ul>
+    <div class="neg-h">▼ 부정적 / 개선 의견</div>
+    <ul class="op neg">
+<li>없네요 ~</li>
+</ul>
+  </div>
+  <div class="doc-block">
+    <h3><span class="tag">(2-4)</span>윤보영 원장 (통합치의학 전문의) <span class="role">· 치과의사 · 응답 5명</span></h3>
+    <div class="pos-h">▲ 긍정적 의견</div>
+    <ul class="op pos">
+<li>직원분들과선생님들  모두친절 하였습니다.</li>
+<li>친절하셨어요. 이 상태에 대해 상세한 설명을 해주신 것도 좋았습니다.</li>
+<li>좋아요</li>
+<li>모두 다 친절 그 자체였읍니다</li>
+</ul>
+    <div class="neg-h">▼ 부정적 / 개선 의견</div>
+    <ul class="op neg">
+<li>이제 치료 해보려는 것이라서요.</li>
+<li>친절해서 좋아요</li>
+</ul>
+  </div>
+</section>
+
+<!-- 스탭 / 시설 -->
+<section class="page">
+  <div class="doc-block">
+    <h3><span class="tag">(2-5)</span>데스크 / 진료실 (스탭)</h3>
+    <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">이름이 언급된 직원</div>
+    <div class="named"><span class="chip">모든</span><span class="chip">원장</span><span class="chip">간호사</span><span class="chip">하시는</span><span class="chip">장님과</span><span class="chip">김윤지</span><span class="chip">데스크</span><span class="chip">서원장</span><span class="chip">라원장</span><span class="chip">박수연</span><span class="chip">전체</span><span class="chip">접수</span><span class="chip">담당</span><span class="chip">분들과</span><span class="chip">원원장</span></div>
+    <div class="pos-h">▲ 긍정적 의견</div>
+    <ul class="op pos">
+<li>1. 모든 직원 분들이 친절하심
+2. 설명을 정확하고 이해하기 쉽게 해주심
+3. 과잉 진료를 안하시고 필요한 치료만 해주심
+4. 모든 치료가 아프지 않았음😀</li>
+<li>서치원 원장님과 함께 일하시는 간호사님 친찬합니다 참 친절합니다</li>
+<li>모든 직원여러분 친절하고 좋으십니다!</li>
+<li>원장님과  직원 분  다 최고이십니다.항상 감사합니다.</li>
+<li>중산 사과나무 모두 친절하시지만 김윤지 선생님이 밝은 미소와
+차분한 목소리로 치과치료의 불안을 
+ 안정 시켜 주셔 마음에 치료까지 받아
+고맙습니다
+원장님도 데스크 선생님들도 모두 최고예요</li>
+<li>서원장님 과 안내데스크 왕친절</li>
+<li>박수연간호사쌤께서 스케일링 할때 친절하게 설명 해 주시고 또 꼼꼼하게 해 주셔서 너무 고마웠습니다</li>
+<li>전체직원을칭찬합니다,</li>
+<li>친절하셔서 좋았습니다. 직원분들 이름은 모르겠고 다들 친절하셨어요.</li>
+<li>접수직원(들어와서 오른쪽), 담당치위생사, 치과의사 모두 모두 친절함</li>
+<li>김보라 원장님과 데스크 선생님들과 치료 도와주는 모든 선생님들이 친절합니다.</li>
+<li>담당의사분, 간호사분 두분 모두 표정도 밝으시고  설명도 친절하고 명쾌하게 해주셔서 매우 만족합니다.</li>
+<li>직원분들과선생님들  모두친절 하였습니다.</li>
+<li>체계적인 치료와 모든 직원들이 친절하게 대해줘서 원장님과 모든직원분들을 칭찬합니다</li>
+<li>서치원원장님 뿐만 아니라 모든 직원분들이 너무너무 친절하고 다정하였습니다.
+전 직원 칭찬하고 싶습니다.</li>
+</ul>
+    <div class="neg-h">▼ 부정적 / 개선 의견</div>
+    <ul class="op neg">
+<li>모든 직원분들께서 친절하게 응대해 주셔서 개선할 부분은 없는듯합니다</li>
+</ul>
+  </div>
+
+  <div class="doc-block">
+    <h3><span class="tag">(2-6)</span>시설 및 편의 관련 의견</h3>
+    <div class="pos-h">▲ 긍정적 의견</div>
+    <div class="none">수집된 긍정적 의견 없음</div>
+    <div class="neg-h">▼ 부정적 / 개선 의견</div>
+    <ul class="op neg">
+<li>다좋은데 주차가협소하고 불편해요</li>
+<li>주차장 불편...</li>
+<li>치과쪽은 전혀없었고
+주차장이 자주 만차가 되어  조금 불편한점이라고하면 주차 개선 이라고 하겠습니다.</li>
+<li>건물 안에 약국이 없어서 처음에 매우 당황했음, 주차 자리가 너무 좁네요.</li>
+</ul>
+  </div>
+
+
+</section>
+
+</body>
+</html>

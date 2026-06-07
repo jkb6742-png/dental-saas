@@ -9,11 +9,12 @@ export default async function SetupMasterPage() {
 
   try {
     // 기존 마스터 계정 확인 (이메일 또는 역할로)
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com'
     const existingMaster = await prisma.user.findFirst({
       where: {
         OR: [
           { role: UserRole.MASTER },
-          { email: 'thinklabmedi@gmail.com' }
+          { email: adminEmail }
         ]
       }
     })
@@ -32,13 +33,13 @@ export default async function SetupMasterPage() {
       })
 
       // 비밀번호 해시
-      const password = 'dltodrkr13!'  // 사용자 지정 비밀번호
+      const password = process.env.ADMIN_DEFAULT_PASSWORD || 'temp123456'  // 기본 임시 비밀번호
       const hashedPassword = await bcrypt.hash(password, 12)
 
       // 마스터 계정 생성
       const masterUser = await prisma.user.create({
         data: {
-          email: 'thinklabmedi@gmail.com',
+          email: adminEmail,
           password: hashedPassword,
           name: 'Master Admin',
           role: UserRole.MASTER,

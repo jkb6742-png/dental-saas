@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation"
 import SectionCard from "@/components/ui/SectionCard"
 import KpiCard from "@/components/ui/KpiCard"
 import YearMonthFilter from "@/components/ui/YearMonthFilter"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, LabelList, ComposedChart } from "recharts"
-import { Users, TrendingUp, Calendar, Cake } from "lucide-react"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, LabelList, ComposedChart, Area, AreaChart, Tooltip } from "recharts"
+import { Users, TrendingUp, Calendar, Cake, BarChart3, Grid3X3 } from "lucide-react"
 
 interface AgeData {
   id: string
@@ -63,6 +63,8 @@ export default function AgePageClient({
   const [selectedYear, setSelectedYear] = useState(initialYear)
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("")
+  const [chartViewMode, setChartViewMode] = useState<'combined' | 'separated'>('combined')
+  const [detailViewMode, setDetailViewMode] = useState<'combined' | 'separated'>('combined')
 
   // URL 업데이트
   useEffect(() => {
@@ -236,50 +238,303 @@ export default function AgePageClient({
           />
         </div>
 
-        {/* 월별 연령대별 환자 현황 차트 */}
+        {/* 연령대별 환자 분포 차트 */}
         {monthlyChartData.length > 0 && (
-          <div>
-            <h3 className="text-[20px] font-semibold text-[#191f28] mb-6">연령대별 환자 분포</h3>
-            <div className="h-[450px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyChartData} margin={{ top: 20, right: 30, left: 20, bottom: 120 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 11, fill: "#6b7280" }}
-                    stroke="#9ca3af"
-                    angle={-45}
-                    textAnchor="end"
-                    height={100}
-                    interval={0}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12, fill: "#6b7280" }}
-                    stroke="#9ca3af"
-                    domain={[0, 'dataMax + 20']}
-                  />
-                  <Bar dataKey="newPatients" stackId="a" fill="#3182f6" name="신환" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="returningPatients" stackId="a" fill="#10b981" name="구환" radius={[4, 4, 0, 0]} />
-                  <Legend />
-                </BarChart>
-              </ResponsiveContainer>
+          <div className="space-y-6">
+            {/* 헤더와 토글 버튼 */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Cake className="w-6 h-6 text-purple-600" />
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">연령대별 환자 분포</h3>
+                    <p className="text-slate-600 text-sm mt-1">
+                      연령대별 총환자, 신환, 구환 분포를 확인하세요
+                    </p>
+                  </div>
+                  <span className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                    {selectedYear}년 {selectedMonth}월
+                  </span>
+                </div>
+
+                {/* 토글 버튼 */}
+                <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setChartViewMode('combined')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                      chartViewMode === 'combined'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    합쳐서 보기
+                  </button>
+                  <button
+                    onClick={() => setChartViewMode('separated')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                      chartViewMode === 'separated'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Grid3X3 className="w-4 h-4" />
+                    분리해서 보기
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {/* 차트 하단 요약 정보 */}
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-              <div className="bg-blue-50 rounded-xl p-4">
-                <div className="text-[18px] font-bold text-[#3182f6]">{topAgeGroup?.ageGroup || "—"}</div>
-                <div className="text-[12px] text-[#6b7280]">최다 환자 연령대</div>
+            {/* 합쳐서 보기 모드 */}
+            {chartViewMode === 'combined' && (
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">통합 환자 분포</h3>
+                    <p className="text-sm text-slate-600">
+                      연령대별 총환자, 신환, 구환을 한번에 비교
+                    </p>
+                  </div>
+                </div>
+
+                <div className="h-80 mb-4 w-full min-h-[320px] min-w-0">
+                  <ResponsiveContainer width="100%" height={320} minHeight={320}>
+                    <BarChart data={monthlyChartData} margin={{ top: 20, right: 20, left: 0, bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(value) => `${value}명`}
+                        width={50}
+                      />
+                      <Tooltip
+                        formatter={(value: any, name: string) => {
+                          const nameMap: Record<string, string> = {
+                            'totalPatients': '총환자',
+                            'newPatients': '신환',
+                            'returningPatients': '구환'
+                          }
+                          return [`${value}명`, nameMap[name] || name]
+                        }}
+                        contentStyle={{
+                          borderRadius: 12,
+                          border: 'none',
+                          boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                          fontSize: 13,
+                          background: 'rgba(255, 255, 255, 0.95)',
+                          backdropFilter: 'blur(8px)'
+                        }}
+                      />
+                      <Legend
+                        formatter={(value) => {
+                          const nameMap: Record<string, string> = {
+                            'totalPatients': '총환자',
+                            'newPatients': '신환',
+                            'returningPatients': '구환'
+                          }
+                          return nameMap[value] || value
+                        }}
+                      />
+                      <Bar
+                        dataKey="totalPatients"
+                        fill="#8b5cf6"
+                        name="totalPatients"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="newPatients"
+                        fill="#3b82f6"
+                        name="newPatients"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="returningPatients"
+                        fill="#10b981"
+                        name="returningPatients"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-              <div className="bg-green-50 rounded-xl p-4">
-                <div className="text-[18px] font-bold text-[#10b981]">{totalNewPatients.toLocaleString()}명</div>
-                <div className="text-[12px] text-[#6b7280]">총 신환</div>
+            )}
+
+            {/* 분리해서 보기 모드 */}
+            {chartViewMode === 'separated' && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* 총 환자 분포 */}
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300">
+                  <div className="mb-4">
+                    <h4 className="text-lg font-bold text-slate-900 mb-1">총 환자</h4>
+                    <p className="text-xs text-slate-600">연령대별 전체 환자 수</p>
+                  </div>
+
+                  <div className="h-64 w-full min-h-[256px] min-w-0">
+                    <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                      <AreaChart data={monthlyChartData} margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
+                        <defs>
+                          <linearGradient id="gradient-total" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                            <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.05}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fontSize: 10, fill: "#64748b" }}
+                          axisLine={false}
+                          tickLine={false}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 10, fill: "#64748b" }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={40}
+                        />
+                        <Tooltip
+                          formatter={(value: any) => [`${value}명`, '총환자']}
+                          contentStyle={{
+                            borderRadius: 8,
+                            border: 'none',
+                            boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                            fontSize: 12
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="totalPatients"
+                          stroke="#8b5cf6"
+                          strokeWidth={2}
+                          fill="url(#gradient-total)"
+                          dot={{ fill: '#8b5cf6', strokeWidth: 1, r: 3 }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* 신환 분포 */}
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300">
+                  <div className="mb-4">
+                    <h4 className="text-lg font-bold text-slate-900 mb-1">신환</h4>
+                    <p className="text-xs text-slate-600">연령대별 신규 환자 수</p>
+                  </div>
+
+                  <div className="h-64 w-full min-h-[256px] min-w-0">
+                    <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                      <AreaChart data={monthlyChartData} margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
+                        <defs>
+                          <linearGradient id="gradient-new" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.05}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fontSize: 10, fill: "#64748b" }}
+                          axisLine={false}
+                          tickLine={false}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 10, fill: "#64748b" }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={40}
+                        />
+                        <Tooltip
+                          formatter={(value: any) => [`${value}명`, '신환']}
+                          contentStyle={{
+                            borderRadius: 8,
+                            border: 'none',
+                            boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                            fontSize: 12
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="newPatients"
+                          stroke="#3b82f6"
+                          strokeWidth={2}
+                          fill="url(#gradient-new)"
+                          dot={{ fill: '#3b82f6', strokeWidth: 1, r: 3 }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* 구환 분포 */}
+                <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300">
+                  <div className="mb-4">
+                    <h4 className="text-lg font-bold text-slate-900 mb-1">구환</h4>
+                    <p className="text-xs text-slate-600">연령대별 기존 환자 수</p>
+                  </div>
+
+                  <div className="h-64 w-full min-h-[256px] min-w-0">
+                    <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                      <AreaChart data={monthlyChartData} margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
+                        <defs>
+                          <linearGradient id="gradient-returning" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.3}/>
+                            <stop offset="100%" stopColor="#10b981" stopOpacity={0.05}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fontSize: 10, fill: "#64748b" }}
+                          axisLine={false}
+                          tickLine={false}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 10, fill: "#64748b" }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={40}
+                        />
+                        <Tooltip
+                          formatter={(value: any) => [`${value}명`, '구환']}
+                          contentStyle={{
+                            borderRadius: 8,
+                            border: 'none',
+                            boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                            fontSize: 12
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="returningPatients"
+                          stroke="#10b981"
+                          strokeWidth={2}
+                          fill="url(#gradient-returning)"
+                          dot={{ fill: '#10b981', strokeWidth: 1, r: 3 }}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               </div>
-              <div className="bg-yellow-50 rounded-xl p-4">
-                <div className="text-[18px] font-bold text-[#f59e0b]">{newPatientRate.toFixed(1)}%</div>
-                <div className="text-[12px] text-[#6b7280]">전체 신환 비율</div>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </SectionCard>
@@ -289,40 +544,30 @@ export default function AgePageClient({
         <SectionCard title="연령대별 상세 분석" description="개별 연령대 심화 분석">
           {/* 연령대 선택 */}
           <div className="mb-8">
-            <h3 className="text-[16px] font-semibold text-[#191f28] mb-4">분석할 연령대 선택</h3>
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Cake className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-semibold text-slate-900">분석할 연령대 선택</h3>
+              </div>
 
-            {/* 모든 연령대 - 좌우 스크롤 사이드바 (연령대는 보통 9개 정도라서 모두 표시) */}
-            <div className="mb-4">
-              <h4 className="text-[14px] font-medium text-[#6b7280] mb-3">연령대별</h4>
-              <div className="relative">
-                <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
-                  {availableAgeGroups.map((ageGroup, index) => (
-                    <button
-                      key={ageGroup}
-                      onClick={() => setSelectedAgeGroup(ageGroup)}
-                      className={`flex-shrink-0 px-4 py-2.5 text-[14px] rounded-xl transition-all duration-200 font-medium ${
-                        selectedAgeGroup === ageGroup
-                          ? "bg-[#3182f6] text-white shadow-lg shadow-blue-500/25"
-                          : "bg-white text-[#495057] hover:bg-[#f8f9fa] border border-[#e5e8eb] hover:border-[#d1d5db] hover:shadow-sm"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className={`w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center ${
-                          selectedAgeGroup === ageGroup
-                            ? "bg-white/20 text-white"
-                            : "bg-[#3182f6] text-white"
-                        }`}>
-                          {index + 1}
-                        </span>
-                        {ageGroup}
-                      </div>
-                    </button>
+              <div className="flex items-center gap-4">
+                <label className="text-sm font-medium text-slate-700">연령대:</label>
+                <select
+                  value={selectedAgeGroup}
+                  onChange={(e) => setSelectedAgeGroup(e.target.value)}
+                  className="flex-1 max-w-xs px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all shadow-sm"
+                >
+                  {availableAgeGroups.map((ageGroup) => (
+                    <option key={ageGroup} value={ageGroup}>
+                      {ageGroup}
+                    </option>
                   ))}
-                </div>
+                </select>
 
-                {/* 스크롤 힌트 */}
-                {availableAgeGroups.length > 5 && (
-                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#f9fafb] to-transparent pointer-events-none"></div>
+                {selectedAgeGroup && (
+                  <span className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-xs px-3 py-1.5 rounded-full font-medium">
+                    선택됨
+                  </span>
                 )}
               </div>
             </div>
@@ -383,202 +628,306 @@ export default function AgePageClient({
               </div>
 
               {/* 선택된 연령대 월별 추이 차트 */}
-              <div className="grid grid-cols-1 gap-8">
-                {/* 환자 수 추이 */}
-                <div>
-                  <h3 className="text-[16px] font-semibold text-[#191f28] mb-4">{selectedAgeGroup} 월별 환자 수 추이</h3>
-                  <div className="h-[400px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={selectedAgeGroupData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
-                        <XAxis
-                          dataKey="month"
-                          tick={{ fontSize: 12, fill: "#6b7280" }}
-                          stroke="#9ca3af"
-                        />
-                        <YAxis
-                          tick={{ fontSize: 12, fill: "#6b7280" }}
-                          stroke="#9ca3af"
-                          domain={[0, 'dataMax + 10']}
-                        />
-                        <Legend />
+              <div className="space-y-6">
+                {/* 헤더와 토글 버튼 */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <TrendingUp className="w-6 h-6 text-blue-600" />
+                      <div>
+                        <h3 className="text-xl font-bold text-slate-900">
+                          {selectedAgeGroup} 월별 추이 분석
+                        </h3>
+                        <p className="text-slate-600 text-sm mt-1">
+                          선택 연령대의 월별 환자 수 변화 추이
+                        </p>
+                      </div>
+                      <span className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                        {selectedYear}년 연간
+                      </span>
+                    </div>
 
-                        {/* 총 환자 - 막대 차트 */}
-                        <Bar
-                          dataKey="totalPatients"
-                          fill="#e2e8f0"
-                          name="총 환자"
-                          radius={[4, 4, 0, 0]}
-                          isAnimationActive={false}
-                        >
-                          <LabelList
-                            dataKey="totalPatients"
-                            position="top"
-                            formatter={(value: any) => `${value}`}
-                            style={{ fontSize: '12px', fill: '#374151', fontWeight: 'bold' }}
-                          />
-                        </Bar>
-
-                        {/* 신환 - 꺾은선 차트 */}
-                        <Line
-                          type="linear"
-                          dataKey="newPatients"
-                          stroke="#3182f6"
-                          strokeWidth={3}
-                          name="신환"
-                          dot={{ r: 6, fill: "#3182f6", strokeWidth: 2, stroke: "#ffffff" }}
-                          isAnimationActive={false}
-                        >
-                          <LabelList
-                            dataKey="newPatients"
-                            position="top"
-                            formatter={(value: any) => `${value}`}
-                            style={{ fontSize: '10px', fill: '#3182f6', fontWeight: 'bold' }}
-                          />
-                        </Line>
-
-                        {/* 구환 - 꺾은선 차트 */}
-                        <Line
-                          type="linear"
-                          dataKey="returningPatients"
-                          stroke="#10b981"
-                          strokeWidth={3}
-                          name="구환"
-                          dot={{ r: 6, fill: "#10b981", strokeWidth: 2, stroke: "#ffffff" }}
-                          isAnimationActive={false}
-                        >
-                          <LabelList
-                            dataKey="returningPatients"
-                            position="top"
-                            formatter={(value: any) => `${value}`}
-                            style={{ fontSize: '10px', fill: '#10b981', fontWeight: 'bold' }}
-                          />
-                        </Line>
-                      </ComposedChart>
-                    </ResponsiveContainer>
+                    {/* 토글 버튼 */}
+                    <div className="flex items-center gap-2 bg-slate-100 rounded-lg p-1">
+                      <button
+                        onClick={() => setDetailViewMode('combined')}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                          detailViewMode === 'combined'
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                        합쳐서 보기
+                      </button>
+                      <button
+                        onClick={() => setDetailViewMode('separated')}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                          detailViewMode === 'separated'
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <Grid3X3 className="w-4 h-4" />
+                        분리해서 보기
+                      </button>
+                    </div>
                   </div>
                 </div>
+
+                {/* 합쳐서 보기 모드 */}
+                {detailViewMode === 'combined' && (
+                  <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
+                    <div className="flex items-start justify-between mb-6">
+                      <div>
+                        <h3 className="text-xl font-bold text-slate-900 mb-2">
+                          {selectedAgeGroup} 통합 월별 추이
+                        </h3>
+                        <p className="text-sm text-slate-600">
+                          총환자, 신환, 구환 추이를 한번에 비교
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="h-80 mb-4 w-full min-h-[320px] min-w-0">
+                      <ResponsiveContainer width="100%" height={320} minHeight={320}>
+                        <LineChart data={selectedAgeGroupData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                          <XAxis
+                            dataKey="month"
+                            tick={{ fontSize: 12, fill: "#64748b" }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 12, fill: "#64748b" }}
+                            axisLine={false}
+                            tickLine={false}
+                            tickFormatter={(value) => `${value}명`}
+                            width={50}
+                          />
+                          <Tooltip
+                            formatter={(value: any, name: string) => {
+                              const nameMap: Record<string, string> = {
+                                'totalPatients': '총환자',
+                                'newPatients': '신환',
+                                'returningPatients': '구환'
+                              }
+                              return [`${value}명`, nameMap[name] || name]
+                            }}
+                            contentStyle={{
+                              borderRadius: 12,
+                              border: 'none',
+                              boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                              fontSize: 13,
+                              background: 'rgba(255, 255, 255, 0.95)',
+                              backdropFilter: 'blur(8px)'
+                            }}
+                          />
+                          <Legend
+                            formatter={(value) => {
+                              const nameMap: Record<string, string> = {
+                                'totalPatients': '총환자',
+                                'newPatients': '신환',
+                                'returningPatients': '구환'
+                              }
+                              return nameMap[value] || value
+                            }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="totalPatients"
+                            stroke="#8b5cf6"
+                            strokeWidth={3}
+                            dot={{ fill: '#8b5cf6', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
+                            activeDot={{ r: 6, fill: '#8b5cf6', stroke: '#ffffff', strokeWidth: 3 }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="newPatients"
+                            stroke="#3b82f6"
+                            strokeWidth={3}
+                            dot={{ fill: '#3b82f6', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
+                            activeDot={{ r: 6, fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 3 }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="returningPatients"
+                            stroke="#10b981"
+                            strokeWidth={3}
+                            dot={{ fill: '#10b981', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
+                            activeDot={{ r: 6, fill: '#10b981', stroke: '#ffffff', strokeWidth: 3 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+
+                {/* 분리해서 보기 모드 */}
+                {detailViewMode === 'separated' && (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* 총환자 추이 */}
+                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300">
+                      <div className="mb-4">
+                        <h4 className="text-lg font-bold text-slate-900 mb-1">총환자 추이</h4>
+                        <p className="text-xs text-slate-600">월별 총 환자 수 변화</p>
+                      </div>
+
+                      <div className="h-64 w-full min-h-[256px] min-w-0">
+                        <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                          <AreaChart data={selectedAgeGroupData} margin={{ top: 5, right: 10, left: 0, bottom: 20 }}>
+                            <defs>
+                              <linearGradient id="gradient-detail-total" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                                <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.05}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                            <XAxis
+                              dataKey="month"
+                              tick={{ fontSize: 10, fill: "#64748b" }}
+                              axisLine={false}
+                              tickLine={false}
+                            />
+                            <YAxis
+                              tick={{ fontSize: 10, fill: "#64748b" }}
+                              axisLine={false}
+                              tickLine={false}
+                              width={40}
+                            />
+                            <Tooltip
+                              formatter={(value: any) => [`${value}명`, '총환자']}
+                              contentStyle={{
+                                borderRadius: 8,
+                                border: 'none',
+                                boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                                fontSize: 12
+                              }}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="totalPatients"
+                              stroke="#8b5cf6"
+                              strokeWidth={2}
+                              fill="url(#gradient-detail-total)"
+                              dot={{ fill: '#8b5cf6', strokeWidth: 1, r: 3 }}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* 신환 추이 */}
+                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300">
+                      <div className="mb-4">
+                        <h4 className="text-lg font-bold text-slate-900 mb-1">신환 추이</h4>
+                        <p className="text-xs text-slate-600">월별 신환 수 변화</p>
+                      </div>
+
+                      <div className="h-64 w-full min-h-[256px] min-w-0">
+                        <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                          <AreaChart data={selectedAgeGroupData} margin={{ top: 5, right: 10, left: 0, bottom: 20 }}>
+                            <defs>
+                              <linearGradient id="gradient-detail-new" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.05}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                            <XAxis
+                              dataKey="month"
+                              tick={{ fontSize: 10, fill: "#64748b" }}
+                              axisLine={false}
+                              tickLine={false}
+                            />
+                            <YAxis
+                              tick={{ fontSize: 10, fill: "#64748b" }}
+                              axisLine={false}
+                              tickLine={false}
+                              width={40}
+                            />
+                            <Tooltip
+                              formatter={(value: any) => [`${value}명`, '신환']}
+                              contentStyle={{
+                                borderRadius: 8,
+                                border: 'none',
+                                boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                                fontSize: 12
+                              }}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="newPatients"
+                              stroke="#3b82f6"
+                              strokeWidth={2}
+                              fill="url(#gradient-detail-new)"
+                              dot={{ fill: '#3b82f6', strokeWidth: 1, r: 3 }}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* 구환 추이 */}
+                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300">
+                      <div className="mb-4">
+                        <h4 className="text-lg font-bold text-slate-900 mb-1">구환 추이</h4>
+                        <p className="text-xs text-slate-600">월별 구환 수 변화</p>
+                      </div>
+
+                      <div className="h-64 w-full min-h-[256px] min-w-0">
+                        <ResponsiveContainer width="100%" height={256} minHeight={256}>
+                          <AreaChart data={selectedAgeGroupData} margin={{ top: 5, right: 10, left: 0, bottom: 20 }}>
+                            <defs>
+                              <linearGradient id="gradient-detail-returning" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#10b981" stopOpacity={0.3}/>
+                                <stop offset="100%" stopColor="#10b981" stopOpacity={0.05}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                            <XAxis
+                              dataKey="month"
+                              tick={{ fontSize: 10, fill: "#64748b" }}
+                              axisLine={false}
+                              tickLine={false}
+                            />
+                            <YAxis
+                              tick={{ fontSize: 10, fill: "#64748b" }}
+                              axisLine={false}
+                              tickLine={false}
+                              width={40}
+                            />
+                            <Tooltip
+                              formatter={(value: any) => [`${value}명`, '구환']}
+                              contentStyle={{
+                                borderRadius: 8,
+                                border: 'none',
+                                boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
+                                fontSize: 12
+                              }}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="returningPatients"
+                              stroke="#10b981"
+                              strokeWidth={2}
+                              fill="url(#gradient-detail-returning)"
+                              dot={{ fill: '#10b981', strokeWidth: 1, r: 3 }}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}
         </SectionCard>
       )}
 
-      {/* 년도별 월간 전체 연령대 추이 */}
-      {yearlyTrendData.length > 0 && (
-        <SectionCard title={`${selectedYear}년 연령대별 월간 추이`} description="상위 5개 연령대 비교">
-          <div className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={yearlyTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 12, fill: "#6b7280" }}
-                  stroke="#9ca3af"
-                />
-                <YAxis
-                  tick={{ fontSize: 12, fill: "#6b7280" }}
-                  stroke="#9ca3af"
-                  domain={[0, 'dataMax + 10']}
-                />
-                <Legend />
-                {[...new Set(yearlyData.map(d => d.ageGroup))]
-                  .filter(ageGroup => !ageGroup.includes("평균"))
-                  .filter(ageGroup => {
-                    const total = yearlyData.filter(d => d.ageGroup === ageGroup).reduce((sum, d) => sum + (d.totalPatients || 0), 0)
-                    return total > 0
-                  })
-                  .sort((a, b) => {
-                    const totalA = yearlyData.filter(d => d.ageGroup === a).reduce((sum, d) => sum + (d.totalPatients || 0), 0)
-                    const totalB = yearlyData.filter(d => d.ageGroup === b).reduce((sum, d) => sum + (d.totalPatients || 0), 0)
-                    return totalB - totalA
-                  })
-                  .slice(0, 5)
-                  .map((ageGroup, index) => {
-                    const colors = ['#3182f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
-                    return (
-                      <Line
-                        key={ageGroup}
-                        type="linear"
-                        dataKey={`${ageGroup}_총환자`}
-                        stroke={colors[index]}
-                        strokeWidth={3}
-                        name={ageGroup}
-                        dot={{ r: 4, fill: colors[index] }}
-                        isAnimationActive={false}
-                      />
-                    )
-                  })
-                }
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </SectionCard>
-      )}
 
-      {/* 월별 상세 데이터 테이블 */}
-      <SectionCard title={`${selectedYear}년 ${selectedMonth}월 연령대별 상세 데이터`}>
-        {filteredMonthlyData.length === 0 ? (
-          <div className="text-center py-12 text-[14px] text-[#8b95a1]">
-            {selectedYear}년 {selectedMonth}월 연령대별 데이터가 없습니다.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-[14px]">
-              <thead>
-                <tr className="border-b border-[#e5e8eb] bg-[#f8f9fa]">
-                  <th className="text-left p-4 font-semibold text-[#495057]">연령대</th>
-                  <th className="text-center p-4 font-semibold text-[#495057]">총 환자</th>
-                  <th className="text-center p-4 font-semibold text-[#495057]">신환</th>
-                  <th className="text-center p-4 font-semibold text-[#495057]">구환</th>
-                  <th className="text-center p-4 font-semibold text-[#495057]">신환률</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMonthlyData
-                  .sort((a, b) => {
-                    const ai = AGE_ORDER.indexOf(a.ageGroup)
-                    const bi = AGE_ORDER.indexOf(b.ageGroup)
-                    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
-                  })
-                  .map((ageGroup, index) => {
-                    const newPatientRate = (ageGroup.totalPatients || 0) > 0 ?
-                      ((ageGroup.newPatients || 0) / (ageGroup.totalPatients || 0) * 100) : 0
-
-                    return (
-                      <tr key={ageGroup.ageGroup} className="border-b border-[#e5e8eb] hover:bg-[#f8f9fa]">
-                        <td className="p-4 font-medium text-[#191f28]">
-                          <div className="flex items-center gap-2">
-                            <span className="w-6 h-6 bg-[#3182f6] text-white rounded-full text-[12px] flex items-center justify-center font-bold">
-                              {index + 1}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Cake className="w-4 h-4 text-[#6b7280]" />
-                              {ageGroup.ageGroup}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="text-center p-4 tabular-nums font-semibold text-[#191f28]">
-                          {(ageGroup.totalPatients || 0).toLocaleString()}
-                        </td>
-                        <td className="text-center p-4 tabular-nums text-[#3182f6] font-medium">
-                          {(ageGroup.newPatients || 0).toLocaleString()}
-                        </td>
-                        <td className="text-center p-4 tabular-nums text-[#10b981] font-medium">
-                          {(ageGroup.returningPatients || 0).toLocaleString()}
-                        </td>
-                        <td className="text-center p-4 tabular-nums text-[#6b7280]">
-                          {newPatientRate.toFixed(1)}%
-                        </td>
-                      </tr>
-                    )
-                  })
-                }
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
 
       {/* 데이터가 없는 경우 */}
       {availableAgeGroups.length === 0 && (
