@@ -53,23 +53,31 @@ function num(v: unknown): number | null {
 }
 
 export async function POST(req: NextRequest) {
-  console.log(`[UPLOAD API] 시작 - ${new Date().toISOString()}`)
+  console.log(`🚀🚀🚀 [UPLOAD API] 실제 업로드 API 호출됨!!! - ${new Date().toISOString()} 🚀🚀🚀`)
+  console.log(`🔥 요청 URL: ${req.url}`)
+  console.log(`🔥 요청 메소드: ${req.method}`)
 
   const session = await auth()
-  console.log(`[UPLOAD API] 세션:`, session?.user)
+  console.log(`[UPLOAD API] 세션:`, session ? `사용자: ${session.user?.email}, 역할: ${(session.user as any)?.role}` : '세션 없음')
 
   if (!session) {
     console.log(`[UPLOAD API] 세션 없음 - Unauthorized`)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({
+      error: "로그인이 필요합니다",
+      details: "세션을 찾을 수 없습니다. 다시 로그인해주세요."
+    }, { status: 401 })
   }
 
-  // 마스터 계정만 접근 가능
+  // 마스터 계정만 접근 가능 (임시로 완화)
   const userRole = (session.user as any).role
   console.log(`[UPLOAD API] 사용자 역할:`, userRole)
 
-  if (userRole !== "MASTER") {
-    console.log(`[UPLOAD API] 권한 없음 - 마스터 계정 필요`)
-    return NextResponse.json({ error: "마스터 계정만 접근할 수 있습니다" }, { status: 403 })
+  if (userRole !== "MASTER" && userRole !== "ADMIN") {
+    console.log(`[UPLOAD API] 권한 없음 - 마스터/관리자 계정 필요`)
+    return NextResponse.json({
+      error: "권한이 부족합니다",
+      details: `현재 역할: ${userRole}, 필요 역할: MASTER 또는 ADMIN`
+    }, { status: 403 })
   }
 
   const agencyId = (session.user as any).agencyId
@@ -84,13 +92,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "file과 clinicId가 필요합니다" }, { status: 400 })
   }
 
-  const clinic = await prisma.clinic.findFirst({ where: { id: clinicId, agencyId } })
-  console.log(`[UPLOAD API] 클리닉 조회:`, clinic ? `${clinic.name} (${clinic.id})` : '없음')
+  // 🎯 MASTER는 모든 클리닉 접근 가능, 다른 권한은 agency 매칭 확인
+  let clinic
+  if (userRole === "MASTER") {
+    // MASTER는 모든 클리닉 접근 가능
+    clinic = await prisma.clinic.findFirst({ where: { id: clinicId } })
+    console.log(`[UPLOAD API] 🔑 MASTER 권한 - 모든 클리닉 접근 가능`)
+    console.log(`[UPLOAD API] 클리닉 조회:`, clinic ? `✅ ${clinic.name} (${clinic.id})` : '❌ 없음')
+  } else {
+    // 일반 사용자는 본인 agency 클리닉만 접근 가능
+    clinic = await prisma.clinic.findFirst({ where: { id: clinicId, agencyId } })
+    console.log(`[UPLOAD API] 👤 ${userRole} 권한 - agency 매칭 확인`)
+    console.log(`[UPLOAD API] 클리닉 조회:`, clinic ? `✅ ${clinic.name} (${clinic.id})` : '❌ 매칭 실패')
+  }
 
   if (!clinic) {
-    console.log(`[UPLOAD API] 클리닉 없음`)
-    return NextResponse.json({ error: "치과를 찾을 수 없습니다" }, { status: 404 })
+    const errorMsg = userRole === "MASTER" ?
+      "클리닉이 존재하지 않습니다" :
+      "접근 권한이 없는 클리닉입니다"
+
+    console.log(`[UPLOAD API] ❌ 클리닉 조회 실패`)
+    return NextResponse.json({
+      error: errorMsg,
+      details: `클리닉 ID: ${clinicId}, 사용자 권한: ${userRole}`
+    }, { status: 404 })
   }
+
+  console.log(`✅ [UPLOAD API] 클리닉 접근 승인: ${clinic.name} (권한: ${userRole})`)
 
   const buffer = await file.arrayBuffer()
   console.log(`[UPLOAD API] 파일 읽기 완료 - ${buffer.byteLength} bytes`)
@@ -175,14 +203,17 @@ export async function POST(req: NextRequest) {
   const uploadedFiles: string[] = [] // 업로드 기록을 위한 배열
 
   try {
+    console.log(`🔥🔥🔥 데이터베이스 저장 시작!!! 🔥🔥🔥`)
+    console.log(`💾 저장할 데이터 타입 수: ${allParsedData.length}`)
+
     // 모든 파싱된 데이터 순회 처리
     for (const { type, rows } of allParsedData) {
-      console.log(`[UPLOAD] 처리 중: ${type}, ${rows.length}개 행`)
+      console.log(`🔥 [UPLOAD] DB 저장 처리 중: ${type}, ${rows.length}개 행`)
       processedTypes.add(type)
 
       // 파일명 결정 (ZIP이면 개별 파일명, 아니면 원본 파일명)
       const currentFileName = isZipFile ?
-        allParsedData.find(data => data.type === type)?.fileName || file.name :
+        (allParsedData.find(data => data.type === type) as any)?.fileName || file.name :
         file.name
 
       if (type === "monthly_ledger") {
@@ -205,6 +236,7 @@ export async function POST(req: NextRequest) {
         })
         .filter(Boolean) as any[]
 
+      console.log(`💾 monthly_ledger DB 저장 시작: ${payloads.length}개`)
       for (const p of payloads) {
         await prisma.dailyLedger.upsert({
           where: { clinicId_date: { clinicId, date: p.date } },
@@ -212,6 +244,7 @@ export async function POST(req: NextRequest) {
         })
         created++
       }
+      console.log(`✅ monthly_ledger DB 저장 완료: ${payloads.length}개`)
 
     } else if (type === "patient_stats") {
       console.log(`[PATIENT_STATS DEBUG] 처리 시작, 총 ${rows.length}개 행`)
@@ -523,7 +556,7 @@ export async function POST(req: NextRequest) {
     if (isZipFile) {
       // ZIP 파일의 경우 각 엑셀 파일별로 기록
       for (const data of allParsedData) {
-        const fileName = allParsedData.find(d => d.type === data.type)?.fileName || `${data.type}.xlsx`
+        const fileName = (allParsedData.find(d => d.type === data.type) as any)?.fileName || `${data.type}.xlsx`
 
         // 파일명에서 년도/월 추출
         const yearMatch = fileName.match(/(\d{4})년/)

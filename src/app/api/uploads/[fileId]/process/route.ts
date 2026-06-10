@@ -417,12 +417,17 @@ async function processAgeDistributionData(fileUpload: any, data: any[][], column
   let processedCount = 0
 
   // 기존 데이터 삭제
+  const deleteWhere: any = {
+    clinicId: fileUpload.clinicId,
+    year: fileUpload.year
+  }
+
+  if (fileUpload.month !== null && fileUpload.month !== undefined) {
+    deleteWhere.month = fileUpload.month
+  }
+
   await prisma.ageDist.deleteMany({
-    where: {
-      clinicId: fileUpload.clinicId,
-      year: fileUpload.year,
-      month: fileUpload.month
-    }
+    where: deleteWhere
   })
 
   for (let i = 0; i < data.length; i++) {
@@ -433,17 +438,24 @@ async function processAgeDistributionData(fileUpload: any, data: any[][], column
     if (!ageGroup) continue
 
     try {
+      const createData: any = {
+        clinic: {
+          connect: { id: fileUpload.clinicId }
+        },
+        year: fileUpload.year,
+        ageGroup,
+        totalPatients: parseFloat(row[1]) || 0,
+        returningPatients: parseFloat(row[2]) || 0,
+        newPatients: parseFloat(row[3]) || 0,
+        avgRevenue: parseFloat(row[4]) || 0
+      }
+
+      if (fileUpload.month !== null && fileUpload.month !== undefined) {
+        createData.month = fileUpload.month
+      }
+
       await prisma.ageDist.create({
-        data: {
-          clinicId: fileUpload.clinicId,
-          year: fileUpload.year,
-          month: fileUpload.month,
-          ageGroup,
-          totalPatients: parseFloat(row[1]) || 0,
-          returningPatients: parseFloat(row[2]) || 0,
-          newPatients: parseFloat(row[3]) || 0,
-          avgRevenue: parseFloat(row[4]) || 0
-        }
+        data: createData
       })
 
       processedCount++
@@ -470,12 +482,17 @@ async function processAgeDistributionDataAdvanced(fileUpload: any, buffer: Buffe
     }
 
     // 기존 데이터 삭제
+    const deleteWhere: any = {
+      clinicId: fileUpload.clinicId,
+      year: fileUpload.year
+    }
+
+    if (fileUpload.month !== null && fileUpload.month !== undefined) {
+      deleteWhere.month = fileUpload.month
+    }
+
     await prisma.ageDist.deleteMany({
-      where: {
-        clinicId: fileUpload.clinicId,
-        year: fileUpload.year,
-        month: fileUpload.month
-      }
+      where: deleteWhere
     })
 
     let processedCount = 0
@@ -485,17 +502,24 @@ async function processAgeDistributionDataAdvanced(fileUpload: any, buffer: Buffe
         try {
           console.log(`[연령별분포] 처리 중인 행:`, JSON.stringify(row))
 
+          const createData: any = {
+            clinic: {
+              connect: { id: fileUpload.clinicId }
+            },
+            year: fileUpload.year,
+            ageGroup: String(row.ageGroup || ''),
+            totalPatients: Number(row.totalPatients) || 0,
+            returningPatients: Number(row.returningPatients) || 0,
+            newPatients: Number(row.newPatients) || 0,
+            avgRevenue: Number(row.avgRevenue) || 0
+          }
+
+          if (fileUpload.month !== null && fileUpload.month !== undefined) {
+            createData.month = fileUpload.month
+          }
+
           await prisma.ageDist.create({
-            data: {
-              clinicId: fileUpload.clinicId,
-              year: fileUpload.year,
-              month: fileUpload.month,
-              ageGroup: String(row.ageGroup || ''),
-              totalPatients: Number(row.totalPatients) || 0,
-              returningPatients: Number(row.returningPatients) || 0,
-              newPatients: Number(row.newPatients) || 0,
-              avgRevenue: Number(row.avgRevenue) || 0
-            }
+            data: createData
           })
 
           processedCount++
@@ -530,12 +554,17 @@ async function processRegionDistributionData(fileUpload: any, data: any[][], col
   let processedCount = 0
 
   // 기존 데이터 삭제
+  const deleteWhere: any = {
+    clinicId: fileUpload.clinicId,
+    year: fileUpload.year
+  }
+
+  if (fileUpload.month !== null && fileUpload.month !== undefined) {
+    deleteWhere.month = fileUpload.month
+  }
+
   await prisma.regionDist.deleteMany({
-    where: {
-      clinicId: fileUpload.clinicId,
-      year: fileUpload.year,
-      month: fileUpload.month
-    }
+    where: deleteWhere
   })
 
   for (let i = 0; i < data.length; i++) {
@@ -546,18 +575,23 @@ async function processRegionDistributionData(fileUpload: any, data: any[][], col
     if (!region) continue
 
     try {
+      const createData: any = {
+        clinicId: fileUpload.clinicId,
+        year: fileUpload.year,
+        region,
+        totalPatients: parseFloat(row[1]) || 0,
+        returningPatients: parseFloat(row[2]) || 0,
+        newPatients: parseFloat(row[3]) || 0,
+        totalVisits: parseFloat(row[4]) || 0,
+        avgRevenue: parseFloat(row[5]) || 0
+      }
+
+      if (fileUpload.month !== null && fileUpload.month !== undefined) {
+        createData.month = fileUpload.month
+      }
+
       await prisma.regionDist.create({
-        data: {
-          clinicId: fileUpload.clinicId,
-          year: fileUpload.year,
-          month: fileUpload.month,
-          region,
-          totalPatients: parseFloat(row[1]) || 0,
-          returningPatients: parseFloat(row[2]) || 0,
-          newPatients: parseFloat(row[3]) || 0,
-          totalVisits: parseFloat(row[4]) || 0,
-          avgRevenue: parseFloat(row[5]) || 0
-        }
+        data: createData
       })
 
       processedCount++
@@ -585,12 +619,17 @@ async function processRegionDistributionDataAdvanced(fileUpload: any, buffer: Bu
     }
 
     // 기존 데이터 삭제
+    const deleteWhere: any = {
+      clinicId: fileUpload.clinicId,
+      year: fileUpload.year
+    }
+
+    if (fileUpload.month !== null && fileUpload.month !== undefined) {
+      deleteWhere.month = fileUpload.month
+    }
+
     await prisma.regionDist.deleteMany({
-      where: {
-        clinicId: fileUpload.clinicId,
-        year: fileUpload.year,
-        month: fileUpload.month
-      }
+      where: deleteWhere
     })
 
     let processedCount = 0
@@ -600,18 +639,23 @@ async function processRegionDistributionDataAdvanced(fileUpload: any, buffer: Bu
         try {
           console.log(`[지역별분포] 처리 중인 행:`, JSON.stringify(row))
 
+          const createData: any = {
+            clinicId: fileUpload.clinicId,
+            year: fileUpload.year,
+            region: String(row.region || ''),
+            totalPatients: Number(row.totalPatients) || 0,
+            returningPatients: Number(row.returningPatients) || 0,
+            newPatients: Number(row.newPatients) || 0,
+            totalVisits: Number(row.totalVisits) || 0,
+            avgRevenue: Number(row.avgRevenue) || 0
+          }
+
+          if (fileUpload.month !== null && fileUpload.month !== undefined) {
+            createData.month = fileUpload.month
+          }
+
           await prisma.regionDist.create({
-            data: {
-              clinicId: fileUpload.clinicId,
-              year: fileUpload.year,
-              month: fileUpload.month,
-              region: String(row.region || ''),
-              totalPatients: Number(row.totalPatients) || 0,
-              returningPatients: Number(row.returningPatients) || 0,
-              newPatients: Number(row.newPatients) || 0,
-              totalVisits: Number(row.totalVisits) || 0,
-              avgRevenue: Number(row.avgRevenue) || 0
-            }
+            data: createData
           })
 
           processedCount++
