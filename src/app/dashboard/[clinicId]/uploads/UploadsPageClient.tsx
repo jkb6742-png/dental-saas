@@ -29,8 +29,10 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
   // 월별 선택 제거 - 연간 기준으로 변경
   const [uploading, setUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
+  const [expandedRows, setExpandedRows] = useState<number[]>([]) // Set 대신 배열 사용
   const [refreshKey, setRefreshKey] = useState(0) // 🔥 강제 리렌더링용
+  const [mounted, setMounted] = useState(false) // Hydration 안전성을 위한 상태
+
 
   // 파일 카테고리 목록 (신환 관련 제거, 통합 구조로 변경)
   const requiredFileCategories = [
@@ -67,25 +69,51 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
   }
 
   useEffect(() => {
-    loadData()
-  }, [clinicId])
+    setMounted(true)
+  }, [])
 
-  // 파일 업로드 처리 함수
+  useEffect(() => {
+    if (mounted) {
+      loadData()
+    }
+  }, [clinicId, mounted])
+
+  // 파일 업로드 처리 함수 (개선된 버전)
   const processFiles = async (files: FileList | File[]) => {
-    if (!files || files.length === 0) return
+    if (!files || files.length === 0) {
+      console.warn('⚠️ processFiles: 파일이 없습니다')
+      return
+    }
+
+    const fileArray = Array.from(files)
+    console.log(`🎯 processFiles 호출: ${fileArray.length}개 파일`)
+    console.log(`📄 파일 목록:`, fileArray.map(f => `${f.name} (${(f.size / 1024).toFixed(1)}KB)`))
 
     setUploading(true)
 
-    const fileArray = Array.from(files)
     let successCount = 0
     let errorCount = 0
     const errors: string[] = []
+    const validFiles: File[] = []
 
-    // 🚀 병렬 업로드로 변경 (한번에 모든 파일)
-    const uploadPromises = fileArray.map(async (file) => {
-      // Excel 파일이 아니면 스킵
+    // 1단계: 파일 사전 검증
+    for (const file of fileArray) {
+      console.log(`🔍 검증 중: ${file.name}`)
+
+      // Excel 파일 체크
       if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-        return { file: file.name, success: false, error: 'Excel 파일이 아님' }
+        console.warn(`❌ Excel 파일 아님: ${file.name}`)
+        errorCount++
+        errors.push(`${file.name}: Excel 파일이 아님 (.xlsx 또는 .xls 파일만 지원)`)
+        continue
+      }
+
+      // 파일 크기 체크 (100MB 제한)
+      if (file.size > 100 * 1024 * 1024) {
+        console.warn(`❌ 파일 크기 초과: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)}MB)`)
+        errorCount++
+        errors.push(`${file.name}: 파일 크기가 너무 큼 (100MB 이하만 지원)`)
+        continue
       }
 
       // 중복 업로드 체크
@@ -95,10 +123,30 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
       )
 
       if (isDuplicate) {
-        return { file: file.name, success: false, error: '이미 업로드됨' }
+        console.warn(`❌ 중복 파일: ${file.name}`)
+        errorCount++
+        errors.push(`${file.name}: 이미 업로드됨`)
+        continue
       }
 
-      console.log(`[업로드] ${file.name} 시작`)
+      console.log(`✅ 검증 통과: ${file.name}`)
+      validFiles.push(file)
+    }
+
+    console.log(`📊 검증 결과: 유효한 파일 ${validFiles.length}개, 오류 ${errorCount}개`)
+
+    if (validFiles.length === 0) {
+      setUploading(false)
+      const message = `업로드할 수 있는 파일이 없습니다.${errorCount > 0 ? `\n\n오류:\n${errors.join('\n')}` : ''}`
+      alert(message)
+      return
+    }
+
+    // 2단계: 업로드 실행
+    console.log(`🚀 ${validFiles.length}개 파일 업로드 시작...`)
+
+    const uploadPromises = validFiles.map(async (file, index) => {
+      console.log(`📤 [${index + 1}/${validFiles.length}] ${file.name} 업로드 시작`)
 
       const formData = new FormData()
       formData.append('file', file)
@@ -112,28 +160,25 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
 
         const result = await response.json()
 
-        // 🔥 간단한 로그 (병렬 처리용)
-        console.log(`📤 ${file.name}: ${response.status} ${result.success ? '✅' : '❌'}`)
-        if (result.errors && result.errors.length > 0) {
-          console.log(`❌ ${file.name} Errors:`, result.errors)
-        }
+        console.log(`📝 [${index + 1}/${validFiles.length}] ${file.name} 응답: ${response.status}`)
 
         if (response.ok && result.success) {
+          console.log(`✅ [${index + 1}/${validFiles.length}] ${file.name} 성공`)
           return { file: file.name, success: true }
         } else {
-          return { file: file.name, success: false, error: result.error }
+          console.error(`❌ [${index + 1}/${validFiles.length}] ${file.name} 실패:`, result.error)
+          return { file: file.name, success: false, error: result.error || '업로드 실패' }
         }
       } catch (error) {
-        console.error(`[업로드] ${file.name} 오류:`, error)
-        return { file: file.name, success: false, error: '업로드 중 오류' }
+        console.error(`💥 [${index + 1}/${validFiles.length}] ${file.name} 네트워크 오류:`, error)
+        return { file: file.name, success: false, error: `네트워크 오류: ${error}` }
       }
     })
 
-    // 🚀 모든 업로드를 동시에 실행
-    console.log(`🚀 ${fileArray.length}개 파일 병렬 업로드 시작...`)
+    // 모든 업로드 동시 실행
     const results = await Promise.all(uploadPromises)
 
-    // 결과 집계
+    // 3단계: 결과 집계
     results.forEach(result => {
       if (result.success) {
         successCount++
@@ -143,78 +188,141 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
       }
     })
 
-    // 업로드 완료 후 데이터 새로고침
+    console.log(`📈 최종 결과: 성공 ${successCount}개, 실패 ${errorCount}개`)
+
+    // 4단계: 데이터 새로고침
+    console.log('🔄 데이터 새로고침 중...')
     await loadData()
 
-    // 🔥 강제 드롭다운 새로고침: 펼쳐진 행들을 접었다 펴기
-    const currentExpanded = Array.from(expandedRows)
-    setExpandedRows(new Set()) // 모든 행 접기
+    // UI 강제 새로고침
+    const currentExpanded = [...expandedRows]
+    setExpandedRows([])
     setTimeout(() => {
-      setExpandedRows(new Set(currentExpanded)) // 다시 펼치기
-      setRefreshKey(prev => prev + 1) // 강제 리렌더링
+      setExpandedRows(currentExpanded)
+      setRefreshKey(prev => prev + 1)
     }, 100)
 
     setUploading(false)
 
-    // 한번에 결과 알림
+    // 5단계: 사용자 알림
     let message = ''
     if (successCount > 0) {
       message += `✅ ${successCount}개 파일 업로드 성공!`
     }
     if (errorCount > 0) {
-      message += `\n❌ ${errorCount}개 파일 실패`
-      if (errors.length > 0) {
-        message += `:\n${errors.slice(0, 5).join('\n')}`
-        if (errors.length > 5) {
-          message += `\n... 외 ${errors.length - 5}개`
-        }
+      if (successCount > 0) message += '\n\n'
+      message += `❌ ${errorCount}개 파일 실패:`
+      message += `\n${errors.slice(0, 3).join('\n')}`
+      if (errors.length > 3) {
+        message += `\n... 외 ${errors.length - 3}개 (자세한 내용은 콘솔 참조)`
       }
     }
+
     if (message) {
+      console.log('💬 사용자 알림:', message)
       alert(message)
     }
   }
 
-  // 파일 선택 업로드
+  // 파일 선택 업로드 (개선된 버전)
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
-    if (files) {
-      await processFiles(files)
-      event.target.value = '' // input 초기화
+    console.log('🖱️ 파일 선택 이벤트 발생')
+    console.log(`📁 선택된 파일 수: ${files?.length || 0}`)
+
+    if (files && files.length > 0) {
+      console.log('📄 선택된 파일들:', Array.from(files).map(f => f.name))
+
+      try {
+        await processFiles(files)
+      } finally {
+        // 항상 input 초기화 (같은 파일을 다시 선택할 수 있도록)
+        event.target.value = ''
+        console.log('🧹 파일 선택 input 초기화 완료')
+      }
+    } else {
+      console.warn('⚠️ 파일 선택되지 않음')
+      event.target.value = ''
     }
   }
 
-  // 드래그앤드롭 이벤트
+  // 카테고리별 파일 선택 함수
+  const handleCategoryFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, category: string) => {
+    const files = event.target.files
+    console.log(`🎯 카테고리별 파일 선택: ${category}`)
+    console.log(`📁 선택된 파일 수: ${files?.length || 0}`)
+
+    if (files && files.length > 0) {
+      console.log('📄 선택된 파일들:', Array.from(files).map(f => f.name))
+
+      try {
+        await processFiles(files)
+      } finally {
+        // 항상 input 초기화
+        event.target.value = ''
+        console.log(`🧹 ${category} 파일 선택 input 초기화 완료`)
+      }
+    } else {
+      console.warn(`⚠️ ${category} 파일 선택되지 않음`)
+      event.target.value = ''
+    }
+  }
+
+  // 드래그앤드롭 이벤트 (개선된 버전)
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     setIsDragging(true)
   }
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault()
-    setIsDragging(false)
+    e.stopPropagation()
+
+    // 드롭 영역을 완전히 벗어났을 때만 상태 변경
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX
+    const y = e.clientY
+
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setIsDragging(false)
+    }
   }
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     setIsDragging(false)
 
+    console.log('🎯 드롭 이벤트 감지!')
+
     const files = e.dataTransfer.files
-    if (files) {
+    console.log(`📁 드롭된 파일 수: ${files.length}`)
+
+    if (files && files.length > 0) {
+      console.log('📄 드롭된 파일들:', Array.from(files).map(f => f.name))
       await processFiles(files)
+    } else {
+      console.warn('⚠️ 드롭된 파일이 없습니다')
+      alert('파일을 제대로 드롭하지 못했습니다. 다시 시도해주세요.')
     }
   }
 
   // 행 펼침/접기 토글
   const toggleRow = (rowId: number) => {
     setExpandedRows(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(rowId)) {
-        newSet.delete(rowId)
+      const isExpanded = prev.includes(rowId)
+      if (isExpanded) {
+        return prev.filter(id => id !== rowId)
       } else {
-        newSet.add(rowId)
+        return [...prev, rowId]
       }
-      return newSet
     })
   }
 
@@ -236,10 +344,10 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
         await loadData() // 데이터 새로고침
 
         // 드롭다운 새로고침
-        const currentExpanded = Array.from(expandedRows)
-        setExpandedRows(new Set())
+        const currentExpanded = [...expandedRows]
+        setExpandedRows([])
         setTimeout(() => {
-          setExpandedRows(new Set(currentExpanded))
+          setExpandedRows(currentExpanded)
           setRefreshKey(prev => prev + 1)
         }, 100)
       } else {
@@ -274,7 +382,7 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
         await loadData()
 
         // 모든 상태 초기화
-        setExpandedRows(new Set())
+        setExpandedRows([])
         setRefreshKey(prev => prev + 1)
 
         // 브라우저도 강제 새로고침
@@ -290,8 +398,8 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
 
   // 연간 기준 업로드 파일 목록 생성
   const getRequiredFilesList = (): RequiredFileItem[] => {
-    // ✅ 성공! 간단한 로그만 유지
-    if (uploadedFiles.length > 0) {
+    // ✅ 성공! 간단한 로그만 유지 (클라이언트에서만)
+    if (mounted && uploadedFiles.length > 0) {
       console.log(`📊 ${selectedYear}년 데이터 처리 중: ${uploadedFiles.length}개 파일`)
     }
 
@@ -308,8 +416,8 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
         return match
       })
 
-      // ✅ 매칭 성공시만 로그
-      if (categoryFiles.length > 0) {
+      // ✅ 매칭 성공시만 로그 (클라이언트에서만)
+      if (mounted && categoryFiles.length > 0) {
         console.log(`📁 ${required.name}: ${categoryFiles.length}개 파일 매칭`)
       }
 
@@ -336,8 +444,8 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
       // 중복 제거
       const uniqueMonths = [...new Set(uploadedMonths)]
 
-      // ✅ 완료된 월들만 로그
-      if (uniqueMonths.length > 0) {
+      // ✅ 완료된 월들만 로그 (클라이언트에서만)
+      if (mounted && uniqueMonths.length > 0) {
         console.log(`📅 ${required.name}: ${uniqueMonths.join('월, ')}월 완료`)
       }
 
@@ -353,9 +461,30 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
     })
   }
 
-  const filesList = getRequiredFilesList()
+  const filesList = mounted ? getRequiredFilesList() : []
   const fullyCompletedCount = filesList.filter(f => f.isFullyUploaded).length
   const totalMonthsCompleted = filesList.reduce((sum, f) => sum + f.completedMonths, 0)
+
+  // 클라이언트에서만 렌더링 (hydration 안전성)
+  if (!mounted || typeof window === 'undefined') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <FileSpreadsheet className="w-6 h-6 text-blue-600" />
+            <div>
+              <h3 className="text-lg font-semibold">파일 업로드 관리</h3>
+              <p className="text-sm text-gray-600">월별 필수 파일 업로드 현황</p>
+            </div>
+          </div>
+        </div>
+        <div className="text-center py-8">
+          <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
+          <div className="mt-2 text-sm text-gray-600">로딩 중...</div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -409,6 +538,7 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
               : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
         }`}
         onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
@@ -416,8 +546,8 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
           {uploading ? (
             <div className="space-y-3">
               <div className="w-12 h-12 mx-auto border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-              <div className="text-blue-600 font-medium">🚀 병렬 업로드 중...</div>
-              <div className="text-sm text-gray-600">여러 파일을 동시에 처리하고 있습니다</div>
+              <div className="text-blue-600 font-medium">업로드 중...</div>
+              <div className="text-sm text-gray-600">파일을 처리하고 있습니다</div>
             </div>
           ) : isDragging ? (
             <div className="space-y-3">
@@ -443,11 +573,11 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
                   onChange={handleFileUpload}
                   disabled={uploading}
                   className="hidden"
-                  id="file-upload"
+                  id="file-upload-input"
                 />
                 <label
-                  htmlFor="file-upload"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50"
+                  htmlFor="file-upload-input"
+                  className={`inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <Upload className="w-4 h-4" />
                   파일 선택
@@ -508,12 +638,12 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
                       statusIcon = <CheckCircle className="w-3 h-3" />
                     } else if (item.completedMonths > 0) {
                       statusColor = "yellow"
-                      statusText = `부분완료 (${item.completedMonths}/12)`
+                      statusText = `진행중 (${item.completedMonths}개월)`
                       statusIcon = <Upload className="w-3 h-3" />
                     }
                   }
 
-                  const isExpanded = expandedRows.has(item.id)
+                  const isExpanded = expandedRows.includes(item.id)
 
                   return (
                     <React.Fragment key={`row-group-${item.id}`}>
@@ -552,9 +682,30 @@ export default function UploadsPageClient({ clinicId }: { clinicId: string }) {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <span className="text-xs text-gray-500">
-                            {isExpanded ? "접기" : "펼치기"}
-                          </span>
+                          <div className="flex items-center justify-center gap-2">
+                            {/* 카테고리별 파일 선택 버튼 */}
+                            <input
+                              type="file"
+                              multiple
+                              accept=".xlsx,.xls"
+                              onChange={(e) => handleCategoryFileUpload(e, item.category)}
+                              disabled={uploading}
+                              className="hidden"
+                              id={`file-upload-${item.category}`}
+                            />
+                            <label
+                              htmlFor={`file-upload-${item.category}`}
+                              className={`inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors cursor-pointer ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              title={`${item.name} 파일 선택`}
+                            >
+                              <Upload className="w-3 h-3" />
+                              파일선택
+                            </label>
+
+                            <span className="text-xs text-gray-500">
+                              {isExpanded ? "접기" : "펼치기"}
+                            </span>
+                          </div>
                         </td>
                       </tr>
 
