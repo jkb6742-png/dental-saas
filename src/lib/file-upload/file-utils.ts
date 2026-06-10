@@ -88,7 +88,7 @@ export const parseExcelFile = (buffer: Buffer): {
 
     // 첫 번째 행을 컬럼명으로 사용
     const columns = jsonData[0] as string[]
-    const data = jsonData.slice(1) // 헤더 제외한 데이터
+    const data = jsonData.slice(1) as any[][] // 헤더 제외한 데이터
 
     return {
       success: true,
