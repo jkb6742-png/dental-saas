@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { syncNaverConfig } from "@/lib/reviews/sync"
+import { requireClinicAccess } from "@/lib/security"
 
 // Google Places API를 사용한 리뷰 수집
 async function fetchGoogleReviews(placeId: string) {
@@ -33,6 +34,13 @@ export async function POST(request: Request) {
 
     if (!clinicId || !source) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    // 로그인만으로는 부족 — 요청한 치과에 접근 권한이 있는 계정만 수집을 실행할 수 있다
+    try {
+      await requireClinicAccess(clinicId)
+    } catch (e: any) {
+      return NextResponse.json({ error: e.message }, { status: 403 })
     }
 
     // 리뷰 설정 조회

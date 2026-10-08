@@ -3,7 +3,13 @@ import Anthropic from "@anthropic-ai/sdk"
 // 네이버는 별점을 없앴으므로 긍정/부정은 본문을 읽고 판단한다.
 // 답글이 없는 리뷰에는 원장님 명의 답글 초안을 함께 만든다 (등록은 사람이 확인 후 직접).
 
-const client = new Anthropic()
+// 키가 없는 환경(운영 .env 에 ANTHROPIC_API_KEY 미설정)에서도 수집 모듈이 로드되도록 지연 생성한다.
+// 모듈 최상위에서 new Anthropic() 을 하면 키가 없을 때 import 단계에서 예외가 나서 크롤·스케줄러가 통째로 죽는다.
+let client: Anthropic | null = null
+function getClient() {
+  if (!client) client = new Anthropic()
+  return client
+}
 
 export const REVIEW_TOPICS = ["친절", "설명", "통증", "실력", "비용", "대기", "예약", "시설", "청결", "주차", "직원응대", "기타"] as const
 
@@ -61,7 +67,7 @@ export async function analyzeReviews(clinicName: string, reviews: ReviewToAnalyz
   if (reviews.length === 0 || !process.env.ANTHROPIC_API_KEY) return out
 
   const payload = reviews.map((r) => ({ id: r.id, needsReply: !r.hasReply, body: r.body }))
-  const response = await client.beta.messages.create({
+  const response = await getClient().beta.messages.create({
     model: "claude-opus-5-5",
     max_tokens: 16000,
     betas: ["server-side-fallback-2026-07-01"],

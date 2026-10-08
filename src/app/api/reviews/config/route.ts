@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { NextResponse } from "next/server"
 import { fetchNaverPlaceReviews, resolveNaverPlaceId } from "@/lib/reviews/naver"
+import { requireClinicAccess } from "@/lib/security"
 
 // 리뷰 설정 생성/수정
 export async function POST(request: Request) {
@@ -15,6 +16,13 @@ export async function POST(request: Request) {
 
     if (!clinicId || !source) {
       return NextResponse.json({ error: "Missing required fields: clinicId, source" }, { status: 400 })
+    }
+
+    // 플레이스 연결(설정 변경)은 해당 치과에 쓰기 권한이 있는 계정만
+    try {
+      await requireClinicAccess(clinicId, "WRITE")
+    } catch (e: any) {
+      return NextResponse.json({ error: e.message }, { status: 403 })
     }
 
     // 네이버는 플레이스 주소(또는 ID)만 있으면 되고, 업체명은 플레이스에서 가져온다

@@ -102,7 +102,7 @@ export function parseNaverDate(text: string, now = new Date()): Date | null {
   const parts = text.split(".").map((p) => p.trim()).filter((p) => /^\d+$/.test(p)).map(Number)
   const kstNow = new Date(now.getTime() + 9 * 3600 * 1000)
   let year: number, month: number, day: number
-  if (parts.length >= 3) [year, month, day] = [2000 + parts[0], parts[1], parts[2]]
+  if (parts.length >= 3) [year, month, day] = [parts[0] > 99 ? parts[0] : 2000 + parts[0], parts[1], parts[2]] // "2024.10.22." 처럼 네 자리 연도도 허용
   else if (parts.length === 2) [year, month, day] = [kstNow.getUTCFullYear(), parts[0], parts[1]]
   else return null
   let date = new Date(Date.UTC(year, month - 1, day) - 9 * 3600 * 1000)

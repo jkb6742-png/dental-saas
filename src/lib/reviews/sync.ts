@@ -147,7 +147,7 @@ async function updateNaverMonth(configId: string, clinicId: string, year: number
 
   await prisma.reviewSummary.upsert({
     where: { clinicId_source_year_month: { clinicId, source: "NAVER", year, month } },
-    create: { clinicId, source: "NAVER", year, month, totalReviews: last.visitorTotal, newReviews, positiveCount, negativeCount, replyRate },
+    create: { clinicId, source: "NAVER", year, month, totalReviews: last.visitorTotal, newReviews, positiveCount, negativeCount, replyRate, achievementRate },
     update: { totalReviews: last.visitorTotal, newReviews, positiveCount, negativeCount, replyRate, achievementRate },
   })
 }
