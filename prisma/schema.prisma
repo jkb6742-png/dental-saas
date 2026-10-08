@@ -442,6 +442,7 @@ model ReviewConfig {
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
   reviews    Review[]
+  snapshots  ReviewSnapshot[]
   clinic     Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@unique([clinicId, source])
@@ -460,6 +461,9 @@ model Review {
   reviewDate DateTime?
   reply      String?
   replyDate  DateTime?
+  originType String?
+  replyDraft String?
+  analyzedAt DateTime?
   isPositive Boolean?
   keywords   Json?
   createdAt  DateTime     @default(now())
@@ -470,6 +474,18 @@ model Review {
   @@unique([configId, reviewId])
   @@index([clinicId, source, reviewDate])
   @@index([clinicId, rating])
+}
+
+// 수집 시점마다 플레이스 전체 리뷰 수를 남겨 월별 신규 = (월말 총계 - 전월말 총계)로 계산
+model ReviewSnapshot {
+  id           String       @id @default(cuid())
+  configId     String
+  visitorTotal Int
+  blogTotal    Int?
+  takenAt      DateTime     @default(now())
+  config       ReviewConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@index([configId, takenAt])
 }
 
 model ReviewSummary {

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { syncNaverConfig } from "@/lib/reviews/sync"
 
 // 모든 활성화된 리뷰 설정에 대해 자동 동기화 실행
 export async function POST(request: Request) {
@@ -26,9 +27,9 @@ export async function POST(request: Request) {
 
         if (config.source === "GOOGLE" && config.placeId) {
           reviewData = await fetchGoogleReviews(config.placeId)
-        } else if (config.source === "NAVER" && config.placeUrl) {
-          // 네이버 크롤링은 현재 구현하지 않음
-          console.log(`Skipping Naver crawl for clinic ${config.clinicId}`)
+        } else if (config.source === "NAVER" && (config.placeId || config.placeUrl)) {
+          const r = await syncNaverConfig(config.id)
+          results.push({ ...r, clinicName: config.clinic.name, source: config.source, newReviewsCount: r.newReviews, status: "success" })
           continue
         } else {
           console.log(`Invalid config for ${config.source} - clinic ${config.clinicId}`)
