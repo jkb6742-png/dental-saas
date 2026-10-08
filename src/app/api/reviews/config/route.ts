@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { NextResponse } from "next/server"
+import { fetchNaverPlaceReviews, resolveNaverPlaceId } from "@/lib/reviews/naver"
 
 // 리뷰 설정 생성/수정
 export async function POST(request: Request) {
@@ -16,20 +17,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields: clinicId, source" }, { status: 400 })
     }
 
-    if (!placeName) {
-      return NextResponse.json({ error: "업체명은 필수입니다" }, { status: 400 })
-    }
-
-    // 네이버 리뷰의 경우 placeUrl 필수, 구글 리뷰의 경우 placeId 필수
+    // 네이버는 플레이스 주소(또는 ID)만 있으면 되고, 업체명은 플레이스에서 가져온다
+    let resolvedPlaceId = placeId
+    let resolvedPlaceName = placeName
     if (source === "NAVER") {
-      if (!placeUrl) {
-        return NextResponse.json({ error: "네이버 플레이스 URL은 필수입니다" }, { status: 400 })
+      if (!placeUrl && !placeId) {
+        return NextResponse.json({ error: "네이버 플레이스 주소는 필수입니다" }, { status: 400 })
       }
-
-      // 네이버 URL 형식 검증
-      if (!placeUrl.includes('map.naver.com')) {
-        return NextResponse.json({ error: "올바른 네이버 지도 URL 형식이 아닙니다 (예: https://map.naver.com/p/...)" }, { status: 400 })
+      resolvedPlaceId = await resolveNaverPlaceId(placeId || placeUrl)
+      if (!resolvedPlaceId) {
+        return NextResponse.json({ error: "플레이스 주소에서 ID를 찾지 못했습니다 (예: https://m.place.naver.com/hospital/13055956)" }, { status: 400 })
       }
+      if (!resolvedPlaceName) {
+        try {
+          resolvedPlaceName = (await fetchNaverPlaceReviews(resolvedPlaceId)).name
+        } catch {
+          // 업체명은 첫 수집 때 채워진다
+        }
+      }
+    } else if (!placeName) {
+      return NextResponse.json({ error: "업체명은 필수입니다" }, { status: 400 })
     }
 
     if (source === "GOOGLE") {
@@ -64,8 +71,8 @@ export async function POST(request: Request) {
       config = await prisma.reviewConfig.update({
         where: { id: existingConfig.id },
         data: {
-          placeName,
-          placeId,
+          placeName: resolvedPlaceName,
+          placeId: resolvedPlaceId,
           placeUrl,
           isActive: true,
           updatedAt: new Date(),
@@ -77,8 +84,8 @@ export async function POST(request: Request) {
         data: {
           clinicId,
           source,
-          placeName,
-          placeId,
+          placeName: resolvedPlaceName,
+          placeId: resolvedPlaceId,
           placeUrl,
           isActive: true,
         },

@@ -327,55 +327,6 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
         </SectionCard>
       )}
 
-      {/* 최근 리뷰 */}
-      {recentReviews.length > 0 && (
-        <SectionCard title="최근 리뷰" description="최근 작성된 리뷰">
-          <div className="space-y-4">
-            {recentReviews.map((review) => (
-              <div
-                key={review.id}
-                className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      review.source === "NAVER"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-blue-100 text-blue-700"
-                    }`}>
-                      {review.source}
-                    </span>
-                    <span className="font-medium text-gray-900">
-                      {review.authorName || "익명"}
-                    </span>
-                    {review.rating && (
-                      <div className="flex items-center">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-3 h-3 ${
-                              i < review.rating! ? "text-yellow-400 fill-current" : "text-gray-300"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-sm text-gray-500">
-                    {review.reviewDate ? new Date(review.reviewDate).toLocaleDateString() : ""}
-                  </span>
-                </div>
-                {review.content && (
-                  <p className="text-sm text-gray-700 line-clamp-3">
-                    {review.content}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      )}
-
       {/* 수동 입력 모달 */}
       {showManualInput && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense } from "react"
 import MonthlyReviewManager from "@/components/reviews/MonthlyReviewManager"
 import ReviewDashboard from "@/components/reviews/ReviewDashboard"
+import NaverReviewFeed from "@/components/reviews/NaverReviewFeed"
 import YearMonthFilter from "@/components/ui/YearMonthFilter"
 
 interface ReviewsPageClientProps {
@@ -60,6 +61,9 @@ export default function ReviewsPageClient({
           month={month}
         />
       </Suspense>
+
+      {/* 네이버 리뷰 목록 (자동 수집 · 답글 초안) */}
+      <NaverReviewFeed clinicId={clinicId} userRole={userRole} />
 
       {/* 월별 관리 */}
       <Suspense fallback={<div className="text-center py-8">설정을 불러오는 중...</div>}>
