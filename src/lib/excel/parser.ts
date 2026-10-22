@@ -87,6 +87,7 @@ export function parseMonthlyLedger(buffer: ArrayBuffer): ParsedRow[] {
       if (!date) return null
       const month = extractMonth(r["날짜"])
       const year = new Date(date).getFullYear()
+      const { totalIncome, netTotal } = ledgerTotals(r)
       return {
         _type: "daily_ledger",
         date,
@@ -101,12 +102,31 @@ export function parseMonthlyLedger(buffer: ArrayBuffer): ParsedRow[] {
         cardExpense: cleanNum(r["카드지출"]),
         onlineExpense: cleanNum(r["기타(온라인)지출"]),
         cardFee: cleanNum(r["카드수수료"]),
-        totalIncome: cleanNum(r["총 수입(청구포함,VAT제외)"]),
+        totalIncome,
         totalExpense: cleanNum(r["총 지출"]),
-        netTotal: cleanNum(r["총계(청구포함,VAT제외)"]),
+        netTotal,
       } as ParsedRow
     })
     .filter(Boolean) as ParsedRow[]
+}
+
+// 월간장부 합계 열은 덴트웹 설정에 따라 두 가지로 나온다.
+//   "총 수입(청구포함,VAT제외)" — 공단청구액 포함 (지음·중산·디어스)
+//   "총 수입(VAT제외)"          — 공단청구액 제외 (하얀드림) → 공단부담(청구액)을 더해 청구포함으로 맞춘다
+function ledgerTotals(r: any): { totalIncome: number | null; netTotal: number | null } {
+  if (r["총 수입(청구포함,VAT제외)"] !== undefined) {
+    return {
+      totalIncome: cleanNum(r["총 수입(청구포함,VAT제외)"]),
+      netTotal: cleanNum(r["총계(청구포함,VAT제외)"]),
+    }
+  }
+  const claim = cleanNum(r["공단부담(청구액)"]) ?? 0
+  const income = cleanNum(r["총 수입(VAT제외)"])
+  const net = cleanNum(r["총계(VAT제외)"])
+  return {
+    totalIncome: income == null ? null : income + claim,
+    netTotal: net == null ? null : net + claim,
+  }
 }
 
 export function parseAnnualLedger(buffer: ArrayBuffer): ParsedRow[] {

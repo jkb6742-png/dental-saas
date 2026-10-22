@@ -10,6 +10,7 @@ const KNOWN_PLACES: Array<{ match: string; placeId: string }> = [
   { match: "디어스", placeId: "1989758373" },
   { match: "고산", placeId: "2019721532" },
   { match: "지음", placeId: "1364600419" }, // 노원구 공릉동
+  { match: "하얀드림", placeId: "1962540163" }, // 청주 오송
 ]
 
 export async function GET() {
