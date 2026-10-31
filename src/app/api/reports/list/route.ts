@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 🔒 보안 검증: 클리닉 접근 및 READ 권한 확인
-    const user = await requireClinicAccess(clinicId, 'read')
+    const user = await requireClinicAccess(clinicId, 'READ')
 
     // 보안 이벤트 로깅
     await logSecurityEvent({

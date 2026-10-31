@@ -13,7 +13,6 @@ import {
   Settings,
   ChevronDown,
   Building2,
-  UserCheck,
   MessageSquare,
   MessageCircle,
   BarChart2,
@@ -23,6 +22,9 @@ import {
   Code,
   Database,
   Target,
+  Inbox,
+  Megaphone,
+  ClipboardList,
 } from "lucide-react"
 
 type NavItem = {
@@ -46,15 +48,22 @@ const baseNavItems: NavItem[] = [
   { href: "/dashboard/implants", label: "임플란트 통계", icon: <Stethoscope className="w-4 h-4" />, group: "진료" },
 
   { href: "/dashboard/routes", label: "내원경로 ROI", icon: <MapPin className="w-4 h-4" />, group: "마케팅" },
+  { href: "/dashboard/site-leads", label: "홈페이지 문의", icon: <Inbox className="w-4 h-4" />, group: "마케팅" },
   { href: "/dashboard/consultations", label: "상담 성과", icon: <MessageSquare className="w-4 h-4" />, group: "마케팅" },
   { href: "/dashboard/reviews", label: "온라인 리뷰", icon: <MessageCircle className="w-4 h-4" />, group: "마케팅" },
+  { href: "/dashboard/naver-ads", label: "네이버 검색광고", icon: <Megaphone className="w-4 h-4" />, group: "마케팅" },
 
-  { href: "/dashboard/reports", label: "월간 리포트", icon: <FileText className="w-4 h-4" />, group: "리포트" },
-  { href: "/dashboard/pei", label: "PEI 리포트", icon: <UserCheck className="w-4 h-4" />, group: "리포트" },
+  { href: "/dashboard/reports", label: "보고서", icon: <FileText className="w-4 h-4" />, group: "리포트" },
+  { href: "/dashboard/pei-survey", label: "PEI 설문", icon: <ClipboardList className="w-4 h-4" />, group: "리포트" },
 
   { href: "/dashboard/action-plans", label: "실행계획", icon: <Target className="w-4 h-4" />, group: "관리" },
 
-  { href: "/dashboard/uploads", label: "파일 업로드", icon: <Upload className="w-4 h-4" />, group: "데이터" },
+  { href: "/dashboard/requests", label: "요청사항", icon: <Inbox className="w-4 h-4" />, group: "요청" },
+]
+
+// 마스터 전용: 데이터 업로드 / DB 관리
+const masterDataItems: NavItem[] = [
+  { href: "/dashboard/excel-upload", label: "📊 엑셀 업로드", icon: <Upload className="w-4 h-4" />, group: "데이터" },
   { href: "/dashboard/database", label: "데이터베이스 관리", icon: <Database className="w-4 h-4" />, group: "데이터" },
 ]
 
@@ -75,7 +84,9 @@ export default function Sidebar({ clinicName, agencyName, clinicId, userRole }: 
     { href: "/admin/reset", label: "데이터 초기화", icon: <Database className="w-4 h-4" />, group: "관리자" },
   ] : []
 
-  const navItems = [...baseNavItems, ...adminNavItems]
+  const navItems = userRole === 'MASTER'
+    ? [...baseNavItems, ...masterDataItems, ...adminNavItems]
+    : [...baseNavItems]
 
   const resolvedNav = navItems.map((item) => ({
     ...item,
@@ -162,16 +173,18 @@ export default function Sidebar({ clinicName, agencyName, clinicId, userRole }: 
         {rendered}
       </nav>
 
-      {/* Bottom */}
-      <div className="px-3 py-3 border-t border-[#f2f4f6]">
-        <Link
-          href="/admin/clinics"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium text-[#4e5968] hover:bg-[#f9fafb] hover:text-[#191f28] transition-all duration-150"
-        >
-          <Settings className="w-4 h-4 text-[#8b95a1]" />
-          설정
-        </Link>
-      </div>
+      {/* Bottom — 설정(치과 관리)은 마스터 전용 */}
+      {userRole === 'MASTER' && (
+        <div className="px-3 py-3 border-t border-[#f2f4f6]">
+          <Link
+            href="/admin/clinics"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium text-[#4e5968] hover:bg-[#f9fafb] hover:text-[#191f28] transition-all duration-150"
+          >
+            <Settings className="w-4 h-4 text-[#8b95a1]" />
+            설정
+          </Link>
+        </div>
+      )}
     </aside>
   )
 }

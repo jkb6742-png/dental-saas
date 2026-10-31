@@ -583,25 +583,22 @@ export type FileType =
 export function detectFileType(filename: string): FileType {
   console.log(`🔍 [PARSER] 파일 타입 판별 시작: "${filename}"`)
 
-  // 🔥 강화된 월간장부 패턴 (더 관대하게)
-  if (filename.includes("월간장부") ||
-      filename.includes("장부") ||
-      filename.includes("월간") ||
-      filename.match(/\d+월.*장부/) ||
-      filename.match(/장부.*\d+월/) ||
-      filename.includes("monthly") ||
-      filename.includes("ledger")) {
-    console.log(`✅ [PARSER] 타입 판별 결과: monthly_ledger (강화된 패턴)`)
-    return "monthly_ledger"
-  }
-
-  // 🔥 연간장부 강화된 패턴 (우선순위 최고)
+  // 🔥 연간장부 강화된 패턴 (우선순위 최고 - 먼저 체크)
   if (filename.includes("연간장부") ||
-      filename.match(/\d{4}연간장부/) ||
+      filename.match(/\d{4}년?연간장부/) ||
       filename.match(/연간.*장부/) ||
       filename.toLowerCase().includes("annual")) {
     console.log(`✅ [PARSER] 연간장부 확실 감지: "${filename}" → annual_ledger`)
     return "annual_ledger"
+  }
+
+  // 🔥 월간장부 패턴 (연간장부 이후 체크, "장부" 단순 조건 제거)
+  if (filename.includes("월간장부") ||
+      filename.match(/\d+월.*장부/) ||
+      filename.match(/장부.*\d+월/) ||
+      filename.toLowerCase().includes("monthly")) {
+    console.log(`✅ [PARSER] 타입 판별 결과: monthly_ledger`)
+    return "monthly_ledger"
   }
 
   // 환자 통계 관련 파일명 패턴 확장

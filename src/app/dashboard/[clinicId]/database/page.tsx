@@ -12,6 +12,8 @@ export default async function DatabasePage({
 }) {
   const session = await auth()
   if (!session) redirect("/login")
+  // 데이터베이스 관리는 마스터 전용
+  if ((session.user as any).role !== "MASTER") redirect("/dashboard")
 
   const { clinicId } = await params
 
@@ -84,29 +86,29 @@ export default async function DatabasePage({
     revenue: {
       count: revenueCount,
       latest: latestRevenue?.date,
-      health: revenueCount > 0 ? 'healthy' : 'warning'
+      health: revenueCount > 0 ? ('healthy' as const) : ('warning' as const)
     },
     patientInfo: {
       count: patientInfoCount,
       latest: latestPatientInfo?.visitDate,
-      health: patientInfoCount > 0 ? 'healthy' : 'warning'
+      health: patientInfoCount > 0 ? ('healthy' as const) : ('warning' as const)
     },
     treatmentData: {
       count: treatmentDataCount,
       latest: latestTreatmentData ? `${latestTreatmentData.year}년 ${latestTreatmentData.month}월` : null,
-      health: treatmentDataCount > 0 ? 'healthy' : 'warning'
+      health: treatmentDataCount > 0 ? ('healthy' as const) : ('warning' as const)
     },
     visitRouteData: {
       count: visitRouteDataCount,
-      health: visitRouteDataCount > 0 ? 'healthy' : 'warning'
+      health: visitRouteDataCount > 0 ? ('healthy' as const) : ('warning' as const)
     },
     regionData: {
       count: regionDataCount,
-      health: regionDataCount > 0 ? 'healthy' : 'warning'
+      health: regionDataCount > 0 ? ('healthy' as const) : ('warning' as const)
     },
     ageData: {
       count: ageDataCount,
-      health: ageDataCount > 0 ? 'healthy' : 'warning'
+      health: ageDataCount > 0 ? ('healthy' as const) : ('warning' as const)
     }
   }
 

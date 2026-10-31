@@ -65,9 +65,9 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
 
   const months = generateMonths()
 
-  // 사용 가능한 연도 목록 (2025년부터 현재 연도까지)
+  // 사용 가능한 연도 목록 (2022년부터 현재 연도까지)
   const availableYears = []
-  for (let year = 2025; year <= currentDate.getFullYear(); year++) {
+  for (let year = 2022; year <= currentDate.getFullYear(); year++) {
     availableYears.push(year)
   }
 
@@ -112,22 +112,8 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
   }
 
   const calculateTotalReviews = (year: number, month: number) => {
-    // 2025년 기준으로 0개에서 시작
-    // 2026년 1월부터 신규 리뷰를 누적
-    const baseYear = 2025
-    let total = 0
-
-    for (let y = 2026; y <= year; y++) {
-      const endMonth = y === year ? month : 12
-      const startMonth = y === 2026 ? 1 : 1
-
-      for (let m = startMonth; m <= endMonth; m++) {
-        const monthData = currentReviews.find(r => r.year === y && r.month === m)
-        total += monthData?.newReviews || 0
-      }
-    }
-
-    return total
+    // 누적 총계는 API가 연도 무관 누적합으로 계산해 totalReviews 로 내려줌 → 그 값을 사용
+    return getReviewData(year, month)?.totalReviews ?? 0
   }
 
   const startEditing = (year: number, month: number) => {

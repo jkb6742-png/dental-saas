@@ -22,41 +22,29 @@ export async function POST(req: NextRequest) {
     // 🔒 보안 검증: 클리닉 접근 및 WRITE 권한 확인
     const user = await requireClinicAccess(clinicId, 'WRITE')
 
-    // 🔒 보안 1: 파일 확장자 및 MIME 타입 검증
-    const allowedExtensions = ['.html', '.htm']
-    const allowedMimeTypes = ['text/html', 'text/plain', 'application/octet-stream']
+    // 파일 타입 제한 제거 - 모든 파일 형식 허용
 
-    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'))
-    if (!allowedExtensions.includes(fileExtension)) {
+    // 파일 크기 제한 (50MB)
+    if (file.size > 50 * 1024 * 1024) {
       return NextResponse.json({
-        error: "HTML 파일(.html, .htm)만 업로드 가능합니다"
+        error: "파일 크기는 50MB를 초과할 수 없습니다"
       }, { status: 400 })
     }
 
-    if (file.type && !allowedMimeTypes.includes(file.type)) {
-      return NextResponse.json({
-        error: "허용되지 않은 파일 타입입니다"
-      }, { status: 400 })
+    // 파일 내용을 Base64로 읽기 (모든 파일 형식 지원)
+    const buffer = await file.arrayBuffer()
+    const rawContent = Buffer.from(buffer).toString('base64')
+
+    // 파일 정보 저장을 위한 메타데이터
+    const fileMetadata = {
+      originalName: file.name,
+      mimeType: file.type || 'application/octet-stream',
+      size: file.size,
+      encoding: 'base64'
     }
 
-    // 🔒 보안 2: 파일 크기 제한 (5MB로 축소)
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({
-        error: "파일 크기는 5MB를 초과할 수 없습니다"
-      }, { status: 400 })
-    }
-
-    // 파일 내용 읽기
-    const rawHtmlContent = await file.text()
-
-    // 🔒 보안 3: 기본적인 HTML 검증
-    if (!rawHtmlContent.includes('<!DOCTYPE html>') && !rawHtmlContent.includes('<html')) {
-      return NextResponse.json({
-        error: "올바른 HTML 파일이 아닙니다"
-      }, { status: 400 })
-    }
-
-    // 🔒 보안 4: 악성 패턴 검사
+    // 🔒 보안 4: 악성 패턴 검사 (비활성화 - PDF 업로드 허용)
+    /*
     const dangerousPatterns = [
       /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
       /javascript:/gi,
@@ -74,46 +62,21 @@ export async function POST(req: NextRequest) {
         }, { status: 400 })
       }
     }
+    */
 
-    // 🔒 보안 5: HTML 새니타이징 (XSS 방지)
+    // 🔒 HTML 새니타이징 비활성화 - 원본 파일 그대로 저장
+    /*
     const sanitizeOptions = {
-      allowedTags: [
-        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'p', 'div', 'span', 'br', 'hr',
-        'strong', 'b', 'em', 'i', 'u',
-        'ul', 'ol', 'li',
-        'table', 'thead', 'tbody', 'tr', 'th', 'td',
-        'img', 'a',
-        'blockquote', 'pre', 'code',
-        'html', 'head', 'body', 'title', 'meta', 'link', 'style'
-      ],
-      allowedAttributes: {
-        '*': ['class', 'id', 'style'],
-        'a': ['href', 'target'],
-        'img': ['src', 'alt', 'width', 'height'],
-        'meta': ['charset', 'name', 'content'],
-        'link': ['rel', 'type', 'href']
-      },
-      allowedSchemes: ['http', 'https', 'data'],
-      allowedClasses: {},
-      allowedStyles: {
-        '*': {
-          'color': [/^[a-z]+$/i, /^#[0-9a-f]{3,6}$/i, /^rgb\([0-9, ]+\)$/],
-          'background-color': [/^[a-z]+$/i, /^#[0-9a-f]{3,6}$/i, /^rgb\([0-9, ]+\)$/],
-          'font-size': [/^\d+(px|em|rem|%)$/],
-          'font-weight': [/^\d+$/, /^(normal|bold|bolder|lighter)$/],
-          'text-align': [/^(left|center|right|justify)$/],
-          'margin': [/^\d+(px|em|rem|%)(\s+\d+(px|em|rem|%))*$/],
-          'padding': [/^\d+(px|em|rem|%)(\s+\d+(px|em|rem|%))*$/],
-          'width': [/^\d+(px|em|rem|%)$/],
-          'height': [/^\d+(px|em|rem|%)$/],
-          'border': [/^[\d\w\s#(),-]+$/],
-          'display': [/^(block|inline|inline-block|flex|grid|none)$/]
-        }
-      }
+      // ... (생략)
     }
-
     const htmlContent = sanitizeHtml(rawHtmlContent, sanitizeOptions)
+    */
+
+    // 원본 파일 내용을 Base64로 저장
+    const fileContent = JSON.stringify({
+      content: rawContent,
+      metadata: fileMetadata
+    })
 
     // 보안 이벤트 로깅
     await logSecurityEvent({
@@ -131,11 +94,11 @@ export async function POST(req: NextRequest) {
       },
       update: {
         title,
-        content: htmlContent,
+        content: fileContent,
         status: 'COMPLETED',
         generatedAt: new Date(),
         updatedAt: new Date(),
-        summary: 'HTML로 업로드된 PEI 보고서',
+        summary: `원본 파일로 업로드된 PEI 보고서 (${fileMetadata.originalName})`,
         peiScore: 0,
         categoryScores: {},
         insights: [],
@@ -146,11 +109,11 @@ export async function POST(req: NextRequest) {
         year,
         month,
         title,
-        content: htmlContent,
+        content: fileContent,
         status: 'COMPLETED',
         generatedAt: new Date(),
         generatedBy: user.id!,
-        summary: 'HTML로 업로드된 PEI 보고서',
+        summary: `원본 파일로 업로드된 PEI 보고서 (${fileMetadata.originalName})`,
         peiScore: 0,
         categoryScores: {},
         insights: [],
@@ -159,32 +122,14 @@ export async function POST(req: NextRequest) {
     })
 
     // HTML 파일을 구조화된 디렉토리에 저장
-    const clinic = await prisma.clinic.findUnique({
-      where: { id: clinicId },
-      select: { name: true }
-    })
-
-    const fileName = `[${clinic?.name || '치과'}] ${year}년 ${month}월 PEI리포트.html`
-
-    // 개선된 파일 저장 구조: ./uploads/pei/[clinicId]/[year]/[month]/
-    const fs = require('fs').promises
-    const path = require('path')
-
-    const baseDir = path.join(process.cwd(), 'uploads', 'pei', clinicId, year.toString(), month.toString().padStart(2, '0'))
-    const filePath = path.join(baseDir, fileName)
-
-    // 디렉토리가 없으면 생성
-    await fs.mkdir(baseDir, { recursive: true })
-    await fs.writeFile(filePath, htmlContent, 'utf8')
-
-    console.log(`[PEI_UPLOAD] HTML 보고서 업로드 완료: ${report.id} - ${title}`)
+    console.log(`[PEI_UPLOAD] 리포트 업로드 완료: ${report.id} - ${title} (${fileMetadata.originalName})`)
 
     return NextResponse.json({
       success: true,
-      message: "PEI 보고서가 성공적으로 업로드되었습니다",
+      message: `PEI 리포트 원본 파일이 성공적으로 업로드되었습니다 (${fileMetadata.originalName})`,
       reportId: report.id,
-      fileName: fileName,
-      filePath: filePath
+      fileName: fileMetadata.originalName,
+      downloadUrl: `/api/pei/html?reportId=${report.id}&download=true`
     })
 
   } catch (error: any) {

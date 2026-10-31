@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation"
 import SectionCard from "@/components/ui/SectionCard"
 import KpiCard from "@/components/ui/KpiCard"
 import YearMonthFilter from "@/components/ui/YearMonthFilter"
-import { XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar, AreaChart, Area, Tooltip } from "recharts"
+import { XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar, AreaChart, Area, Tooltip, LabelList } from "recharts"
+
+const manLabel = (v: unknown) => (typeof v === 'number' && v > 0 ? `${Math.round(v / 10000)}만` : '')
 import { Calendar, Activity } from "lucide-react"
 
 interface TreatmentData {
@@ -89,10 +91,13 @@ export default function TreatmentsPageClient({
   // URL 업데이트
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString())
+    // 이미 같은 URL이면 재이동(전체 서버 재조회+재렌더) 하지 않음 → 마운트 시 불필요한 리로드 방지
+    if (params.get('year') === String(selectedYear) && params.get('month') === String(selectedMonth)) return
     params.set('year', selectedYear.toString())
     params.set('month', selectedMonth.toString())
     router.push(`/dashboard/${clinicId}/treatments?${params.toString()}`)
-  }, [selectedYear, selectedMonth, clinicId, router, searchParams])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedYear, selectedMonth])
 
 
 
@@ -273,7 +278,7 @@ export default function TreatmentsPageClient({
 
                   <div className="h-40 mb-6 w-full min-h-[160px] min-w-0">
                     <ResponsiveContainer width="100%" height={160} minHeight={160}>
-                      <AreaChart data={itemData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                      <AreaChart data={itemData} margin={{ top: 22, right: 20, left: 0, bottom: 5 }}>
                         <defs>
                           <linearGradient id={`gradient-${index}`} x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor={color.primary} stopOpacity={0.3}/>
@@ -286,13 +291,16 @@ export default function TreatmentsPageClient({
                           tick={{ fontSize: 12, fill: "#64748b" }}
                           axisLine={false}
                           tickLine={false}
+                          tickMargin={10}
+                          padding={{ left: 14, right: 14 }}
                         />
                         <YAxis
                           tick={{ fontSize: 12, fill: "#64748b" }}
                           axisLine={false}
                           tickLine={false}
                           tickFormatter={(value) => `${(value/10000).toFixed(0)}만`}
-                          width={50}
+                          width={56}
+                          tickMargin={8}
                         />
                         <Tooltip
                           formatter={(value: any) => [`${formatAmount(value)}`, '수익']}
@@ -313,7 +321,9 @@ export default function TreatmentsPageClient({
                           fill={`url(#gradient-${index})`}
                           dot={{ fill: color.primary, strokeWidth: 2, stroke: '#ffffff', r: 4 }}
                           activeDot={{ r: 6, fill: color.primary, stroke: '#ffffff', strokeWidth: 3 }}
-                        />
+                        >
+                          <LabelList dataKey="revenue" position="top" offset={8} formatter={manLabel} style={{ fontSize: 9, fontWeight: 700, fill: color.primary }} />
+                        </Area>
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>

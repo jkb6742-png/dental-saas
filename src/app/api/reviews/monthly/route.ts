@@ -19,34 +19,52 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Missing clinicId" }, { status: 400 })
     }
 
-    // 연도가 지정된 경우 해당 연도 데이터만, 아니면 최근 12개월 데이터 조회
-    const whereClause: any = {
-      clinicId,
-      ...(source && { source })
-    }
+    // ── 연도 무관 누적 계산 ──────────────────────────────
+    // 누적 총계(totalReviews)는 저장값을 쓰지 않고 항상 "월별 신규(newReviews)의 누적합"으로 계산.
+    // 시작 이전 기존 리뷰(베이스라인)는 month=0 행의 newReviews 로 넣으면 자동 포함됨. (없으면 0부터)
+    const targetYear = year ? parseInt(year) : new Date().getFullYear()
 
-    if (year) {
-      whereClause.year = parseInt(year)
-    }
-
-    const reviews = await prisma.reviewSummary.findMany({
-      where: whereClause,
+    // 요청 연도 이하 전체를 시간순으로 가져와 누적 계산
+    const all = await prisma.reviewSummary.findMany({
+      where: { clinicId, ...(source && { source }), year: { lte: targetYear } },
       select: {
-        id: true,
-        year: true,
-        month: true,
-        totalReviews: true,
-        newReviews: true,
-        targetReviews: true,
-        achievementRate: true,
-        updatedAt: true
+        id: true, year: true, month: true,
+        totalReviews: true, newReviews: true,
+        targetReviews: true, achievementRate: true, updatedAt: true,
       },
-      orderBy: [
-        { year: "desc" },
-        { month: "desc" }
-      ],
-      ...(year ? {} : { take: 12 }) // 특정 연도가 아니면 12개 제한
+      orderBy: [{ year: "asc" }, { month: "asc" }],
     })
+
+    // 각 (연,월)까지의 누적 총계 계산 (month=0 베이스라인 포함)
+    let running = 0
+    const cumulative = new Map<string, number>()
+    for (const r of all) {
+      running += r.newReviews || 0
+      cumulative.set(`${r.year}-${r.month}`, running)
+    }
+
+    const shape = (r: typeof all[number]) => ({
+      id: r.id, year: r.year, month: r.month,
+      newReviews: r.newReviews || 0,
+      totalReviews: cumulative.get(`${r.year}-${r.month}`) ?? 0, // 항상 누적 계산값
+      targetReviews: r.targetReviews,
+      achievementRate: r.achievementRate,
+      updatedAt: r.updatedAt,
+    })
+
+    let reviews
+    if (year) {
+      // 지정 연도의 실제 월(month>=1)만, 최신월 우선
+      reviews = all.filter(r => r.year === targetYear && r.month >= 1)
+        .map(shape)
+        .sort((a, b) => b.month - a.month)
+    } else {
+      // 연도 미지정: 최근 12개월(month>=1)
+      reviews = all.filter(r => r.month >= 1)
+        .map(shape)
+        .sort((a, b) => (b.year * 100 + b.month) - (a.year * 100 + a.month))
+        .slice(0, 12)
+    }
 
     return NextResponse.json(reviews)
 

@@ -32,13 +32,8 @@ let redisClient: Redis | null = null
 try {
   if (process.env.REDIS_URL) {
     redisClient = new Redis(process.env.REDIS_URL, {
-      retryDelayOnFailover: 100,
       maxRetriesPerRequest: 3,
-      lazyConnect: true,
-      // 연결 에러 시 로그만 기록하고 계속 진행
-      onError: (error) => {
-        console.warn('Redis connection error:', error.message)
-      }
+      lazyConnect: true
     })
   }
 } catch (error) {
@@ -198,7 +193,7 @@ export class CacheService {
       // 메모리 캐시에서 삭제
       const memoryDeleted = memoryCache.del(key)
 
-      return deleted || memoryDeleted
+      return deleted || (typeof memoryDeleted === 'number' ? memoryDeleted > 0 : memoryDeleted)
     } catch (error) {
       console.error(`Cache delete error for key ${key}:`, error)
       return false
@@ -350,20 +345,20 @@ export function cached(
   }
 }
 
-// 사용 예제
-export class CachedDataService {
-  @cached('region-stats', CACHE_STRATEGIES.MONTHLY_STATS)
-  static async getRegionStats(clinicId: string, year: number, month: number) {
-    // 실제 DB 조회 로직
-    return { clinicId, year, month, data: [] }
-  }
+// 사용 예제 (주석 처리됨)
+// export class CachedDataService {
+//   @cached('region-stats', CACHE_STRATEGIES.MONTHLY_STATS)
+//   static async getRegionStats(clinicId: string, year: number, month: number) {
+//     // 실제 DB 조회 로직
+//     return { clinicId, year, month, data: [] }
+//   }
 
-  @cached('age-stats', CACHE_STRATEGIES.MONTHLY_STATS)
-  static async getAgeStats(clinicId: string, year: number, month: number) {
-    // 실제 DB 조회 로직
-    return { clinicId, year, month, data: [] }
-  }
-}
+//   @cached('age-stats', CACHE_STRATEGIES.MONTHLY_STATS)
+//   static async getAgeStats(clinicId: string, year: number, month: number) {
+//     // 실제 DB 조회 로직
+//     return { clinicId, year, month, data: [] }
+//   }
+// }
 
 // 캐시 관리 유틸리티
 export const CacheManager = {

@@ -1,7 +1,7 @@
 "use client"
 
 import {
-  ComposedChart, Bar, Line,
+  ComposedChart, Bar, Line, LabelList,
   XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from "recharts"
@@ -28,18 +28,28 @@ const fmt = (v: number) =>
   v >= 1_000_000   ? `${(v / 1_000_000).toFixed(0)}백만` :
   v >= 10_000      ? `${(v / 10_000).toFixed(0)}만` : String(v)
 
+// 막대/점 위 라벨 포맷 (단위별). 0/음수는 숨김.
+const mkLabelFmt = (unit?: string) => (v: unknown) => {
+  if (typeof v !== "number" || v <= 0) return ""
+  if (unit === "원") return fmt(v)
+  if (unit === "%") return `${v.toFixed(0)}%`
+  return v.toLocaleString("ko-KR")
+}
+
 export default function TrendChart({ data, series, rightUnit, height = 280 }: Props) {
   const hasRight = series.some((s) => s.yAxisId === "right")
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <ComposedChart data={data} margin={{ top: 4, right: hasRight ? 16 : 8, left: 0, bottom: 0 }}>
+      <ComposedChart data={data} margin={{ top: 24, right: hasRight ? 16 : 8, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f2f4f6" vertical={false} />
         <XAxis
           dataKey="label"
           tick={{ fontSize: 11, fill: "#8b95a1" }}
           axisLine={false}
           tickLine={false}
+          tickMargin={10}
+          padding={{ left: 14, right: 14 }}
         />
         <YAxis
           yAxisId="left"
@@ -47,7 +57,8 @@ export default function TrendChart({ data, series, rightUnit, height = 280 }: Pr
           tick={{ fontSize: 11, fill: "#8b95a1" }}
           axisLine={false}
           tickLine={false}
-          width={52}
+          width={56}
+          tickMargin={8}
         />
         {hasRight && (
           <YAxis
@@ -91,7 +102,9 @@ export default function TrendChart({ data, series, rightUnit, height = 280 }: Pr
               fill={s.color}
               radius={[4, 4, 0, 0]}
               maxBarSize={36}
-            />
+            >
+              <LabelList dataKey={s.key} position="top" formatter={mkLabelFmt(s.unit)} offset={8} style={{ fontSize: 11, fontWeight: 700, fill: s.color }} />
+            </Bar>
           ) : (
             <Line
               key={s.key}
@@ -104,7 +117,9 @@ export default function TrendChart({ data, series, rightUnit, height = 280 }: Pr
               dot={{ r: 3.5, fill: s.color }}
               activeDot={{ r: 5 }}
               connectNulls
-            />
+            >
+              <LabelList dataKey={s.key} position="top" formatter={mkLabelFmt(s.unit)} offset={10} style={{ fontSize: 11, fontWeight: 700, fill: s.color }} />
+            </Line>
           )
         )}
       </ComposedChart>

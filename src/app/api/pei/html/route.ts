@@ -28,17 +28,50 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "보고서 내용이 없습니다" }, { status: 404 })
     }
 
-    const headers: HeadersInit = {
-      'Content-Type': 'text/html; charset=utf-8'
+    // 새로운 Base64 형식인지 확인
+    let fileData: any
+    let isNewFormat = false
+
+    try {
+      fileData = JSON.parse(report.content)
+      if (fileData.content && fileData.metadata) {
+        isNewFormat = true
+      }
+    } catch {
+      // 기존 HTML 형식
+      isNewFormat = false
     }
 
-    // 다운로드 요청인 경우 파일명 설정
-    if (download) {
-      const fileName = `${report.year}년${report.month}월_PEI보고서_${report.clinic.name}.html`
-      headers['Content-Disposition'] = `attachment; filename="${encodeURIComponent(fileName)}"`
-    }
+    if (isNewFormat) {
+      // 새로운 형식: Base64 디코딩하여 원본 파일 제공
+      const buffer = Buffer.from(fileData.content, 'base64')
+      const originalFileName = fileData.metadata.originalName
+      const mimeType = fileData.metadata.mimeType
 
-    return new NextResponse(report.content, { headers })
+      const headers: HeadersInit = {
+        'Content-Type': mimeType
+      }
+
+      // 다운로드 요청인 경우 파일명 설정
+      if (download) {
+        const fileName = originalFileName || `${report.year}년${report.month}월_PEI보고서_${report.clinic.name}`
+        headers['Content-Disposition'] = `attachment; filename="${encodeURIComponent(fileName)}"`
+      }
+
+      return new NextResponse(buffer, { headers })
+    } else {
+      // 기존 HTML 형식 (하위 호환성)
+      const headers: HeadersInit = {
+        'Content-Type': 'text/html; charset=utf-8'
+      }
+
+      if (download) {
+        const fileName = `${report.year}년${report.month}월_PEI보고서_${report.clinic.name}.html`
+        headers['Content-Disposition'] = `attachment; filename="${encodeURIComponent(fileName)}"`
+      }
+
+      return new NextResponse(report.content, { headers })
+    }
 
   } catch (error) {
     console.error('[PEI_HTML] 조회 실패:', error)

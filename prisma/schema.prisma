@@ -1,5 +1,8 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // NAS(ARM64 alpine, OpenSSL 3) 런타임용 엔진을 반드시 함께 생성.
+  // 미지정 시 빌더가 openssl 감지 실패로 1.1.x 엔진을 만들어 런타임에서 libssl.so.1.1 없음 오류 발생.
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
@@ -19,25 +22,34 @@ model Agency {
 }
 
 model User {
-  id                  String           @id @default(cuid())
-  email               String           @unique
-  password            String
-  name                String
-  role                UserRole         @default(VIEWER)
-  agencyId            String
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  approvedAt          DateTime?
-  approvedBy          String?
-  inviteCodeId        String?
-  status              UserStatus       @default(PENDING)
-  lockedAt            DateTime?
-  lockUntil           DateTime?
-  createdInviteCodes  InviteCode[]     @relation("InviteCodeCreator")
-  generatedPeiReports PeiReport[]      @relation("PeiReportGenerator")
-  peiSheetConfigs     PeiSheetConfig[]
-  agency              Agency           @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-  inviteCode          InviteCode?      @relation(fields: [inviteCodeId], references: [id])
+  id                     String                     @id @default(cuid())
+  email                  String                     @unique
+  password               String
+  name                   String
+  role                   UserRole                   @default(VIEWER)
+  agencyId               String
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  approvedAt             DateTime?
+  approvedBy             String?
+  inviteCodeId           String?
+  status                 UserStatus                 @default(PENDING)
+  lockedAt               DateTime?
+  lockUntil              DateTime?
+  // 직접 소속 치과. 비마스터(로그인 계정)는 이 치과에만 접근 가능. MASTER는 null.
+  clinicId               String?
+  clinic                 Clinic?                    @relation("ClinicAccounts", fields: [clinicId], references: [id], onDelete: Cascade)
+  actionPlans            ActionPlan[]
+  actionPlanAttachments  ActionPlanAttachment[]
+  actionPlanComments     ActionPlanComment[]
+  createdInviteCodes     InviteCode[]               @relation("InviteCodeCreator")
+  generatedPeiReports    PeiReport[]                @relation("PeiReportGenerator")
+  peiSheetConfigs        PeiSheetConfig[]
+  serviceRequests        ServiceRequest[]           @relation("ServiceRequestCreator")
+  serviceRequestComments ServiceRequestComment[]
+  serviceRequestFiles    ServiceRequestAttachment[]
+  agency                 Agency                     @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  inviteCode             InviteCode?                @relation(fields: [inviteCodeId], references: [id])
 }
 
 model Clinic {
@@ -47,6 +59,8 @@ model Clinic {
   agencyId              String
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
+  actionPlans           ActionPlan[]
+  ageDatas              AgeData[]
   ageDists              AgeDist[]
   agency                Agency                 @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   consultationStats     ConsultationStat[]
@@ -57,30 +71,56 @@ model Clinic {
   inviteCodes           InviteCode[]
   monthlySummaries      MonthlySummary[]
   patientConsents       PatientConsent[]
+  patientInfos          PatientInfo[]
   patientStats          PatientStat[]
   peiReports            PeiReport[]
   peiSheetConfig        PeiSheetConfig?
+  peiSurvey             PeiSurvey?
+  peiResponses          PeiResponse[]
   receptionRecords      ReceptionRecord[]
+  regionDatas           RegionData[]
   regionDists           RegionDist[]
   reports               Report[]
+  reportSectors         ReportSector[]
+  managedReports        ManagedReport[]
+  revenues              Revenue[]
   revenueGoals          RevenueGoal[]
   reviews               Review[]
   reviewConfigs         ReviewConfig[]
   reviewSummaries       ReviewSummary[]
+  treatmentDatas        TreatmentData[]
   treatmentPlans        TreatmentPlan[]
   treatmentStats        TreatmentStat[]
   uploadLogs            UploadLog[]
   visitRoutes           VisitRoute[]
-
-  // 새로운 6개 핵심 데이터 관계
-  revenues              Revenue[]
-  patientInfos          PatientInfo[]
-  treatmentDatas        TreatmentData[]
   visitRouteDatas       VisitRouteData[]
-  regionDatas           RegionData[]
-  ageDatas              AgeData[]
+  importBatches         ImportBatch[]
+  importedFiles         ImportedFile[]
+  clinicAccounts        User[]                 @relation("ClinicAccounts")
+  cashRevenues          CashRevenue[]
+  serviceRequests       ServiceRequest[]
+  naverAdAccount        NaverAdAccount?
+  naverAdStats          NaverAdDailyStat[]
+  naverAdReports        NaverAdReport[]
+  siteLeadSource        SiteLeadSource?
+  siteLeads             SiteLead[]
 
   @@unique([agencyId, code])
+}
+
+// 마스터가 월별로 직접 입력하는 현금매출. 총매출에 가산됨.
+model CashRevenue {
+  id        String   @id @default(cuid())
+  clinicId  String
+  year      Int
+  month     Int
+  amount    Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month])
+  @@index([clinicId, year, month])
 }
 
 model DailyLedger {
@@ -132,6 +172,7 @@ model MonthlySummary {
   totalArrears          Float?
   arrearsRate           Float?
   treatmentCompleteRate Float?
+  avgWaitingTime        Float?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
   totalBilledRevenue    Float?
@@ -173,11 +214,14 @@ model TreatmentStat {
   revenue      Float?
   visitRatio   Float?
   revenueRatio Float?
+  periodType   PeriodType        @default(MONTHLY)
+  source       DataSource        @default(OFFICIAL_EXCEL)
   createdAt    DateTime          @default(now())
   clinic       Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
-  @@unique([clinicId, year, month, itemName])
+  @@unique([clinicId, year, month, itemName, source])
   @@index([clinicId, year, month])
+  @@index([source, periodType])
 }
 
 model VisitRoute {
@@ -242,6 +286,44 @@ model Report {
   @@unique([clinicId, year, month])
 }
 
+// 치과별 보고서 카테고리(섹터). 마스터가 치과마다 자유롭게 등록/정렬.
+// (기존 배포 DB의 ReportSector 테이블과 1:1 매핑 — 구조 변경 금지)
+model ReportSector {
+  id        String          @id @default(cuid())
+  clinicId  String
+  name      String
+  sortOrder Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  clinic    Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  reports   ManagedReport[]
+
+  @@index([clinicId])
+}
+
+// 마스터가 업로드하는 HTML 보고서. 카테고리(섹터)에 소속.
+// (기존 배포 DB의 ManagedReport 테이블과 1:1 매핑 — month는 String)
+model ManagedReport {
+  id        String       @id @default(cuid())
+  clinicId  String
+  sectorId  String
+  title     String
+  content   String // HTML: sanitize된 원본 / PDF: 빈 문자열
+  fileType  String       @default("html") // "html" | "pdf"
+  fileName  String? // 원본 파일명(PDF)
+  fileData  Bytes? // PDF 바이너리(bytea). DB에 저장돼 백업/이관에 함께 따라감
+  month     String?
+  memo      String?
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  clinic    Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  sector    ReportSector @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([sectorId])
+}
+
 model ImplantStat {
   id           String   @id @default(cuid())
   clinicId     String
@@ -258,7 +340,7 @@ model ImplantStat {
 }
 
 model ConsultationStat {
-  id                 String   @id @default(cuid())
+  id                 String     @id @default(cuid())
   clinicId           String
   year               Int
   month              Int
@@ -271,78 +353,111 @@ model ConsultationStat {
   patientConfirmRate Float?
   confirmedAmount    Float?
   avgDiscountRate    Float?
-  createdAt          DateTime @default(now())
-  clinic             Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  periodType         PeriodType @default(MONTHLY)
+  source             DataSource @default(OFFICIAL_EXCEL)
+  createdAt          DateTime   @default(now())
+  clinic             Clinic     @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
-  @@unique([clinicId, year, month, counselorName])
+  @@unique([clinicId, year, month, counselorName, source])
   @@index([clinicId, year, month])
+  @@index([source, periodType])
 }
 
 model ReceptionRecord {
-  id                String    @id @default(cuid())
-  clinicId          String
-  year              Int
-  month             Int
-  receptionTime     DateTime?
-  status            String?
-  chartNumber       String?
-  patientName       String?
-  ageGender         String?
-  insuranceType     String?
-  patientType       String?
-  doctor            String?
-  totalRevenue      Float?
-  insuranceCoverage Float?
-  patientPayment    Float?
-  nonInsurance      Float?
-  cardPayment       Float?
-  cashPayment       Float?
-  onlinePayment     Float?
-  dailyArrears      Float?
-  totalArrears      Float?
-  visitRoute        String?
-  createdAt         DateTime  @default(now())
-  waitingTime       Float?
-  clinic            Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  id                 String    @id @default(cuid())
+  clinicId           String
+  year               Int
+  month              Int
+  receptionTime      DateTime?
+  status             String?
+  chartNumber        String?
+  patientName        String?
+  ageGender          String?
+  insuranceType      String?
+  patientType        String? // 신환/구환
+  identityVerified   String?
+  waitingMinutes     Int? // 분 단위 대기시간
+  treatmentStartTime DateTime?
+  treatmentEndTime   DateTime?
+  reservationTime    DateTime?
+  doctor             String?
+  treatmentDoctor    String?
+  summaryDoctor      String?
+  paymentStaff       String?
+  chair              String?
+  phone              String?
+  treatmentMemo      String? // 진료/예약내역
+  totalRevenue       Float?
+  insuranceCoverage  Float? // 공단부담
+  patientPayment     Float? // 본인부담
+  nonInsurance       Float? // 비급여
+  vat                Float? // 부가세
+  discountAmount     Float? // 할인액
+  cardPayment        Float?
+  cashPayment        Float?
+  onlinePayment      Float? // 기타(온라인)
+  receiptIssued      String? // 현영
+  healthExpense      Float? // 건강생활비
+  dailyArrears       Float?
+  totalArrears       Float?
+  memo               String?
+  firstVisitDate     DateTime? // 최초내원
+  visitRoute         String? // 내원경로
+  customerTendency   String? // 고객성향
+  customerType       String? // 고객구분
+  customerType2      String? // 고객구분2
+  recallType         String? // 리콜구분
+  createdAt          DateTime  @default(now())
+  waitingTime        Float? // 기존 호환성을 위해 유지
+  clinic             Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@index([clinicId, year, month])
   @@index([clinicId, patientType])
   @@index([clinicId, doctor])
+  @@index([clinicId, chartNumber])
+  @@index([clinicId, visitRoute])
+  @@index([clinicId, receptionTime])
 }
 
 model AgeDist {
-  id                String   @id @default(cuid())
+  id                String     @id @default(cuid())
   clinicId          String
   year              Int
-  month             Int
+  month             Int?
   ageGroup          String
   totalPatients     Float?
   returningPatients Float?
   newPatients       Float?
   avgRevenue        Float?
-  createdAt         DateTime @default(now())
-  clinic            Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  periodType        PeriodType @default(MONTHLY)
+  source            DataSource @default(OFFICIAL_EXCEL)
+  createdAt         DateTime   @default(now())
+  clinic            Clinic     @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
-  @@unique([clinicId, year, month, ageGroup])
+  @@unique([clinicId, year, month, ageGroup, source])
   @@index([clinicId, year, month])
+  @@index([source, periodType])
 }
 
 model RegionDist {
-  id                String   @id @default(cuid())
+  id                String     @id @default(cuid())
   clinicId          String
   year              Int
-  month             Int
+  month             Int?
   region            String
   totalPatients     Float?
   returningPatients Float?
   newPatients       Float?
   totalVisits       Float?
   avgRevenue        Float?
-  createdAt         DateTime @default(now())
-  clinic            Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  periodType        PeriodType @default(MONTHLY)
+  source            DataSource @default(OFFICIAL_EXCEL)
+  createdAt         DateTime   @default(now())
+  clinic            Clinic     @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
-  @@unique([clinicId, year, month, region])
+  @@unique([clinicId, year, month, region, source])
   @@index([clinicId, year, month])
+  @@index([source, periodType])
 }
 
 model InviteCode {
@@ -431,19 +546,19 @@ model PeiReport {
 }
 
 model ReviewConfig {
-  id         String       @id @default(cuid())
+  id         String           @id @default(cuid())
   clinicId   String
   source     ReviewSource
   placeName  String?
   placeId    String?
   placeUrl   String?
-  isActive   Boolean      @default(true)
+  isActive   Boolean          @default(true)
   lastSyncAt DateTime?
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
   reviews    Review[]
   snapshots  ReviewSnapshot[]
-  clinic     Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  clinic     Clinic           @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@unique([clinicId, source])
   @@index([clinicId, isActive])
@@ -631,6 +746,173 @@ model UploadLog {
   @@index([clinicId, createdAt])
 }
 
+model ActionPlan {
+  id          String                 @id @default(cuid())
+  clinicId    String
+  goal        String
+  description String
+  targetDate  DateTime
+  status      ActionPlanStatus       @default(PENDING)
+  priority    ActionPlanPriority     @default(MEDIUM)
+  progress    Int                    @default(0)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  createdBy   String
+  clinic      Clinic                 @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  user        User                   @relation(fields: [createdBy], references: [id])
+  attachments ActionPlanAttachment[]
+  comments    ActionPlanComment[]
+
+  @@index([clinicId, status])
+  @@index([clinicId, createdAt])
+}
+
+model ActionPlanAttachment {
+  id           String     @id @default(cuid())
+  actionPlanId String
+  fileName     String
+  originalName String
+  fileSize     Int
+  mimeType     String
+  filePath     String
+  uploadedAt   DateTime   @default(now())
+  uploadedBy   String
+  actionPlan   ActionPlan @relation(fields: [actionPlanId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [uploadedBy], references: [id])
+
+  @@index([actionPlanId])
+}
+
+model ActionPlanComment {
+  id           String     @id @default(cuid())
+  actionPlanId String
+  content      String
+  createdAt    DateTime   @default(now())
+  createdBy    String
+  actionPlan   ActionPlan @relation(fields: [actionPlanId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [createdBy], references: [id])
+
+  @@index([actionPlanId, createdAt])
+}
+
+model Revenue {
+  id           String   @id @default(cuid())
+  clinicId     String
+  date         DateTime
+  year         Int
+  month        Int
+  day          Int
+  cashIncome   Float    @default(0)
+  cardIncome   Float    @default(0)
+  onlineIncome Float    @default(0)
+  totalIncome  Float    @default(0)
+  totalExpense Float    @default(0)
+  netProfit    Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  clinic       Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, date])
+  @@index([clinicId, year, month])
+}
+
+model PatientInfo {
+  id            String    @id @default(cuid())
+  clinicId      String
+  chartNumber   String
+  name          String
+  age           Int?
+  gender        String?
+  region        String?
+  visitRoute    String?
+  visitDate     DateTime
+  visitTime     String?
+  receptionTime DateTime?
+  visitType     String
+  ageGroup      String?
+  waitingTime   Int       @default(0)
+  revenue       Float     @default(0)
+  treatmentType String?
+  year          Int
+  month         Int
+  day           Int
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  clinic        Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, chartNumber])
+  @@index([clinicId, year, month])
+  @@index([clinicId, visitType])
+  @@index([clinicId, region])
+  @@index([clinicId, visitRoute])
+}
+
+model TreatmentData {
+  id            String   @id @default(cuid())
+  clinicId      String
+  treatmentType String
+  year          Int
+  month         Int
+  patientCount  Int      @default(0)
+  totalRevenue  Float    @default(0)
+  avgRevenue    Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  clinic        Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, treatmentType, year, month])
+  @@index([clinicId, year, month])
+}
+
+model VisitRouteData {
+  id                String   @id @default(cuid())
+  clinicId          String
+  routeName         String
+  year              Int
+  month             Int
+  newPatients       Int      @default(0)
+  returningPatients Int      @default(0)
+  totalRevenue      Float    @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  clinic            Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, routeName, year, month])
+  @@index([clinicId, year, month])
+}
+
+model RegionData {
+  id           String   @id @default(cuid())
+  clinicId     String
+  region       String
+  year         Int
+  month        Int
+  patientCount Int      @default(0)
+  percentage   Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  clinic       Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, region, year, month])
+  @@index([clinicId, year, month])
+}
+
+model AgeData {
+  id           String   @id @default(cuid())
+  clinicId     String
+  ageGroup     String
+  year         Int
+  month        Int
+  patientCount Int      @default(0)
+  percentage   Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  clinic       Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, ageGroup, year, month])
+  @@index([clinicId, year, month])
+}
+
 enum UserRole {
   ADMIN
   ANALYST
@@ -668,6 +950,18 @@ enum TreatmentCategory {
   NON_INSURANCE
 }
 
+enum ActionPlanStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum ActionPlanPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
 enum ReviewSource {
   NAVER
   GOOGLE
@@ -677,12 +971,20 @@ enum FileCategory {
   MONTHLY_LEDGER
   ANNUAL_LEDGER
   TREATMENT_STATS
+  CONSULTATION_STATS
   IMPLANT_STATS
   COMPREHENSIVE_PATIENTS
   AGE_DISTRIBUTION
   REGION_DISTRIBUTION
   DAILY_PATIENTS
+  MONTHLY_PATIENTS
   VISIT_ROUTES
+  RECEPTION_RECORDS
+}
+
+enum PeriodType {
+  MONTHLY
+  YEARLY
 }
 
 enum FileStatus {
@@ -691,152 +993,389 @@ enum FileStatus {
   COMPLETED
   FAILED
   DUPLICATE
+  COMPLETED_WITH_WARNINGS
+  NEEDS_REVIEW
 }
 
-// ========================================
-// 새로운 6개 핵심 데이터 테이블
-// ========================================
+enum DataSource {
+  DERIVED_FROM_RECEPTION
+  OFFICIAL_EXCEL
+  MANUAL
+  GPT_ASSISTED_MAPPING
+}
 
-// 1. 💰 매출 데이터 (일별)
-model Revenue {
-  id            String   @id @default(cuid())
-  clinicId      String
-  date          DateTime
-  year          Int
-  month         Int
-  day           Int
+enum DetectionMethod {
+  RULE_BASED
+  GPT_ASSISTED
+  MANUAL
+}
 
-  cashIncome    Float    @default(0)    // 현금수입
-  cardIncome    Float    @default(0)    // 카드수입
-  onlineIncome  Float    @default(0)    // 온라인수입
-  totalIncome   Float    @default(0)    // 총수입
-  totalExpense  Float    @default(0)    // 총지출
-  netProfit     Float    @default(0)    // 순이익
+enum ApiProvider {
+  OPENAI
+  ANTHROPIC
+  GOOGLE
+  CUSTOM
+}
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+// =============================================================================
+// Import System Models (새로운 업로드 구조)
+// =============================================================================
 
-  clinic        Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+model ImportBatch {
+  id           String         @id @default(cuid())
+  clinicId     String
+  year         Int
+  status       String // PROCESSING, COMPLETED, FAILED
+  totalFiles   Int            @default(0)
+  successFiles Int            @default(0)
+  failedFiles  Int            @default(0)
+  uploadedBy   String
+  createdAt    DateTime       @default(now())
+  completedAt  DateTime?
+  errorMessage String?
+  clinic       Clinic         @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  files        ImportedFile[]
 
-  @@unique([clinicId, date])
+  @@index([clinicId, year])
+  @@index([status])
+}
+
+model ImportedFile {
+  id             String           @id @default(cuid())
+  batchId        String
+  clinicId       String
+  originalName   String
+  filePath       String?
+  fileSize       Int
+  checksum       String?
+  detectedType   String // FileCategory 값
+  detectedBy     DetectionMethod
+  confidence     Float?
+  year           Int
+  month          Int? // 0이면 연간 데이터
+  status         FileStatus       @default(PENDING)
+  sheetName      String?
+  headerRowIndex Int?
+  columnMapping  String? // JSON string
+  recordCount    Int              @default(0)
+  errorCount     Int              @default(0)
+  warnings       String? // JSON array
+  errors         String? // JSON array
+  createdAt      DateTime         @default(now())
+  processedAt    DateTime?
+  batch          ImportBatch      @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  clinic         Clinic           @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  rowErrors      ImportRowError[]
+
   @@index([clinicId, year, month])
+  @@index([status])
+  @@index([detectedType])
 }
 
-// 2. 👥 환자정보 데이터 (방문별)
-model PatientInfo {
-  id              String   @id @default(cuid())
-  clinicId        String
-  chartNumber     String
+model ImportRowError {
+  id             String       @id @default(cuid())
+  importedFileId String
+  rowNumber      Int
+  fieldName      String?
+  rawValue       String?
+  message        String
+  createdAt      DateTime     @default(now())
+  importedFile   ImportedFile @relation(fields: [importedFileId], references: [id], onDelete: Cascade)
+
+  @@index([importedFileId, rowNumber])
+}
+
+model ApiIntegration {
+  id              String      @id @default(cuid())
+  provider        ApiProvider
   name            String
-  age             Int?
-  gender          String?
-  region          String?
-  visitRoute      String?
+  encryptedApiKey String
+  model           String?
+  isEnabled       Boolean     @default(true)
+  isDefault       Boolean     @default(false)
+  lastTestedAt    DateTime?
+  lastTestStatus  String? // SUCCESS, FAILED
+  lastTestMessage String?
+  createdBy       String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
-  visitDate       DateTime
-  visitTime       String?
-  receptionTime   DateTime?
-  visitType       String             // 신환/구환
-  ageGroup        String?            // 20대, 30대 등
-
-  waitingTime     Int      @default(0) // 대기시간(분)
-  revenue         Float    @default(0) // 진료비
-  treatmentType   String?             // 임플란트, 보철 등
-
-  year            Int
-  month           Int
-  day             Int
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  clinic          Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@index([clinicId, chartNumber])
-  @@index([clinicId, year, month])
-  @@index([clinicId, visitType])
-  @@index([clinicId, region])
-  @@index([clinicId, visitRoute])
+  @@index([isEnabled, isDefault])
+  @@index([provider])
 }
 
-// 3. 🦷 진료별 데이터 (월별 집계)
-model TreatmentData {
-  id              String   @id @default(cuid())
-  clinicId        String
-  treatmentType   String            // 임플란트, 보철, 교정 등
-  year            Int
-  month           Int
+// =============================================================================
+// 요청사항 (원장님 → THINKLAB 작업 요청: 이미지 제작·원고·홈페이지 수정 등)
+// =============================================================================
 
-  patientCount    Int      @default(0) // 환자수
-  totalRevenue    Float    @default(0) // 총매출
-  avgRevenue      Float    @default(0) // 평균 진료비
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  clinic          Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([clinicId, treatmentType, year, month])
-  @@index([clinicId, year, month])
+enum ServiceRequestCategory {
+  IMAGE // 이미지·디자인 제작
+  CONTENT // 블로그·칼럼·SNS 원고
+  WEBSITE // 홈페이지 수정
+  REPORT // 보고서·데이터 요청
+  ADS // 광고·마케팅
+  OTHER // 기타 문의
 }
 
-// 4. 🛣️ 내원경로 데이터 (월별 집계)
-model VisitRouteData {
-  id                String   @id @default(cuid())
-  clinicId          String
-  routeName         String            // 지인소개, 인터넷 등
-  year              Int
-  month             Int
-
-  newPatients       Int      @default(0) // 신환수
-  returningPatients Int      @default(0) // 구환수
-  totalRevenue      Float    @default(0) // 총매출
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  clinic            Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([clinicId, routeName, year, month])
-  @@index([clinicId, year, month])
+enum ServiceRequestStatus {
+  REQUESTED // 접수
+  IN_REVIEW // 검토중
+  IN_PROGRESS // 진행중
+  DONE // 완료
+  CANCELED // 취소
 }
 
-// 5. 📍 지역별 데이터 (월별 집계)
-model RegionData {
-  id            String   @id @default(cuid())
+enum ServiceRequestPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model ServiceRequest {
+  id          String                     @id @default(cuid())
+  clinicId    String
+  category    ServiceRequestCategory
+  title       String
+  description String
+  details     Json? // 카테고리별 세부 입력값(용도·사이즈·문구·URL 등)
+  status      ServiceRequestStatus       @default(REQUESTED)
+  priority    ServiceRequestPriority     @default(MEDIUM)
+  dueDate     DateTime?
+  assignee    String? // 담당자 표시명(THINKLAB 내부)
+  resultNote  String? // 완료 시 결과 안내
+  completedAt DateTime?
+  createdBy   String
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+  clinic      Clinic                     @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  user        User                       @relation("ServiceRequestCreator", fields: [createdBy], references: [id])
+  comments    ServiceRequestComment[]
+  attachments ServiceRequestAttachment[]
+
+  @@index([clinicId, status])
+  @@index([clinicId, createdAt])
+  @@index([status, createdAt])
+}
+
+model ServiceRequestComment {
+  id        String         @id @default(cuid())
+  requestId String
+  content   String
+  createdBy String
+  createdAt DateTime       @default(now())
+  request   ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [createdBy], references: [id])
+
+  @@index([requestId, createdAt])
+}
+
+model ServiceRequestAttachment {
+  id           String         @id @default(cuid())
+  requestId    String
+  fileName     String // 저장 파일명
+  originalName String
+  fileSize     Int
+  mimeType     String
+  filePath     String // uploads/requests/... 상대경로
+  kind         String         @default("REFERENCE") // REFERENCE(요청 참고) | RESULT(결과물)
+  uploadedBy   String
+  uploadedAt   DateTime       @default(now())
+  request      ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [uploadedBy], references: [id])
+
+  @@index([requestId])
+}
+
+// =============================================================================
+// 네이버 검색광고 API 연동 (치과별 광고계정)
+// =============================================================================
+
+model NaverAdAccount {
+  id              String    @id @default(cuid())
+  clinicId        String    @unique
+  customerId      String // 네이버 검색광고 CUSTOMER_ID
+  apiKey          String // 액세스 라이선스
+  secretKey       String // 비밀키
+  isActive        Boolean   @default(true)
+  lastSyncAt      DateTime?
+  lastSyncStatus  String? // SUCCESS | FAILED
+  lastSyncError   String?
+  // 알림 설정
+  alertEnabled    Boolean   @default(false) // 비즈머니 부족 메일 알림
+  alertThreshold  Int       @default(100000) // 이 금액(원) 이하로 떨어지면 알림
+  alertDays       Int? // 설정 시 '최근 7일 일평균 × N일' 이하로 떨어지면 알림(금액 기준 대신)
+  alertThreshold2 Int? // 2차 기준(원). 금액 기준일 때만. 1차보다 작아야 함
+  alertEmails     String? // 수신 메일(쉼표 구분)
+  alertOnSyncFail Boolean   @default(true) // 동기화 실패도 메일로
+  lastAlertAt     DateTime? // 마지막 부족 알림 발송 시각
+  lastAlertLevel  Int       @default(0) // 0 없음 · 1 1차 발송됨 · 2 2차 발송됨. 잔액이 1차 기준 위로 올라오면 0으로 초기화
+  lastBizmoney    Int? // 마지막 조회 잔액(원)
+  lastBizmoneyAt  DateTime?
+  autoMonthlyReport Boolean @default(false) // 매월 1일 전월 보고서 자동 생성
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  clinic          Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+}
+
+// 캠페인별 일자별 성과 (impCnt·clkCnt·salesAmt 등)
+model NaverAdDailyStat {
+  id           String   @id @default(cuid())
+  clinicId     String
+  date         DateTime @db.Date
+  campaignId   String
+  campaignName String
+  campaignType String?
+  impressions  Int      @default(0)
+  clicks       Int      @default(0)
+  cost         Int      @default(0) // 원(VAT 별도)
+  avgRank      Float?
+  conversions  Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  clinic       Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, date, campaignId])
+  @@index([clinicId, date])
+}
+
+// 네이버 검색광고 운영 보고서 (기간 지정 → 수치 집계 + GPT 해석 → HTML 저장)
+model NaverAdReport {
+  id           String   @id @default(cuid())
+  clinicId     String
+  title        String
+  periodStart  DateTime @db.Date
+  periodEnd    DateTime @db.Date
+  compareStart DateTime @db.Date
+  compareEnd   DateTime @db.Date
+  memo         String? // 생성 시 전달한 운영 메모(미송출·결정 사항 등)
+  status       String   @default("DONE") // GENERATING | DONE | FAILED
+  error        String?
+  model        String? // 사용한 GPT 모델
+  summary      Json? // 핵심 수치(목록 표시용)
+  html         String? // 완성된 보고서 HTML
+  createdBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  clinic       Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, createdAt])
+}
+
+// 앱 내 알림(헤더 종 아이콘). 수신자(User) 단위로 한 행씩 만든다
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  clinicId  String?
+  type      String // NAVER_BIZMONEY | NAVER_SYNC_FAIL | NAVER_REPORT | REQUEST_NEW | REQUEST_STATUS | REQUEST_COMMENT | SYSTEM
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt, createdAt])
+}
+
+// PEI(환자경험지수) 자체 설문 — 구글폼 대체. 치과별 공개 링크(/s/<token>)로 응답을 받는다.
+model PeiSurvey {
+  id                String        @id @default(cuid())
+  clinicId          String        @unique
+  token             String        @unique
+  slug              String?       @unique // 한글 주소 /하얀드림치과설문 (기본값 = 치과명 공백 제거 + "설문")
+  title             String
+  intro             String?
+  slogan            String? // 제목 아래 한 줄 — "○○○, 하얀드림치과입니다"
+  logo              String? // 맨 위 치과 로고 URL (업로드)
+  doctors           Json // {name, photo}[] — name "이름 원장 (전공 전문의)" (예전 string[] 도 읽음)
+  treatments        Json          @default("[]") // string[] — 3번 받은 진료 선택지
+  questions         Json          @default("[]") // QuestionDef[] — 문항 구성(순서·문구·선택지·필수). 비어 있으면 기본 15문항
+  facilityQuestion  String
+  isActive          Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  clinic            Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  responses         PeiResponse[]
+}
+
+model PeiResponse {
+  id          String    @id @default(cuid())
+  surveyId    String
+  clinicId    String
+  year        Int
+  month       Int
+  submittedAt DateTime  @default(now())
+  visitType   String? // 첫 방문 / 재방문
+  gender      String?
+  ageGroup    String?
+  doctor      String?
+  treatments  Json? // string[] — 받은 진료 (중복 선택)
+  answers     Json? // { c_xxxx: 값 } — 관리자가 직접 더한 문항 응답
+  // 4~12번 문항: 1~5, 0 = 경험 없음
+  qPhone      Int?
+  qDesk       Int?
+  qConsult    Int?
+  qDoctorTalk Int?
+  qHygienist  Int?
+  qDoctorCare Int?
+  qFacility   Int?
+  qHomepage   Int?
+  qWaiting    Int?
+  recommend   Int? // 0~10
+  positive    String?
+  improvement String?
+  ipHash      String?
+  survey      PeiSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  clinic      Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, year, month])
+  @@index([surveyId, submittedAt])
+}
+
+// 홈페이지(그누보드) 상담문의 연동. 사이트의 /dashboard/api/leads.php 를 토큰으로 읽어 온다(읽기 전용).
+model SiteLeadSource {
+  id             String     @id @default(cuid())
+  clinicId       String     @unique
+  siteUrl        String // https://dearsdental.com
+  token          String // protect() 로 암호화 저장
+  isActive       Boolean    @default(true)
+  lastSyncAt     DateTime?
+  lastSyncStatus String? // SUCCESS | FAILED
+  lastSyncError  String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  clinic         Clinic     @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  leads          SiteLead[]
+}
+
+// 상담문의 1건 = 사이트 g5_track_leads 1행. 접수 1년 지나면 삭제(개인정보 보관기간)
+model SiteLead {
+  id            String         @id @default(cuid())
   clinicId      String
-  region        String            // 강남구, 서초구 등
-  year          Int
-  month         Int
+  sourceId      String
+  siteLeadId    Int // g5_track_leads.id
+  boTable       String
+  wrId          Int
+  receivedAt    DateTime // 사이트 접수 시각
+  siteUpdatedAt DateTime?
+  status        String // new · contacted · consulting · booked · visited · hold · lost · spam
+  statusLabel   String?
+  name          String?
+  phone         String?
+  category      String?
+  subject       String?
+  channel       String? // quick_form · counsel_form · contact_form
+  path          String?
+  src           String?
+  srcLabel      String?
+  med           String?
+  medLabel      String?
+  campaign      String?
+  noteCount     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  clinic        Clinic         @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  source        SiteLeadSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
-  patientCount  Int      @default(0) // 환자수
-  percentage    Float    @default(0) // 비율
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  clinic        Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([clinicId, region, year, month])
-  @@index([clinicId, year, month])
-}
-
-// 6. 👶👴 연령 데이터 (월별 집계)
-model AgeData {
-  id            String   @id @default(cuid())
-  clinicId      String
-  ageGroup      String            // 20대, 30대 등
-  year          Int
-  month         Int
-
-  patientCount  Int      @default(0) // 환자수
-  percentage    Float    @default(0) // 비율
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  clinic        Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([clinicId, ageGroup, year, month])
-  @@index([clinicId, year, month])
+  @@unique([sourceId, siteLeadId])
+  @@index([clinicId, receivedAt])
 }

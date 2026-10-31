@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
     const dayNames = ['일', '월', '화', '수', '목', '금', '토']
 
     monthlyRecords.forEach(record => {
+      if (!record.receptionTime) return
       const dayOfWeek = record.receptionTime.getDay()
       const dayName = dayNames[dayOfWeek]
 
@@ -112,7 +113,7 @@ export async function GET(request: NextRequest) {
         const { waitingTimes, ...rest } = dayData
 
         if (waitingTimes.length > 0) {
-          const avgWaitingTime = Math.round(waitingTimes.reduce((sum, time) => sum + time, 0) / waitingTimes.length * 10) / 10
+          const avgWaitingTime = Math.round(waitingTimes.reduce((sum: number, time: number) => sum + time, 0) / waitingTimes.length * 10) / 10
           const maxWaitingTime = Math.max(...waitingTimes)
           const minWaitingTime = Math.min(...waitingTimes)
 
@@ -138,6 +139,7 @@ export async function GET(request: NextRequest) {
     const timeAnalysisMap = new Map()
 
     monthlyRecords.forEach(record => {
+      if (!record.receptionTime) return
       const hour = record.receptionTime.getHours()
       const timeSlot = `${String(hour).padStart(2, '0')}시`
 

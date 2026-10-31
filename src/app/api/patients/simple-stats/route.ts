@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     // 각 환자별로 신환/구환 판단
     patientGroups.forEach((visits, chartNumber) => {
       // 이 환자의 모든 방문 중에서 신환 타입이 있는지 확인
-      const hasNewPatientVisit = visits.some(visit => {
+      const hasNewPatientVisit = visits.some((visit: any) => {
         const type = String(visit.patientType || '').trim().toLowerCase()
         return type.includes('신환') || type === 'new' || type === '신'
       })
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     // 요일별 대기시간 통계 (일~토 전체, 0분은 제외)
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
-    const weekdayWaitingStats = {};
+    const weekdayWaitingStats: Record<string, any> = {};
 
     // 일요일~토요일 (0~6) 전체 처리
     for (let dayOfWeek = 0; dayOfWeek <= 6; dayOfWeek++) {
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
       });
 
       if (dayRecords.length > 0) {
-        const waitingTimes = dayRecords.map(r => r.waitingTime);
+        const waitingTimes = dayRecords.map(r => r.waitingTime!).filter(time => time > 0);
         const avgTime = waitingTimes.reduce((a, b) => a + b, 0) / waitingTimes.length;
         const maxTime = Math.max(...waitingTimes);
 
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 신환별 요일별 대기시간 통계
-    const newPatientWaitingStats = {};
+    const newPatientWaitingStats: Record<string, any> = {};
     for (let dayOfWeek = 0; dayOfWeek <= 6; dayOfWeek++) {
       const dayRecords = receptionRecords.filter(record => {
         if (!record.receptionTime || !record.waitingTime || record.waitingTime <= 0) return false;
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
       });
 
       if (dayRecords.length > 0) {
-        const waitingTimes = dayRecords.map(r => r.waitingTime);
+        const waitingTimes = dayRecords.map(r => r.waitingTime!).filter(time => time > 0);
         const avgTime = waitingTimes.reduce((a, b) => a + b, 0) / waitingTimes.length;
         const maxTime = Math.max(...waitingTimes);
 
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 구환별 요일별 대기시간 통계
-    const returningPatientWaitingStats = {};
+    const returningPatientWaitingStats: Record<string, any> = {};
     for (let dayOfWeek = 0; dayOfWeek <= 6; dayOfWeek++) {
       const dayRecords = receptionRecords.filter(record => {
         if (!record.receptionTime || !record.waitingTime || record.waitingTime <= 0) return false;
@@ -172,7 +172,7 @@ export async function GET(request: NextRequest) {
       });
 
       if (dayRecords.length > 0) {
-        const waitingTimes = dayRecords.map(r => r.waitingTime);
+        const waitingTimes = dayRecords.map(r => r.waitingTime!).filter(time => time > 0);
         const avgTime = waitingTimes.reduce((a, b) => a + b, 0) / waitingTimes.length;
         const maxTime = Math.max(...waitingTimes);
 

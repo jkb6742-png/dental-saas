@@ -19,7 +19,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
-          include: { agency: true },
+          include: { agency: true, inviteCode: { select: { clinicId: true } } },
         })
 
         if (!user) return null
@@ -42,6 +42,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error("ACCOUNT_NOT_APPROVED")
         }
 
+        // 로그인 성공 이력 기록 (SecurityLog). 실패해도 로그인은 진행.
+        try {
+          await prisma.securityLog.create({
+            data: {
+              userId: user.id,
+              event: "LOGIN_SUCCESS",
+              clinicId: user.clinicId ?? user.inviteCode?.clinicId ?? null,
+              agencyId: user.agencyId,
+              severity: "LOW",
+            },
+          })
+        } catch (e) {
+          console.error("로그인 로그 기록 실패:", e)
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -51,6 +66,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           agencyId: user.agencyId,
           agencySlug: user.agency.slug,
           agencyName: user.agency.name,
+          // 비마스터(로그인 계정)는 소속 치과에만 접근. MASTER는 null(전체).
+          clinicId: user.clinicId ?? user.inviteCode?.clinicId ?? null,
         }
       },
     }),
@@ -64,12 +81,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.agencyId = (user as any).agencyId
         token.agencySlug = (user as any).agencySlug
         token.agencyName = (user as any).agencyName
+        token.clinicId = (user as any).clinicId ?? null
       } else if (token.id) {
         // 기존 토큰이 있으면 최신 사용자 정보를 데이터베이스에서 가져오기
         try {
           const latestUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            include: { agency: true },
+            include: { agency: true, inviteCode: { select: { clinicId: true } } },
           })
 
           if (latestUser) {
@@ -78,6 +96,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.agencyId = latestUser.agencyId
             token.agencySlug = latestUser.agency.slug
             token.agencyName = latestUser.agency.name
+            token.clinicId = latestUser.clinicId ?? latestUser.inviteCode?.clinicId ?? null
           }
         } catch (error) {
           console.error("JWT 토큰 업데이트 오류:", error)
@@ -93,6 +112,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         ;(session.user as any).agencyId = token.agencyId
         ;(session.user as any).agencySlug = token.agencySlug
         ;(session.user as any).agencyName = token.agencyName
+        ;(session.user as any).clinicId = token.clinicId ?? null
       }
       return session
     },

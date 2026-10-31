@@ -17,7 +17,7 @@ export class GoogleSheetsClient {
   /**
    * 스프레드시트 ID에서 데이터 추출
    */
-  async extractSheetId(sheetUrl: string): string {
+  async extractSheetId(sheetUrl: string): Promise<string> {
     const match = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
     if (!match) {
       throw new Error('올바른 구글 스프레드시트 URL이 아닙니다')

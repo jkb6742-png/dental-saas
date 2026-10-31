@@ -5,7 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation"
 import SectionCard from "@/components/ui/SectionCard"
 import KpiCard from "@/components/ui/KpiCard"
 import YearMonthFilter from "@/components/ui/YearMonthFilter"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, ComposedChart, Area, AreaChart, Tooltip } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, ComposedChart, Area, AreaChart, Tooltip, LabelList } from "recharts"
+
+const revLabel = (v: unknown) => {
+  if (typeof v !== 'number' || v <= 0) return ''
+  return v >= 1e8 ? `${(v / 1e8).toFixed(1)}억` : `${Math.round(v / 1e4)}만`
+}
 import { TrendingUp, TrendingDown, Target, Activity, DollarSign, Calendar, AlertCircle } from "lucide-react"
 
 type MonthlySummaryData = {
@@ -42,6 +47,8 @@ interface RevenuePageClientProps {
   initialMonth: number
   monthlySummaries: MonthlySummaryData[]
   availableMonths: Array<{ year: number; month: number }>
+  cashByMonth: Record<string, number>
+  userRole: string
 }
 
 // 금액 포맷팅 함수
@@ -72,14 +79,60 @@ export default function RevenuePageClient({
   initialYear,
   initialMonth,
   monthlySummaries,
-  availableMonths
+  availableMonths,
+  cashByMonth,
+  userRole
 }: RevenuePageClientProps) {
+  console.log(`🔍 [CLIENT] monthlySummaries 개수: ${monthlySummaries.length}`)
+  console.log(`🔍 [CLIENT] initialYear: ${initialYear}, initialMonth: ${initialMonth}`)
+  console.log(`🔍 [CLIENT] monthlySummaries:`, monthlySummaries.slice(0, 3))
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const [selectedYear, setSelectedYear] = useState(initialYear)
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
   const [chartsReady, setChartsReady] = useState(false)
+  const [showPrevYear, setShowPrevYear] = useState(true)
+
+  // 현금매출(마스터 입력) — 선택 월 금액
+  const [cashInput, setCashInput] = useState<string>(
+    String(cashByMonth[`${initialYear}-${initialMonth}`] ?? 0)
+  )
+  const [savingCash, setSavingCash] = useState(false)
+  const [cashMsg, setCashMsg] = useState<string | null>(null)
+
+  useEffect(() => {
+    setCashInput(String(cashByMonth[`${selectedYear}-${selectedMonth}`] ?? 0))
+    setCashMsg(null)
+  }, [selectedYear, selectedMonth, cashByMonth])
+
+  const saveCash = async () => {
+    setSavingCash(true)
+    setCashMsg(null)
+    try {
+      const res = await fetch("/api/cash-revenue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clinicId,
+          year: selectedYear,
+          month: selectedMonth,
+          amount: Number(cashInput) || 0,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setCashMsg(data.error ?? "저장 실패")
+        return
+      }
+      setCashMsg("저장되었습니다 · 총매출에 반영됨")
+      router.refresh()
+    } catch {
+      setCashMsg("네트워크 오류")
+    } finally {
+      setSavingCash(false)
+    }
+  }
 
   // 차트 렌더링 준비 - DOM이 완전히 로드된 후 차트 렌더링
   useEffect(() => {
@@ -442,6 +495,45 @@ export default function RevenuePageClient({
         onMonthChange={setSelectedMonth}
       />
 
+      {/* 현금매출 입력 (마스터 전용) — 총매출에 합산 */}
+      {userRole === "MASTER" && (
+        <div className="bg-white rounded-2xl border border-[#e5e8eb] p-5">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h3 className="text-[15px] font-bold text-[#191f28]">
+                현금매출 입력{" "}
+                <span className="text-[12px] font-normal text-[#8b95a1]">마스터 전용</span>
+              </h3>
+              <p className="text-[12px] text-[#8b95a1] mt-0.5">
+                {selectedYear}년 {selectedMonth}월 · 입력 금액은 총매출에 합산됩니다.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <input
+                  type="number"
+                  min={0}
+                  value={cashInput}
+                  onChange={(e) => setCashInput(e.target.value)}
+                  className="w-48 pl-3 pr-8 py-2 text-[14px] text-right tabular-nums border border-[#e5e8eb] rounded-[8px] outline-none focus:border-[#3182f6]"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-[#8b95a1]">
+                  원
+                </span>
+              </div>
+              <button
+                onClick={saveCash}
+                disabled={savingCash}
+                className="px-4 py-2 bg-[#3182f6] hover:bg-[#1b64da] disabled:opacity-50 text-white text-[13px] font-semibold rounded-[8px]"
+              >
+                {savingCash ? "저장 중..." : "저장"}
+              </button>
+              {cashMsg && <span className="text-[12px] text-[#8b95a1]">{cashMsg}</span>}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 핵심 성장 지표 */}
       <SectionCard title={`${selectedYear}년 ${selectedMonth}월 성장 지표`} description="매출 성장성 및 트렌드 분석">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
@@ -466,9 +558,15 @@ export default function RevenuePageClient({
             value={formatAmount(growthAnalysis.yearToDateRevenue)}
             unit=""
             icon={<Activity className="w-4 h-4" />}
-            color="purple"
+            color="blue"
           />
-          {/* ARPU 분석 카드 제거됨 */}
+          <KpiCard
+            label="현금매출"
+            value={formatAmount(cashByMonth[`${selectedYear}-${selectedMonth}`] ?? 0)}
+            unit=""
+            icon={<DollarSign className="w-4 h-4" />}
+            color="green"
+          />
         </div>
 
 
@@ -614,165 +712,93 @@ export default function RevenuePageClient({
         </div>
       </SectionCard>
 
-      {/* 연간 매출 추이 및 성장 트렌드 */}
-      <div className="space-y-6">
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <DollarSign className="w-6 h-6 text-blue-600" />
-            <h3 className="text-xl font-bold text-slate-900">매출 추이 분석</h3>
-            <span className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs px-3 py-1 rounded-full font-medium">
-              {selectedYear}년
-            </span>
+      {/* 매출 추이 (전년도 대비 토글) */}
+      <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
+        <div className="flex items-start justify-between mb-4 gap-4 flex-wrap">
+          <div>
+            <h3 className="text-[15px] font-bold text-[#191f28]">매출 추이</h3>
+            <p className="text-[13px] text-[#8b95a1] mt-0.5">
+              {selectedYear}년 1~{selectedMonth}월 · 누적 {formatAmount(growthAnalysis.yearToDateRevenue)}
+            </p>
           </div>
-          <p className="text-slate-600">
-            {selectedYear}년 1월부터 {selectedMonth}월까지의 매출 성장 패턴을 확인하세요
-          </p>
+          <button
+            onClick={() => setShowPrevYear((v) => !v)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[13px] font-semibold border transition-colors ${
+              showPrevYear
+                ? "bg-[#eef1f4] text-[#4e5968] border-[#e5e8eb]"
+                : "bg-white text-[#8b95a1] border-[#e5e8eb] hover:bg-[#f9fafb]"
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full ${showPrevYear ? "bg-[#3182f6]" : "bg-[#d1d6db]"}`} />
+            전년도 대비 {showPrevYear ? "ON" : "OFF"}
+          </button>
         </div>
 
-        {/* 현재년도 매출 추이 */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">
-                {selectedYear}년 1~{selectedMonth}월 매출 추이
-              </h3>
-              <p className="text-sm text-slate-600">
-                {selectedMonth}월까지 누적 매출: {formatAmount(growthAnalysis.yearToDateRevenue)}
-              </p>
-            </div>
-          </div>
-
-          <div className="h-64 mb-4 w-full min-h-[256px] min-w-0">
-            {chartsReady ? (
-              <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                <AreaChart data={yearlyTrendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                  <defs>
-                    <linearGradient id="gradient-current-year" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.05}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontSize: 12, fill: "#64748b" }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12, fill: "#64748b" }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(value) => `${(value / 100000000).toFixed(0)}억`}
-                    width={50}
-                  />
-                  <Tooltip
-                    formatter={(value: any) => [`${formatAmount(value)}`, '매출']}
-                    contentStyle={{
-                      borderRadius: 12,
-                      border: 'none',
-                      boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
-                      fontSize: 13,
-                      background: 'rgba(255, 255, 255, 0.95)',
-                      backdropFilter: 'blur(8px)'
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="현재년도"
-                    stroke="#3b82f6"
-                    strokeWidth={3}
-                    fill="url(#gradient-current-year)"
-                    dot={{ fill: '#3b82f6', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
-                    activeDot={{ r: 6, fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 3 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[256px] flex items-center justify-center">
-                <div className="text-gray-500">차트를 로딩 중...</div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 전년도 대비 추이 */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">
-                전년도 대비 매출 추이 (1~{selectedMonth}월)
-              </h3>
-              <p className="text-sm text-slate-600">
-                {selectedYear - 1}년 vs {selectedYear}년 동기간 비교
-              </p>
-            </div>
-          </div>
-
-          <div className="h-64 mb-4 w-full min-h-[256px] min-w-0">
-            {chartsReady ? (
-              <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                <AreaChart data={yearlyTrendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                  <defs>
-                    <linearGradient id="gradient-current" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.3}/>
-                      <stop offset="100%" stopColor="#10b981" stopOpacity={0.05}/>
-                    </linearGradient>
-                    <linearGradient id="gradient-previous" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#64748b" stopOpacity={0.2}/>
-                      <stop offset="100%" stopColor="#64748b" stopOpacity={0.05}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fontSize: 12, fill: "#64748b" }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12, fill: "#64748b" }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(value) => `${(value / 100000000).toFixed(0)}억`}
-                    width={50}
-                  />
-                  <Tooltip
-                    formatter={(value: any, name: any) => [`${formatAmount(value)}`, name]}
-                    contentStyle={{
-                      borderRadius: 12,
-                      border: 'none',
-                      boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
-                      fontSize: 13,
-                      background: 'rgba(255, 255, 255, 0.95)',
-                      backdropFilter: 'blur(8px)'
-                    }}
-                  />
+        <div className="h-64 w-full min-h-[256px] min-w-0">
+          {chartsReady ? (
+            <ResponsiveContainer width="100%" height={256} minHeight={256}>
+              <AreaChart data={yearlyTrendData} margin={{ top: 22, right: 20, left: 0, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="grad-current" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3182f6" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#3182f6" stopOpacity={0.03} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f2f4f6" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 12, fill: "#8b95a1" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickMargin={10}
+                  padding={{ left: 14, right: 14 }}
+                />
+                <YAxis
+                  tick={{ fontSize: 12, fill: "#8b95a1" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(value) => `${(value / 100000000).toFixed(0)}억`}
+                  width={48}
+                  tickMargin={8}
+                />
+                <Tooltip
+                  formatter={(value: any, name: any) => [formatAmount(value), name]}
+                  contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 12px 0 rgb(0 0 0 / 0.10)", fontSize: 13 }}
+                />
+                {showPrevYear && (
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                )}
+                {showPrevYear && (
                   <Area
                     type="monotone"
                     dataKey="전년도"
-                    stroke="#64748b"
+                    name={`${selectedYear - 1}년`}
+                    stroke="#c1c8ce"
                     strokeWidth={2}
-                    fill="url(#gradient-previous)"
-                    dot={{ fill: '#64748b', strokeWidth: 2, stroke: '#ffffff', r: 3 }}
+                    strokeDasharray="4 3"
+                    fill="none"
+                    dot={{ fill: "#c1c8ce", r: 3 }}
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="현재년도"
-                    stroke="#10b981"
-                    strokeWidth={3}
-                    fill="url(#gradient-current)"
-                    dot={{ fill: '#10b981', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
-                    activeDot={{ r: 6, fill: '#10b981', stroke: '#ffffff', strokeWidth: 3 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[256px] flex items-center justify-center">
-                <div className="text-gray-500">차트를 로딩 중...</div>
-              </div>
-            )}
-          </div>
+                )}
+                <Area
+                  type="monotone"
+                  dataKey="현재년도"
+                  name={`${selectedYear}년`}
+                  stroke="#3182f6"
+                  strokeWidth={3}
+                  fill="url(#grad-current)"
+                  dot={{ fill: "#3182f6", strokeWidth: 2, stroke: "#ffffff", r: 4 }}
+                  activeDot={{ r: 6, fill: "#3182f6", stroke: "#ffffff", strokeWidth: 3 }}
+                >
+                  <LabelList dataKey="현재년도" position="top" offset={10} formatter={revLabel} style={{ fontSize: 10, fontWeight: 700, fill: "#3182f6" }} />
+                </Area>
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[256px] flex items-center justify-center">
+              <div className="text-[#adb5bd] text-[13px]">차트를 로딩 중...</div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -981,7 +1007,7 @@ export default function RevenuePageClient({
                 value={formatAmount(previousYearData.currentYearTotal)}
                 unit=""
                 icon={<DollarSign className="w-4 h-4" />}
-                color="purple"
+                color="green"
               />
             </div>
 

@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     clinicId = searchParams.get('clinicId')
     year = parseInt(searchParams.get('year') || new Date().getFullYear().toString())
-    month = searchParams.get('month') ? parseInt(searchParams.get('month')) : null
+    const monthParam = searchParams.get('month')
+    month = monthParam ? parseInt(monthParam) : null
 
     if (!clinicId) {
       return NextResponse.json({ error: "clinicId가 필요합니다" }, { status: 400 })
@@ -129,23 +130,23 @@ export async function POST(req: NextRequest) {
         clinicId_year_month: {
           clinicId,
           year,
-          month
+          month: month ?? 0 // null인 경우 0으로 처리
         }
       },
       create: {
         clinicId,
         year,
-        month,
+        month: month ?? 0, // null인 경우 0으로 처리
         goalType,
-        revenueGoal,
-        newPatientGoal,
-        description,
+        revenueGoal: revenueGoal ?? 0,
+        newPatientGoal: newPatientGoal ?? 0,
+        description: description ?? '',
         createdBy: (session.user as any).id
       },
       update: {
-        revenueGoal,
-        newPatientGoal,
-        description,
+        revenueGoal: revenueGoal ?? 0,
+        newPatientGoal: newPatientGoal ?? 0,
+        description: description ?? '',
         updatedAt: new Date()
       }
     })

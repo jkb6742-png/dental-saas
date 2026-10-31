@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
 
       // 초대 코드가 유효하면 즉시 승인 (일반 사용자 권한)
       userStatus = UserStatus.APPROVED
-      userRole = UserRole.USER // 🔧 초대코드 가입자는 일반 사용자
+      userRole = UserRole.VIEWER // 🔧 초대코드 가입자는 일반 사용자
       agencyId = inviteCodeRecord.clinic.agencyId
     } else {
       // 초대 코드가 없으면 새 에이전시 생성 (승인 대기 상태)

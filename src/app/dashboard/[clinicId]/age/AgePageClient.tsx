@@ -63,16 +63,19 @@ export default function AgePageClient({
   const [selectedYear, setSelectedYear] = useState(initialYear)
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
   const [selectedAgeGroup, setSelectedAgeGroup] = useState<string>("")
-  const [chartViewMode, setChartViewMode] = useState<'combined' | 'separated'>('combined')
+  const [chartViewMode, setChartViewMode] = useState<'combined' | 'separated'>('separated')
   const [detailViewMode, setDetailViewMode] = useState<'combined' | 'separated'>('combined')
 
   // URL 업데이트
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString())
+    // 이미 같은 URL이면 재이동(전체 서버 재조회+재렌더) 하지 않음 → 마운트 시 불필요한 리로드 방지
+    if (params.get('year') === String(selectedYear) && params.get('month') === String(selectedMonth)) return
     params.set('year', selectedYear.toString())
     params.set('month', selectedMonth.toString())
     router.push(`/dashboard/${clinicId}/age?${params.toString()}`)
-  }, [selectedYear, selectedMonth, clinicId, router, searchParams])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedYear, selectedMonth])
 
   // 사용 가능한 연령대가 변경되면 첫 번째 연령대로 설정
   useEffect(() => {
@@ -299,7 +302,7 @@ export default function AgePageClient({
 
                 <div className="h-80 mb-4 w-full min-h-[320px] min-w-0">
                   <ResponsiveContainer width="100%" height={320} minHeight={320}>
-                    <BarChart data={monthlyChartData} margin={{ top: 20, right: 20, left: 0, bottom: 60 }}>
+                    <BarChart data={monthlyChartData} margin={{ top: 28, right: 20, left: 0, bottom: 60 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                       <XAxis
                         dataKey="name"
@@ -308,14 +311,17 @@ export default function AgePageClient({
                         tickLine={false}
                         angle={-45}
                         textAnchor="end"
-                        height={80}
+                        height={90}
+                        tickMargin={10}
+                        padding={{ left: 12, right: 12 }}
                       />
                       <YAxis
                         tick={{ fontSize: 12, fill: "#64748b" }}
                         axisLine={false}
                         tickLine={false}
                         tickFormatter={(value) => `${value}명`}
-                        width={50}
+                        width={56}
+                        tickMargin={8}
                       />
                       <Tooltip
                         formatter={(value: any, name: string) => {
@@ -336,6 +342,9 @@ export default function AgePageClient({
                         }}
                       />
                       <Legend
+                        iconType="circle"
+                        iconSize={8}
+                        wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
                         formatter={(value) => {
                           const nameMap: Record<string, string> = {
                             'totalPatients': '총환자',
@@ -345,24 +354,15 @@ export default function AgePageClient({
                           return nameMap[value] || value
                         }}
                       />
-                      <Bar
-                        dataKey="totalPatients"
-                        fill="#8b5cf6"
-                        name="totalPatients"
-                        radius={[4, 4, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="newPatients"
-                        fill="#3b82f6"
-                        name="newPatients"
-                        radius={[4, 4, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="returningPatients"
-                        fill="#10b981"
-                        name="returningPatients"
-                        radius={[4, 4, 0, 0]}
-                      />
+                      <Bar dataKey="totalPatients" fill="#8b5cf6" name="totalPatients" radius={[4, 4, 0, 0]}>
+                        <LabelList dataKey="totalPatients" position="top" formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#8b5cf6" }} />
+                      </Bar>
+                      <Bar dataKey="newPatients" fill="#3b82f6" name="newPatients" radius={[4, 4, 0, 0]}>
+                        <LabelList dataKey="newPatients" position="top" formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#3b82f6" }} />
+                      </Bar>
+                      <Bar dataKey="returningPatients" fill="#10b981" name="returningPatients" radius={[4, 4, 0, 0]}>
+                        <LabelList dataKey="returningPatients" position="top" formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#10b981" }} />
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -381,7 +381,7 @@ export default function AgePageClient({
 
                   <div className="h-64 w-full min-h-[256px] min-w-0">
                     <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                      <AreaChart data={monthlyChartData} margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
+                      <AreaChart data={monthlyChartData} margin={{ top: 22, right: 10, left: 0, bottom: 40 }}>
                         <defs>
                           <linearGradient id="gradient-total" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.3}/>
@@ -396,13 +396,16 @@ export default function AgePageClient({
                           tickLine={false}
                           angle={-45}
                           textAnchor="end"
-                          height={60}
+                          height={70}
+                          tickMargin={8}
+                          padding={{ left: 10, right: 10 }}
                         />
                         <YAxis
                           tick={{ fontSize: 10, fill: "#64748b" }}
                           axisLine={false}
                           tickLine={false}
-                          width={40}
+                          width={48}
+                          tickMargin={6}
                         />
                         <Tooltip
                           formatter={(value: any) => [`${value}명`, '총환자']}
@@ -420,7 +423,9 @@ export default function AgePageClient({
                           strokeWidth={2}
                           fill="url(#gradient-total)"
                           dot={{ fill: '#8b5cf6', strokeWidth: 1, r: 3 }}
-                        />
+                        >
+                          <LabelList dataKey="totalPatients" position="top" offset={8} formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#8b5cf6" }} />
+                        </Area>
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -435,7 +440,7 @@ export default function AgePageClient({
 
                   <div className="h-64 w-full min-h-[256px] min-w-0">
                     <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                      <AreaChart data={monthlyChartData} margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
+                      <AreaChart data={monthlyChartData} margin={{ top: 22, right: 10, left: 0, bottom: 40 }}>
                         <defs>
                           <linearGradient id="gradient-new" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -450,13 +455,16 @@ export default function AgePageClient({
                           tickLine={false}
                           angle={-45}
                           textAnchor="end"
-                          height={60}
+                          height={70}
+                          tickMargin={8}
+                          padding={{ left: 10, right: 10 }}
                         />
                         <YAxis
                           tick={{ fontSize: 10, fill: "#64748b" }}
                           axisLine={false}
                           tickLine={false}
-                          width={40}
+                          width={48}
+                          tickMargin={6}
                         />
                         <Tooltip
                           formatter={(value: any) => [`${value}명`, '신환']}
@@ -474,7 +482,9 @@ export default function AgePageClient({
                           strokeWidth={2}
                           fill="url(#gradient-new)"
                           dot={{ fill: '#3b82f6', strokeWidth: 1, r: 3 }}
-                        />
+                        >
+                          <LabelList dataKey="newPatients" position="top" offset={8} formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#3b82f6" }} />
+                        </Area>
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -489,7 +499,7 @@ export default function AgePageClient({
 
                   <div className="h-64 w-full min-h-[256px] min-w-0">
                     <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                      <AreaChart data={monthlyChartData} margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
+                      <AreaChart data={monthlyChartData} margin={{ top: 22, right: 10, left: 0, bottom: 40 }}>
                         <defs>
                           <linearGradient id="gradient-returning" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#10b981" stopOpacity={0.3}/>
@@ -504,13 +514,16 @@ export default function AgePageClient({
                           tickLine={false}
                           angle={-45}
                           textAnchor="end"
-                          height={60}
+                          height={70}
+                          tickMargin={8}
+                          padding={{ left: 10, right: 10 }}
                         />
                         <YAxis
                           tick={{ fontSize: 10, fill: "#64748b" }}
                           axisLine={false}
                           tickLine={false}
-                          width={40}
+                          width={48}
+                          tickMargin={6}
                         />
                         <Tooltip
                           formatter={(value: any) => [`${value}명`, '구환']}
@@ -528,7 +541,9 @@ export default function AgePageClient({
                           strokeWidth={2}
                           fill="url(#gradient-returning)"
                           dot={{ fill: '#10b981', strokeWidth: 1, r: 3 }}
-                        />
+                        >
+                          <LabelList dataKey="returningPatients" position="top" offset={8} formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#10b981" }} />
+                        </Area>
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -691,13 +706,15 @@ export default function AgePageClient({
 
                     <div className="h-80 mb-4 w-full min-h-[320px] min-w-0">
                       <ResponsiveContainer width="100%" height={320} minHeight={320}>
-                        <LineChart data={selectedAgeGroupData} margin={{ top: 20, right: 20, left: 0, bottom: 20 }}>
+                        <LineChart data={selectedAgeGroupData} margin={{ top: 22, right: 20, left: 0, bottom: 20 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                           <XAxis
                             dataKey="month"
                             tick={{ fontSize: 12, fill: "#64748b" }}
                             axisLine={false}
                             tickLine={false}
+                            tickMargin={8}
+                            padding={{ left: 12, right: 12 }}
                           />
                           <YAxis
                             tick={{ fontSize: 12, fill: "#64748b" }}
@@ -705,6 +722,7 @@ export default function AgePageClient({
                             tickLine={false}
                             tickFormatter={(value) => `${value}명`}
                             width={50}
+                            tickMargin={8}
                           />
                           <Tooltip
                             formatter={(value: any, name: string) => {
@@ -776,7 +794,7 @@ export default function AgePageClient({
 
                       <div className="h-64 w-full min-h-[256px] min-w-0">
                         <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                          <AreaChart data={selectedAgeGroupData} margin={{ top: 5, right: 10, left: 0, bottom: 20 }}>
+                          <AreaChart data={selectedAgeGroupData} margin={{ top: 22, right: 10, left: 0, bottom: 20 }}>
                             <defs>
                               <linearGradient id="gradient-detail-total" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.3}/>
@@ -789,12 +807,15 @@ export default function AgePageClient({
                               tick={{ fontSize: 10, fill: "#64748b" }}
                               axisLine={false}
                               tickLine={false}
+                              tickMargin={8}
+                              padding={{ left: 12, right: 12 }}
                             />
                             <YAxis
                               tick={{ fontSize: 10, fill: "#64748b" }}
                               axisLine={false}
                               tickLine={false}
                               width={40}
+                              tickMargin={6}
                             />
                             <Tooltip
                               formatter={(value: any) => [`${value}명`, '총환자']}
@@ -812,7 +833,9 @@ export default function AgePageClient({
                               strokeWidth={2}
                               fill="url(#gradient-detail-total)"
                               dot={{ fill: '#8b5cf6', strokeWidth: 1, r: 3 }}
-                            />
+                            >
+                              <LabelList dataKey="totalPatients" position="top" offset={8} formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#8b5cf6" }} />
+                            </Area>
                           </AreaChart>
                         </ResponsiveContainer>
                       </div>
@@ -827,7 +850,7 @@ export default function AgePageClient({
 
                       <div className="h-64 w-full min-h-[256px] min-w-0">
                         <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                          <AreaChart data={selectedAgeGroupData} margin={{ top: 5, right: 10, left: 0, bottom: 20 }}>
+                          <AreaChart data={selectedAgeGroupData} margin={{ top: 22, right: 10, left: 0, bottom: 20 }}>
                             <defs>
                               <linearGradient id="gradient-detail-new" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -840,12 +863,15 @@ export default function AgePageClient({
                               tick={{ fontSize: 10, fill: "#64748b" }}
                               axisLine={false}
                               tickLine={false}
+                              tickMargin={8}
+                              padding={{ left: 12, right: 12 }}
                             />
                             <YAxis
                               tick={{ fontSize: 10, fill: "#64748b" }}
                               axisLine={false}
                               tickLine={false}
                               width={40}
+                              tickMargin={6}
                             />
                             <Tooltip
                               formatter={(value: any) => [`${value}명`, '신환']}
@@ -863,7 +889,9 @@ export default function AgePageClient({
                               strokeWidth={2}
                               fill="url(#gradient-detail-new)"
                               dot={{ fill: '#3b82f6', strokeWidth: 1, r: 3 }}
-                            />
+                            >
+                              <LabelList dataKey="newPatients" position="top" offset={8} formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#3b82f6" }} />
+                            </Area>
                           </AreaChart>
                         </ResponsiveContainer>
                       </div>
@@ -878,7 +906,7 @@ export default function AgePageClient({
 
                       <div className="h-64 w-full min-h-[256px] min-w-0">
                         <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                          <AreaChart data={selectedAgeGroupData} margin={{ top: 5, right: 10, left: 0, bottom: 20 }}>
+                          <AreaChart data={selectedAgeGroupData} margin={{ top: 22, right: 10, left: 0, bottom: 20 }}>
                             <defs>
                               <linearGradient id="gradient-detail-returning" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="0%" stopColor="#10b981" stopOpacity={0.3}/>
@@ -891,12 +919,15 @@ export default function AgePageClient({
                               tick={{ fontSize: 10, fill: "#64748b" }}
                               axisLine={false}
                               tickLine={false}
+                              tickMargin={8}
+                              padding={{ left: 12, right: 12 }}
                             />
                             <YAxis
                               tick={{ fontSize: 10, fill: "#64748b" }}
                               axisLine={false}
                               tickLine={false}
                               width={40}
+                              tickMargin={6}
                             />
                             <Tooltip
                               formatter={(value: any) => [`${value}명`, '구환']}
@@ -914,7 +945,9 @@ export default function AgePageClient({
                               strokeWidth={2}
                               fill="url(#gradient-detail-returning)"
                               dot={{ fill: '#10b981', strokeWidth: 1, r: 3 }}
-                            />
+                            >
+                              <LabelList dataKey="returningPatients" position="top" offset={8} formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#10b981" }} />
+                            </Area>
                           </AreaChart>
                         </ResponsiveContainer>
                       </div>

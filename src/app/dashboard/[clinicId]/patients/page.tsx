@@ -38,8 +38,6 @@ export default async function PatientsPage({
                 latestData ? latestData.month :
                 currentDate.getMonth() + 1
 
-  console.log(`[PATIENTS DEBUG] 클리닉 ID: ${clinicId}`)
-  console.log(`[PATIENTS DEBUG] 요청된 년도: ${year}, 월: ${month}`)
 
   // 해당 년도 전체 데이터
   const yearlyData = await prisma.patientStat.findMany({
@@ -50,9 +48,7 @@ export default async function PatientsPage({
     orderBy: [{ month: "asc" }]
   })
 
-  console.log(`[PATIENTS DEBUG] yearlyData 결과: ${yearlyData.length}개`)
   if (yearlyData.length > 0) {
-    console.log(`[PATIENTS DEBUG] 첫 번째 데이터:`, JSON.stringify(yearlyData[0], null, 2))
   }
 
   // 해당 월의 상세 데이터
@@ -65,28 +61,21 @@ export default async function PatientsPage({
     orderBy: { date: "asc" }
   })
 
-  console.log(`[PATIENTS DEBUG] monthlyData 결과: ${monthlyData.length}개`)
   if (monthlyData.length > 0) {
-    console.log(`[PATIENTS DEBUG] 월별 첫 번째 데이터:`, JSON.stringify(monthlyData[0], null, 2))
   }
 
   // availableData는 이미 위에서 조회했으므로 중복 제거
 
-  console.log(`[PATIENTS DEBUG] availableData 결과: ${availableData.length}개`)
-  console.log(`[PATIENTS DEBUG] 사용 가능한 년월:`, availableData.map(d => `${d.year}년 ${d.month}월`))
 
   // 데이터가 없는 경우 MonthlySummary에서 기본 데이터 가져오기
   let fallbackData = null
   if (yearlyData.length === 0 && monthlyData.length === 0) {
-    console.log(`[PATIENTS DEBUG] PatientStat 데이터가 없어서 MonthlySummary 폴백 시도`)
     fallbackData = await prisma.monthlySummary.findMany({
       where: { clinicId },
       orderBy: [{ year: "desc" }, { month: "desc" }],
       take: 12
     })
-    console.log(`[PATIENTS DEBUG] fallbackData 결과: ${fallbackData?.length || 0}개`)
     if (fallbackData && fallbackData.length > 0) {
-      console.log(`[PATIENTS DEBUG] 폴백 첫 번째 데이터:`, JSON.stringify(fallbackData[0], null, 2))
     }
   }
 
@@ -109,37 +98,6 @@ export default async function PatientsPage({
     orderBy: { receptionTime: "asc" }
   })
 
-  console.log(`[PATIENTS DEBUG] receptionRecords 결과: ${receptionRecords.length}개`)
-  if (receptionRecords.length > 0) {
-    console.log(`[PATIENTS DEBUG] 첫 번째 접수기록:`, JSON.stringify(receptionRecords[0], null, 2))
-
-    // patientType 값들 확인
-    const patientTypes = [...new Set(receptionRecords.map(r => r.patientType).filter(Boolean))]
-    console.log(`[PATIENTS DEBUG] patientType 값들:`, patientTypes)
-
-    // 신환/구환 필터링 테스트
-    const newPatients = receptionRecords.filter(r =>
-      r.patientType === '신환' || r.patientType === 'NEW' || r.patientType === 'new'
-    )
-    const returningPatients = receptionRecords.filter(r =>
-      r.patientType === '구환' || r.patientType === 'RETURNING' || r.patientType === 'returning' ||
-      r.patientType === '재진' || r.patientType === 'REVISIT'
-    )
-
-    console.log(`[PATIENTS DEBUG] 신환 필터 결과: ${newPatients.length}명`)
-    console.log(`[PATIENTS DEBUG] 구환 필터 결과: ${returningPatients.length}명`)
-
-    // 수익 정보 확인
-    const revenueData = receptionRecords.filter(r => r.totalRevenue && r.totalRevenue > 0)
-    console.log(`[PATIENTS DEBUG] 수익 데이터가 있는 기록: ${revenueData.length}개`)
-    if (revenueData.length > 0) {
-      console.log(`[PATIENTS DEBUG] 첫 번째 수익 기록:`, {
-        patientType: revenueData[0].patientType,
-        totalRevenue: revenueData[0].totalRevenue
-      })
-    }
-  }
-
   // 현재 선택된 월의 상세 접수 기록 (시간대별 분석용)
   const currentMonthReceptionRecords = await prisma.receptionRecord.findMany({
     where: {
@@ -158,7 +116,6 @@ export default async function PatientsPage({
     orderBy: { receptionTime: "asc" }
   })
 
-  console.log(`[PATIENTS DEBUG] currentMonthReceptionRecords 결과: ${currentMonthReceptionRecords.length}개`)
 
   // 치료 계획 데이터 (환자 유지율 분석용)
   const treatmentPlans = await prisma.treatmentPlan.findMany({
@@ -181,7 +138,6 @@ export default async function PatientsPage({
     orderBy: { writtenDate: "desc" }
   })
 
-  console.log(`[PATIENTS DEBUG] treatmentPlans 결과: ${treatmentPlans.length}개`)
 
   // 과거 3개월 데이터 (유지율 분석용)
   const threeMonthsAgo = new Date()
@@ -203,14 +159,6 @@ export default async function PatientsPage({
     orderBy: { receptionTime: "asc" }
   })
 
-  console.log(`[PATIENTS DEBUG] historicalReceptionData 결과: ${historicalReceptionData.length}개`)
-
-  // 전체적으로 데이터베이스에 저장된 PatientStat과 MonthlySummary 확인
-  const totalPatientStats = await prisma.patientStat.count({ where: { clinicId } })
-  const totalMonthlySummaries = await prisma.monthlySummary.count({ where: { clinicId } })
-
-  console.log(`[PATIENTS DEBUG] 전체 PatientStat 개수: ${totalPatientStats}`)
-  console.log(`[PATIENTS DEBUG] 전체 MonthlySummary 개수: ${totalMonthlySummaries}`)
 
   // 완전히 데이터가 없는 경우
   if (yearlyData.length === 0 && monthlyData.length === 0 && (!fallbackData || fallbackData.length === 0)) {

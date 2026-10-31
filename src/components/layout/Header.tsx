@@ -1,7 +1,8 @@
 "use client"
 
 import { signOut } from "next-auth/react"
-import { Bell, LogOut, User } from "lucide-react"
+import { LogOut, User } from "lucide-react"
+import NotificationBell from "./NotificationBell"
 
 type Props = {
   userName: string
@@ -14,9 +15,7 @@ export default function Header({ userName, pageTitle }: Props) {
       <h1 className="text-[17px] font-bold text-[#191f28]">{pageTitle}</h1>
 
       <div className="flex items-center gap-2">
-        <button className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[#f9fafb] text-[#6b7684] transition-colors">
-          <Bell className="w-4 h-4" />
-        </button>
+        <NotificationBell />
 
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-[#f9fafb] cursor-pointer transition-colors">
           <div className="w-7 h-7 bg-[#ebf3fe] rounded-full flex items-center justify-center">

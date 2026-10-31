@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { Star, MessageCircle, TrendingUp, RefreshCw, Edit } from "lucide-react"
+import {
+  ComposedChart, Bar, Line, LabelList,
+  XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer,
+} from "recharts"
 import KpiCard from "@/components/ui/KpiCard"
 import SectionCard from "@/components/ui/SectionCard"
 import ReviewManualInput from "./ReviewManualInput"
@@ -45,6 +50,8 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
   const [summaries, setSummaries] = useState<ReviewSummary[]>([])
   const [recentReviews, setRecentReviews] = useState<RecentReview[]>([])
   const [monthlyTargets, setMonthlyTargets] = useState<MonthlyTarget[]>([])
+  const [monthlyChart, setMonthlyChart] = useState<Array<{ label: string; 네이버: number; 구글: number }>>([])
+  const [chartSource, setChartSource] = useState<"NAVER" | "GOOGLE">("NAVER")
   const [loading, setLoading] = useState(true)
   const [crawling, setCrawling] = useState<string | null>(null)
   const [showManualInput, setShowManualInput] = useState<"NAVER" | "GOOGLE" | null>(null)
@@ -59,19 +66,35 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
         setRecentReviews(summaryData.recentReviews || [])
       }
 
-      // 월별 목표 데이터 가져오기
-      const monthlyResponse = await fetch(`/api/reviews/monthly?clinicId=${clinicId}&year=${year}`)
-      if (monthlyResponse.ok) {
-        const monthlyData = await monthlyResponse.json()
-        const currentMonthTargets = monthlyData
-          .filter((item: any) => item.year === year && item.month === month)
-          .map((item: any) => ({
-            source: item.source,
-            targetReviews: item.targetReviews,
-            achievementRate: item.achievementRate
-          }))
-        setMonthlyTargets(currentMonthTargets)
+      // 월별 데이터를 플랫폼별로 조회 (source 없이 부르면 응답에 source가 없어 구분 불가)
+      const [naverMRes, googleMRes] = await Promise.all([
+        fetch(`/api/reviews/monthly?clinicId=${clinicId}&year=${year}&source=NAVER`),
+        fetch(`/api/reviews/monthly?clinicId=${clinicId}&year=${year}&source=GOOGLE`),
+      ])
+      const naverM: any[] = naverMRes.ok ? await naverMRes.json() : []
+      const googleM: any[] = googleMRes.ok ? await googleMRes.json() : []
+
+      // 이번달 목표/달성률
+      const nT = naverM.find((m) => m.month === month)
+      const gT = googleM.find((m) => m.month === month)
+      setMonthlyTargets([
+        { source: "NAVER", targetReviews: nT?.targetReviews ?? null, achievementRate: nT?.achievementRate ?? null },
+        { source: "GOOGLE", targetReviews: gT?.targetReviews ?? null, achievementRate: gT?.achievementRate ?? null },
+      ])
+
+      // 월별 신규 리뷰 추이 차트 데이터 (월 기준 병합)
+      const byMonth = new Map<number, { month: number; 네이버: number; 구글: number }>()
+      for (const m of naverM) byMonth.set(m.month, { month: m.month, 네이버: m.newReviews || 0, 구글: 0 })
+      for (const m of googleM) {
+        const e = byMonth.get(m.month) || { month: m.month, 네이버: 0, 구글: 0 }
+        e.구글 = m.newReviews || 0
+        byMonth.set(m.month, e)
       }
+      setMonthlyChart(
+        Array.from(byMonth.values())
+          .sort((a, b) => a.month - b.month)
+          .map((e) => ({ label: `${e.month}월`, 네이버: e.네이버, 구글: e.구글 }))
+      )
     } catch (error) {
       console.error("Failed to fetch review data:", error)
     } finally {
@@ -185,6 +208,69 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
         </div>
       </SectionCard>
 
+      {/* 월별 신규 리뷰 추이 (네이버/구글 토글) */}
+      <SectionCard title="월별 신규 리뷰 추이" description={`${year}년 ${chartSource === "NAVER" ? "네이버" : "구글"} 신규 리뷰`}>
+        {/* 플랫폼 토글 */}
+        <div className="flex items-center gap-1 mb-4 w-fit p-1 bg-[#f2f4f6] rounded-[10px]">
+          {(["NAVER", "GOOGLE"] as const).map((src) => (
+            <button
+              key={src}
+              onClick={() => setChartSource(src)}
+              className={`px-3.5 py-1.5 rounded-[8px] text-[13px] font-semibold transition-colors ${
+                chartSource === src
+                  ? "bg-white text-[#191f28] shadow-sm"
+                  : "text-[#8b95a1] hover:text-[#4e5968]"
+              }`}
+            >
+              {src === "NAVER" ? "네이버" : "구글"}
+            </button>
+          ))}
+        </div>
+
+        {monthlyChart.some((d) => (chartSource === "NAVER" ? d.네이버 : d.구글) > 0) ? (
+          <ResponsiveContainer width="100%" height={260}>
+            <ComposedChart data={monthlyChart} margin={{ top: 22, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f2f4f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#8b95a1" }} axisLine={false} tickLine={false} tickMargin={10} padding={{ left: 12, right: 12 }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#8b95a1" }} axisLine={false} tickLine={false} width={32} tickMargin={8} />
+              <Tooltip
+                formatter={(v: any) => [`${v}개`, "신규 리뷰"]}
+                contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 12px 0 rgb(0 0 0 / 0.10)", fontSize: 13 }}
+              />
+              <Bar
+                dataKey={chartSource === "NAVER" ? "네이버" : "구글"}
+                name="신규 리뷰"
+                fill={chartSource === "NAVER" ? "#d4f2e4" : "#d4e4fd"}
+                radius={[4, 4, 0, 0]}
+                maxBarSize={40}
+              />
+              <Line
+                type="monotone"
+                dataKey={chartSource === "NAVER" ? "네이버" : "구글"}
+                name="추이"
+                stroke={chartSource === "NAVER" ? "#05c072" : "#3182f6"}
+                strokeWidth={2.5}
+                dot={{ r: 3, fill: chartSource === "NAVER" ? "#05c072" : "#3182f6" }}
+                activeDot={{ r: 5 }}
+                tooltipType="none"
+              >
+                <LabelList
+                  dataKey={chartSource === "NAVER" ? "네이버" : "구글"}
+                  position="top"
+                  formatter={(v: any) => (typeof v === "number" && v > 0 ? v : "")}
+                  offset={10}
+                  style={{ fontSize: 11, fontWeight: 700, fill: chartSource === "NAVER" ? "#05c072" : "#3182f6" }}
+                />
+              </Line>
+            </ComposedChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="text-center py-10 text-[13px] text-[#adb5bd]">
+            {chartSource === "NAVER" ? "네이버" : "구글"} 신규 리뷰 데이터가 없습니다. 아래에서 입력하면 표시됩니다.
+          </div>
+        )}
+      </SectionCard>
+
       {/* 플랫폼별 상세 현황 */}
       <SectionCard title="플랫폼별 상세" description="네이버, 구글 리뷰 현황">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -230,6 +316,15 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
                   {naverTarget?.achievementRate ? `${naverTarget.achievementRate.toFixed(0)}%` : "—"}
                 </div>
                 <div className="text-sm text-green-600">달성률</div>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <div className="w-full bg-green-100 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-green-500 h-2 rounded-full transition-all"
+                  style={{ width: `${Math.min(naverTarget?.achievementRate ?? 0, 100)}%` }}
+                />
               </div>
             </div>
           </div>
@@ -288,40 +383,25 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
                 <div className="text-sm text-blue-600">달성률</div>
               </div>
             </div>
+
+            <div className="mt-4">
+              <div className="w-full bg-blue-100 rounded-full h-2 overflow-hidden">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all"
+                  style={{ width: `${Math.min(googleTarget?.achievementRate ?? 0, 100)}%` }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </SectionCard>
 
       {/* 주요 피드백 */}
-      {summaries.some(s => s.topKeywords && (s.topKeywords as any).feedback) && (
+      {false && (
         <SectionCard title="주요 피드백" description="개선이 필요한 부분">
           <div className="space-y-3">
             {summaries.map((summary) => {
-              const feedback = summary.topKeywords && (summary.topKeywords as any).feedback
-              if (!feedback || !Array.isArray(feedback)) return null
-
-              return (
-                <div key={summary.source} className="border rounded-lg p-4">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      summary.source === "NAVER"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-blue-100 text-blue-700"
-                    }`}>
-                      {summary.source}
-                    </span>
-                    <span className="text-sm text-gray-600">피드백 {feedback.length}건</span>
-                  </div>
-                  <div className="space-y-2">
-                    {feedback.map((item: string, index: number) => (
-                      <div key={index} className="flex items-start space-x-2">
-                        <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
-                        <p className="text-sm text-gray-700">{item}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )
+              return null
             })}
           </div>
         </SectionCard>

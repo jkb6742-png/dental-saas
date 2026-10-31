@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Target, Calendar, FileText, Plus, Edit, Trash2, Filter, CheckCircle, Clock, PlayCircle, Paperclip, MessageSquare, Send, User, Download } from "lucide-react"
+import { UserRole } from "@prisma/client"
 
 interface ActionPlan {
   id: string
@@ -29,7 +30,7 @@ interface Comment {
   id: string
   content: string
   author: string
-  authorRole: "MASTER" | "CLINIC"
+  authorRole: UserRole
   createdAt: Date
 }
 
@@ -173,70 +174,66 @@ export default function ActionPlansClient({
     setFormData({...formData, attachments: files})
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (editingPlan) {
-      // 수정
-      setActionPlans(plans => plans.map(plan =>
-        plan.id === editingPlan.id
-          ? {
-              ...plan,
-              goal: formData.goal,
-              targetDate: new Date(formData.targetDate),
-              description: formData.description,
-              status: formData.status,
-              priority: formData.priority,
-              // 실제로는 서버에 파일을 업로드하고 URL을 받아와야 합니다
-              attachments: [
-                ...plan.attachments,
-                ...formData.attachments.map((file, index) => ({
-                  id: `${Date.now()}-${index}`,
-                  name: file.name,
-                  size: file.size,
-                  type: file.type,
-                  uploadedAt: new Date(),
-                  url: `#${file.name}` // Mock URL
-                }))
-              ]
-            }
-          : plan
-      ))
-    } else {
-      // 새로 추가
-      const newPlan: ActionPlan = {
-        id: Date.now().toString(),
-        goal: formData.goal,
-        targetDate: new Date(formData.targetDate),
-        description: formData.description,
-        status: formData.status,
-        createdAt: new Date(),
-        progress: formData.status === "완료" ? 100 : formData.status === "진행중" ? 30 : 0,
-        priority: formData.priority,
-        attachments: formData.attachments.map((file, index) => ({
-          id: `${Date.now()}-${index}`,
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          uploadedAt: new Date(),
-          url: `#${file.name}` // Mock URL
-        })),
-        comments: []
-      }
-      setActionPlans([...actionPlans, newPlan])
-    }
+    try {
+      if (editingPlan) {
+        // 수정
+        const response = await fetch(`/api/action-plans/${editingPlan.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            goal: formData.goal,
+            targetDate: formData.targetDate,
+            description: formData.description,
+            status: formData.status,
+            priority: formData.priority
+          })
+        })
 
-    // 폼 초기화
-    setFormData({
-      goal: "",
-      targetDate: "",
-      description: "",
-      status: "시작전",
-      priority: "중",
-      attachments: []
-    })
-    setIsModalOpen(false)
-    setEditingPlan(null)
+        if (response.ok) {
+          const updatedPlan = await response.json()
+          setActionPlans(plans => plans.map(plan =>
+            plan.id === editingPlan.id ? updatedPlan : plan
+          ))
+        }
+      } else {
+        // 새로 추가
+        const response = await fetch('/api/action-plans', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clinicId,
+            goal: formData.goal,
+            targetDate: formData.targetDate,
+            description: formData.description,
+            status: formData.status,
+            priority: formData.priority
+          })
+        })
+
+        if (response.ok) {
+          const newPlan = await response.json()
+          setActionPlans([...actionPlans, newPlan])
+        }
+      }
+
+      // 폼 초기화
+      setFormData({
+        goal: "",
+        targetDate: "",
+        description: "",
+        status: "시작전",
+        priority: "중",
+        attachments: []
+      })
+      setIsModalOpen(false)
+      setEditingPlan(null)
+    } catch (error) {
+      console.error('액션플랜 저장 오류:', error)
+      alert('저장 중 오류가 발생했습니다.')
+    }
   }
 
   const handleEdit = (plan: ActionPlan) => {
@@ -252,9 +249,22 @@ export default function ActionPlansClient({
     setIsModalOpen(true)
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm("정말로 이 액션플랜을 삭제하시겠습니까?")) {
-      setActionPlans(plans => plans.filter(plan => plan.id !== id))
+      try {
+        const response = await fetch(`/api/action-plans/${id}`, {
+          method: 'DELETE'
+        })
+
+        if (response.ok) {
+          setActionPlans(plans => plans.filter(plan => plan.id !== id))
+        } else {
+          alert('삭제 권한이 없거나 오류가 발생했습니다.')
+        }
+      } catch (error) {
+        console.error('삭제 오류:', error)
+        alert('삭제 중 오류가 발생했습니다.')
+      }
     }
   }
 
@@ -276,28 +286,37 @@ export default function ActionPlansClient({
     setIsDetailOpen(true)
   }
 
-  const addComment = (planId: string) => {
+  const addComment = async (planId: string) => {
     if (!newComment.trim()) return
 
-    const comment: Comment = {
-      id: Date.now().toString(),
-      content: newComment,
-      author: isMaster ? "마스터 관리자" : "치과 원장", // 실제로는 세션에서 가져와야 함
-      authorRole: isMaster ? "MASTER" : "CLINIC",
-      createdAt: new Date()
+    try {
+      const response = await fetch(`/api/action-plans/${planId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newComment.trim() })
+      })
+
+      if (response.ok) {
+        const comment = await response.json()
+
+        setActionPlans(plans => plans.map(plan =>
+          plan.id === planId
+            ? { ...plan, comments: [...plan.comments, comment] }
+            : plan
+        ))
+
+        if (selectedPlan?.id === planId) {
+          setSelectedPlan({ ...selectedPlan, comments: [...selectedPlan.comments, comment] })
+        }
+
+        setNewComment("")
+      } else {
+        alert('댓글 추가 중 오류가 발생했습니다.')
+      }
+    } catch (error) {
+      console.error('댓글 추가 오류:', error)
+      alert('댓글 추가 중 오류가 발생했습니다.')
     }
-
-    setActionPlans(plans => plans.map(plan =>
-      plan.id === planId
-        ? { ...plan, comments: [...plan.comments, comment] }
-        : plan
-    ))
-
-    if (selectedPlan?.id === planId) {
-      setSelectedPlan({ ...selectedPlan, comments: [...selectedPlan.comments, comment] })
-    }
-
-    setNewComment("")
   }
 
   // 통계 계산

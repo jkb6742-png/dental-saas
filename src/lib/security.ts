@@ -9,30 +9,30 @@ export async function validateClinicAccess(clinicId: string, userId?: string): P
   if (!userId) return false
 
   try {
-    // 사용자가 속한 에이전시를 통해 접근 가능한 클리닉인지 확인
-    const userWithClinic = await prisma.user.findFirst({
-      where: {
-        id: userId,
-        agency: {
-          clinics: {
-            some: {
-              id: clinicId
-            }
-          }
-        }
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        role: true,
+        agencyId: true,
+        clinicId: true,
+        inviteCode: { select: { clinicId: true } },
       },
-      include: {
-        agency: {
-          include: {
-            clinics: {
-              where: { id: clinicId }
-            }
-          }
-        }
-      }
     })
 
-    return !!userWithClinic && userWithClinic.agency.clinics.length > 0
+    if (!user) return false
+
+    // MASTER는 자신의 에이전시에 속한 모든 치과 접근 가능
+    if (user.role === "MASTER") {
+      const clinic = await prisma.clinic.findFirst({
+        where: { id: clinicId, agencyId: user.agencyId },
+        select: { id: true },
+      })
+      return !!clinic
+    }
+
+    // 비마스터(로그인 계정)는 소속 치과에만 접근 가능
+    const ownClinicId = user.clinicId ?? user.inviteCode?.clinicId ?? null
+    return ownClinicId === clinicId
   } catch (error) {
     console.error("권한 검증 오류:", error)
     return false

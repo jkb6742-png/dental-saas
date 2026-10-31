@@ -20,19 +20,22 @@ type Props = {
 export default function RouteTrendChart({ data, channels }: Props) {
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
+      <LineChart data={data} margin={{ top: 22, right: 16, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f2f4f6" vertical={false} />
         <XAxis
           dataKey="label"
           tick={{ fontSize: 11, fill: "#8b95a1" }}
           axisLine={false}
           tickLine={false}
+          tickMargin={10}
+          padding={{ left: 14, right: 14 }}
         />
         <YAxis
           tick={{ fontSize: 11, fill: "#8b95a1" }}
           axisLine={false}
           tickLine={false}
-          width={32}
+          width={52}
+          tickMargin={8}
         />
         <Tooltip
           formatter={(v, name) => [`${Number(v)}명`, name]}

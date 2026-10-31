@@ -44,3 +44,6 @@ next-env.d.ts
 
 # file uploads
 /uploads
+
+# NAS 배포 인수인계(이미지 tar·env 보강값 포함)
+handoff/

@@ -28,6 +28,20 @@ interface PatientStatsData {
       count: number
     }
   }
+  newPatientWaitingStats?: {
+    [key: string]: {
+      avg: number
+      max: number
+      count: number
+    }
+  }
+  returningPatientWaitingStats?: {
+    [key: string]: {
+      avg: number
+      max: number
+      count: number
+    }
+  }
   overallAvgWaitingTime: number
   overallMaxWaitingTime: number
 }

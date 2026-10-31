@@ -25,14 +25,10 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
   const [isDragging, setIsDragging] = useState(false)
   const [dragCounter, setDragCounter] = useState(0)
 
-  // 파일 검증
+  // 파일 검증 (모든 형식 허용)
   const validateFile = useCallback((file: File): string | null => {
-    if (!file.name.endsWith('.html')) {
-      return 'HTML 파일(.html)만 업로드 가능합니다.'
-    }
-
-    if (file.size > 5 * 1024 * 1024) { // 5MB 제한
-      return '파일 크기는 5MB를 초과할 수 없습니다.'
+    if (file.size > 50 * 1024 * 1024) { // 50MB 제한
+      return '파일 크기는 50MB를 초과할 수 없습니다.'
     }
 
     return null
@@ -154,7 +150,7 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
       const result = await response.json()
 
       if (response.ok) {
-        setMessage('✅ HTML PEI 리포트가 성공적으로 업로드되었습니다!')
+        setMessage('✅ PEI 리포트가 성공적으로 업로드되었습니다!')
         setFile(null)
         setTitle('')
         if (fileInputRef.current) {
@@ -198,8 +194,8 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
           <Upload className="w-4 h-4 text-[#f59e0b]" />
         </div>
         <div>
-          <h3 className="text-[16px] font-semibold text-[#191f28]">PEI HTML 리포트 업로드</h3>
-          <p className="text-[13px] text-[#8b95a1]">Patient Experience Index 리포트 HTML 파일을 업로드합니다</p>
+          <h3 className="text-[16px] font-semibold text-[#191f28]">PEI 리포트 업로드</h3>
+          <p className="text-[13px] text-[#8b95a1]">Patient Experience Index 리포트 파일을 원본 그대로 업로드합니다 (PDF, HTML 등)</p>
         </div>
       </div>
 
@@ -229,7 +225,7 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
             <input
               ref={fileInputRef}
               type="file"
-              accept=".html,text/html"
+              accept="*"
               onChange={handleFileInputChange}
               className="hidden"
             />
@@ -238,7 +234,7 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
               <div className="py-6 sm:py-8">
                 <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">📄</div>
                 <p className="text-base sm:text-lg font-semibold text-[#f59e0b]">
-                  PEI HTML 파일을 여기에 드롭하세요!
+                  PEI 리포트 파일을 여기에 드롭하세요!
                 </p>
               </div>
             ) : file ? (
@@ -258,11 +254,11 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
               <div className="py-6 sm:py-8">
                 <FileText className="w-10 h-10 sm:w-12 sm:h-12 text-[#8b95a1] mx-auto mb-3 sm:mb-4" />
                 <p className="text-base sm:text-lg font-semibold text-[#191f28] mb-2 px-2">
-                  PEI HTML 파일을 터치하여 선택하거나<br className="sm:hidden" />
+                  PEI 리포트 파일을 터치하여 선택하거나<br className="sm:hidden" />
                   <span className="hidden sm:inline"> 드래그 앤 드롭하세요</span>
                 </p>
                 <p className="text-[13px] sm:text-sm text-[#8b95a1]">
-                  지원 형식: .html (최대 5MB)
+                  지원 형식: 모든 파일 (PDF, HTML 등 - 최대 50MB)
                 </p>
               </div>
             )}
@@ -334,7 +330,7 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
           ) : (
             <>
               <Upload className="w-4 h-4" />
-              <span>PEI HTML 리포트 업로드</span>
+              <span>PEI 리포트 업로드</span>
             </>
           )}
         </button>

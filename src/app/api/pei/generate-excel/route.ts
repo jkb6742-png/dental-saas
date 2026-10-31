@@ -184,13 +184,13 @@ export async function POST(request: NextRequest) {
       // 기존 보고서 업데이트
       savedReport = await prisma.peiReport.update({
         where: { id: existingReport.id },
-        data: peiReportData
+        data: peiReportData as any
       })
       console.log(`✅ 기존 보고서 업데이트 완료: ${savedReport.id}`)
     } else {
       // 새 보고서 생성
       savedReport = await prisma.peiReport.create({
-        data: peiReportData
+        data: peiReportData as any
       })
       console.log(`✅ 새 보고서 생성 완료: ${savedReport.id}`)
     }

@@ -4,10 +4,10 @@ import { requireClinicAccess, logSecurityEvent } from "@/lib/security"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { reportId: string } }
+  { params }: { params: Promise<{ reportId: string }> }
 ) {
   try {
-    const reportId = params.reportId
+    const { reportId } = await params
 
     if (!reportId) {
       return NextResponse.json({ error: "Report ID is required" }, { status: 400 })

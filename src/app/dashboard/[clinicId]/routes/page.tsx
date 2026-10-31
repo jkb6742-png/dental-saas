@@ -1,9 +1,10 @@
 export const dynamic = "force-dynamic"
 
+import { Suspense } from "react"
 import { prisma } from "@/lib/db"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import RoutesPageClient from "./RoutesPageClient"
+import RoutesPageClient from "./RoutesPageClient.client"
 
 export default async function RoutesPage({
   params,
@@ -64,13 +65,24 @@ export default async function RoutesPage({
   }
 
   return (
-    <RoutesPageClient
-      clinicId={clinicId}
-      initialYear={year}
-      initialMonth={month}
-      yearlyData={yearlyData}
-      monthlyData={monthlyData}
-      availableData={availableData}
-    />
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
+        <div className="space-y-8 p-6">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">내원경로별 분석</h1>
+            <p className="text-slate-600">차트를 불러오는 중...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <RoutesPageClient
+        clinicId={clinicId}
+        initialYear={year}
+        initialMonth={month}
+        yearlyData={yearlyData}
+        monthlyData={monthlyData}
+        availableData={availableData}
+      />
+    </Suspense>
   )
 }

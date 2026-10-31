@@ -2,96 +2,59 @@ export const dynamic = "force-dynamic"
 
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
+import { prisma } from "@/lib/db"
 import ActionPlansClient from "./ActionPlansClient"
 
-// Mock data - 실제로는 데이터베이스에서 가져와야 합니다
-const mockActionPlans = [
-  {
-    id: "1",
-    goal: "환자 만족도 개선",
-    targetDate: new Date("2026-08-31"),
-    description: "대기시간 단축 및 서비스 품질 향상을 통한 환자 만족도 95% 달성",
-    status: "진행중" as const,
-    createdAt: new Date("2026-06-01"),
-    progress: 60,
-    priority: "상",
-    attachments: [
-      {
-        id: "1",
-        name: "만족도_개선_계획서.pdf",
-        size: 2048576,
-        type: "application/pdf",
-        uploadedAt: new Date("2026-06-01"),
-        url: "/files/satisfaction-plan.pdf"
-      }
-    ],
-    comments: [
-      {
-        id: "1",
-        content: "대기시간 단축을 위한 예약 시스템 개선이 필요해 보입니다.",
-        author: "마스터 관리자",
-        authorRole: "MASTER" as const,
-        createdAt: new Date("2026-06-02")
+async function getActionPlans(clinicId: string) {
+  try {
+    const actionPlans = await prisma.actionPlan.findMany({
+      where: { clinicId },
+      include: {
+        attachments: true,
+        comments: {
+          include: {
+            user: {
+              select: { name: true, role: true }
+            }
+          },
+          orderBy: { createdAt: 'asc' }
+        },
+        user: {
+          select: { name: true, role: true }
+        }
       },
-      {
-        id: "2",
-        content: "네, 새로운 예약 시스템 도입을 검토해보겠습니다.",
-        author: "김원장",
-        authorRole: "CLINIC" as const,
-        createdAt: new Date("2026-06-03")
-      }
-    ]
-  },
-  {
-    id: "2",
-    goal: "월 매출 목표 달성",
-    targetDate: new Date("2026-07-31"),
-    description: "새로운 진료 항목 도입 및 마케팅 강화를 통한 월 매출 20% 증가",
-    status: "시작전" as const,
-    createdAt: new Date("2026-06-08"),
-    progress: 0,
-    priority: "중",
-    attachments: [],
-    comments: [
-      {
-        id: "3",
-        content: "어떤 진료 항목을 추가로 도입할 계획인지 구체적인 계획을 공유해주세요.",
-        author: "마스터 관리자",
-        authorRole: "MASTER" as const,
-        createdAt: new Date("2026-06-08")
-      }
-    ]
-  },
-  {
-    id: "3",
-    goal: "직원 교육 프로그램 완료",
-    targetDate: new Date("2026-06-30"),
-    description: "전 직원 대상 고객 서비스 향상 교육 및 신규 시스템 사용법 교육",
-    status: "완료" as const,
-    createdAt: new Date("2026-05-15"),
-    progress: 100,
-    priority: "하",
-    attachments: [
-      {
-        id: "2",
-        name: "교육_수료증.jpg",
-        size: 512000,
-        type: "image/jpeg",
-        uploadedAt: new Date("2026-06-30"),
-        url: "/files/certificate.jpg"
-      }
-    ],
-    comments: [
-      {
-        id: "4",
-        content: "모든 직원이 교육을 성공적으로 완료했습니다!",
-        author: "김원장",
-        authorRole: "CLINIC" as const,
-        createdAt: new Date("2026-06-30")
-      }
-    ]
+      orderBy: [
+        { priority: 'asc' }, // HIGH(0) > MEDIUM(1) > LOW(2)
+        { createdAt: 'desc' }
+      ]
+    })
+
+    // Enum 값을 한국어로 변환
+    const formattedPlans = actionPlans.map(plan => ({
+      ...plan,
+      status: (plan.status === 'PENDING' ? '시작전' : plan.status === 'IN_PROGRESS' ? '진행중' : '완료') as "시작전" | "진행중" | "완료",
+      priority: (plan.priority === 'HIGH' ? '상' : plan.priority === 'MEDIUM' ? '중' : '하') as "상" | "중" | "하",
+      attachments: plan.attachments.map(attachment => ({
+        id: attachment.id,
+        name: attachment.originalName,
+        size: attachment.fileSize,
+        type: attachment.mimeType,
+        uploadedAt: attachment.uploadedAt,
+        url: attachment.filePath
+      })),
+      comments: plan.comments.map(comment => ({
+        ...comment,
+        author: comment.user.name,
+        authorRole: comment.user.role
+      }))
+    }))
+
+    return formattedPlans
+  } catch (error) {
+    console.error('액션플랜 조회 오류:', error)
+    return []
   }
-]
+}
 
 export default async function ActionPlansPage({
   params,
@@ -106,10 +69,13 @@ export default async function ActionPlansPage({
   // 사용자 역할 가져오기
   const userRole = (session.user as any).role
 
+  // 실제 액션플랜 데이터 조회
+  const actionPlans = await getActionPlans(clinicId)
+
   return (
     <ActionPlansClient
       clinicId={clinicId}
-      actionPlans={mockActionPlans}
+      actionPlans={actionPlans}
       userRole={userRole}
     />
   )

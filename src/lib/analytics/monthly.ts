@@ -23,19 +23,25 @@ export async function recalcMonthlySummary(clinicId: string, year: number, month
   // 아무 데이터도 없으면 집계하지 않음
   if (ledgers.length === 0 && patients.length === 0 && treatmentStats.length === 0 && receptionRecords.length === 0) return
 
-  // Revenue (DailyLedger 실제 수금 기준)
+  // Revenue (매출 정의 확정: 월간장부 "총 수입(청구포함,VAT제외)" = DailyLedger.totalIncome)
   const cashIncome = ledgers.reduce((s, l) => s + (l.cashIncome ?? 0), 0)
   const cardIncome = ledgers.reduce((s, l) => s + (l.cardIncome ?? 0), 0)
   const onlineIncome = ledgers.reduce((s, l) => s + (l.onlineIncome ?? 0), 0)
-  const totalRevenue = cashIncome + cardIncome + onlineIncome // 실제 수금 합계
+  const insuranceClaim = ledgers.reduce((s, l) => s + (l.insuranceClaim ?? 0), 0)
+
+  // 전체 청구 기준 매출 (접수수납 총진료비, 객단가 계산용)
+  const totalBilledRevenue = receptionRecords
+    .reduce((s, r) => s + (r.totalRevenue ?? 0), 0)
+
+  // 매출 = 청구포함 총수입 = 현금+카드+온라인+공단부담(청구액).
+  // (2026 "총 수입(청구포함,VAT제외)" 컬럼과 동일, 2025 구포맷 "총 수입(VAT제외)"도 정확히 재구성)
+  // 월간장부 없으면 접수수납 청구액으로 대체.
+  const ledgerRevenue = cashIncome + cardIncome + onlineIncome + insuranceClaim
+  const totalRevenue = ledgers.length > 0 ? ledgerRevenue : totalBilledRevenue
 
   // 신환 매출은 ReceptionRecord에서 가져오기 (청구 기준)
   const newPatientRevenue = receptionRecords
     .filter(r => r.patientType === '신환')
-    .reduce((s, r) => s + (r.totalRevenue ?? 0), 0)
-
-  // 전체 청구 기준 매출 (객단가 계산용)
-  const totalBilledRevenue = receptionRecords
     .reduce((s, r) => s + (r.totalRevenue ?? 0), 0)
 
   // 근무일 수는 DailyLedger 기준
@@ -45,7 +51,6 @@ export async function recalcMonthlySummary(clinicId: string, year: number, month
   // 기타 DailyLedger 기반 데이터
   const totalExpense = ledgers.reduce((s, l) => s + (l.totalExpense ?? 0), 0)
   const netProfit = totalRevenue - totalExpense
-  const insuranceClaim = ledgers.reduce((s, l) => s + (l.insuranceClaim ?? 0), 0)
 
   // 비급여 (TreatmentStat 기반)
   const nonInsuranceRevenue = treatmentStats

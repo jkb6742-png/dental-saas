@@ -67,6 +67,8 @@ export async function POST(req: NextRequest) {
       /<form\b/gi
     ]
 
+    // PDF 업로드 허용을 위해 비활성화
+    /*
     for (const pattern of dangerousPatterns) {
       if (pattern.test(rawHtmlContent)) {
         return NextResponse.json({
@@ -74,6 +76,7 @@ export async function POST(req: NextRequest) {
         }, { status: 400 })
       }
     }
+    */
 
     // 🔒 보안 5: HTML 새니타이징 (XSS 방지)
     const sanitizeOptions = {

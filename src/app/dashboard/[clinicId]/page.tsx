@@ -76,39 +76,56 @@ export default async function DashboardHome({
   const monthlyGoal = goals[0]
   const yearlyGoal = yearlyGoals[0]
 
-  // Mock 액션플랜 데이터 (실제로는 데이터베이스에서 가져와야 합니다)
-  const actionPlans = [
-    {
-      id: "1",
-      goal: "환자 만족도 개선",
-      targetDate: new Date("2026-08-31"),
-      description: "대기시간 단축 및 서비스 품질 향상을 통한 환자 만족도 95% 달성",
-      status: "진행중" as const,
-      createdAt: new Date("2026-06-01"),
-      progress: 60,
-      priority: "상"
+  // 실제 액션플랜 데이터 가져오기
+  const rawActionPlans = await prisma.actionPlan.findMany({
+    where: { clinicId },
+    include: {
+      attachments: true,
+      comments: {
+        include: {
+          user: {
+            select: { name: true, role: true }
+          }
+        },
+        orderBy: { createdAt: 'asc' }
+      },
+      user: {
+        select: { name: true, role: true }
+      }
     },
-    {
-      id: "2",
-      goal: "월 매출 목표 달성",
-      targetDate: new Date("2026-07-31"),
-      description: "새로운 진료 항목 도입 및 마케팅 강화를 통한 월 매출 20% 증가",
-      status: "시작전" as const,
-      createdAt: new Date("2026-06-08"),
-      progress: 0,
-      priority: "중"
-    },
-    {
-      id: "3",
-      goal: "직원 교육 프로그램 완료",
-      targetDate: new Date("2026-06-30"),
-      description: "전 직원 대상 고객 서비스 향상 교육 및 신규 시스템 사용법 교육",
-      status: "완료" as const,
-      createdAt: new Date("2026-05-15"),
-      progress: 100,
-      priority: "하"
-    }
-  ]
+    orderBy: [
+      { priority: 'asc' }, // HIGH(0) > MEDIUM(1) > LOW(2)
+      { createdAt: 'desc' }
+    ]
+  })
+
+  // Enum 값을 한국어로 변환하여 actionPlans 생성
+  const actionPlans = rawActionPlans.map(plan => ({
+    id: plan.id,
+    goal: plan.goal,
+    targetDate: plan.targetDate,
+    description: plan.description,
+    status: plan.status === 'PENDING' ? '시작전' : plan.status === 'IN_PROGRESS' ? '진행중' : '완료' as const,
+    createdAt: plan.createdAt,
+    progress: plan.progress || 0,
+    priority: plan.priority === 'HIGH' ? '상' : plan.priority === 'MEDIUM' ? '중' : '하' as const,
+    attachments: plan.attachments || [],
+    comments: plan.comments?.map(comment => ({
+      id: comment.id,
+      content: comment.content,
+      author: comment.user?.name || '알 수 없음',
+      authorRole: comment.user?.role || 'USER',
+      createdAt: comment.createdAt
+    })) || []
+  }))
+
+  // 마스터가 입력한 월별 현금매출 → 총매출에 가산
+  const cashRows = await prisma.cashRevenue.findMany({
+    where: { clinicId },
+    select: { year: true, month: true, amount: true },
+  }).catch(() => [] as Array<{ year: number; month: number; amount: number }>)
+  const cashMap = new Map(cashRows.map((c) => [`${c.year}-${c.month}`, c.amount || 0]))
+  const cashOf = (y: number, m: number) => cashMap.get(`${y}-${m}`) ?? 0
 
   // 실제 월간장부 데이터(DailyLedger)에서 집계
   const [currentLedger, previousLedger] = await Promise.all([
@@ -121,7 +138,7 @@ export default async function DashboardHome({
     if (ledgerData.length === 0) return null
 
     const totals = ledgerData.reduce((acc, day) => ({
-      totalRevenue: acc.totalRevenue + (day.cashIncome || 0) + (day.cardIncome || 0) + (day.onlineIncome || 0),
+      totalRevenue: acc.totalRevenue + (day.cashIncome || 0) + (day.cardIncome || 0) + (day.onlineIncome || 0) + (day.insuranceClaim || 0), // 매출=청구포함총수입(현금+카드+온라인+공단부담)
       totalExpense: acc.totalExpense + (day.cashExpense || 0) + (day.cardExpense || 0),
       cashIncome: acc.cashIncome + (day.cashIncome || 0),
       cardIncome: acc.cardIncome + (day.cardIncome || 0),
@@ -139,6 +156,10 @@ export default async function DashboardHome({
 
   const current = calculateMonthlyTotal(currentLedger)
   const previous = calculateMonthlyTotal(previousLedger)
+
+  // 현금매출 가산 (총매출 = 장부매출 + 현금매출)
+  if (current) current.totalRevenue += cashOf(year, month)
+  if (previous) previous.totalRevenue += cashOf(prevYear, prevMonth)
 
   // 환자 수 정보는 ReceptionRecord에서 별도 조회
   const [currentPatients, previousPatients] = await Promise.all([
@@ -228,7 +249,7 @@ export default async function DashboardHome({
       const newPatientRevenue = newPatients.reduce((sum, r) => sum + (r.totalRevenue || 0), 0)
 
       currentData = {
-        totalRevenue: totalBilledRevenue,
+        totalRevenue: totalBilledRevenue + cashOf(year, month),
         totalBilledRevenue: totalBilledRevenue,
         newPatientRevenue: newPatientRevenue,
         newPatients: uniqueNewPatients.length,
@@ -269,7 +290,7 @@ export default async function DashboardHome({
     })
 
     const totalRevenue = monthlyLedger.reduce((sum, day) =>
-      sum + (day.cashIncome || 0) + (day.cardIncome || 0) + (day.onlineIncome || 0), 0
+      sum + (day.cashIncome || 0) + (day.cardIncome || 0) + (day.onlineIncome || 0) + (day.insuranceClaim || 0), 0 // 매출=청구포함총수입
     )
 
     const patientStats = calculatePatientStats(monthlyPatients)
@@ -277,7 +298,7 @@ export default async function DashboardHome({
     last6Months.push({
       year: targetYear,
       month: targetMonth,
-      totalRevenue,
+      totalRevenue: totalRevenue + cashOf(targetYear, targetMonth),
       newPatients: patientStats.newPatients,
       totalPatients: patientStats.totalPatients
     })
@@ -349,8 +370,9 @@ export default async function DashboardHome({
   // 월별 집계를 위한 데이터 변환 (실제 지표 반영)
   const dashboardData = {
     revenue: {
-      current: current?.totalRevenue ?? 0,
-      previous: previous?.totalRevenue ?? 0,
+      // 총매출 = (장부 또는 접수수납 매출) + 현금매출. 데이터 없어도 현금은 반영.
+      current: current?.totalRevenue ?? currentData?.totalRevenue ?? cashOf(year, month),
+      previous: previous?.totalRevenue ?? cashOf(prevYear, prevMonth),
       target: monthlyGoal?.revenueGoal,
       monthlyData: sortedLast6.map(s => s.totalRevenue ?? 0) // 실제 월별 매출 데이터
     },
@@ -359,6 +381,11 @@ export default async function DashboardHome({
       new: currentPatientStats.newPatients,
       returning: currentPatientStats.totalPatients - currentPatientStats.newPatients,
       growth: pct(currentPatientStats.totalPatients, previousPatientStats.totalPatients) ?? 0,
+      newGrowth: pct(currentPatientStats.newPatients, previousPatientStats.newPatients),
+      returningGrowth: pct(
+        currentPatientStats.totalPatients - currentPatientStats.newPatients,
+        previousPatientStats.totalPatients - previousPatientStats.newPatients
+      ),
       monthlyData: sortedLast6.map(s => s.totalPatients ?? 0) // 실제 월별 환자수 데이터
     },
     performance: {
@@ -396,23 +423,18 @@ export default async function DashboardHome({
     >
       {/* 데이터 없음 안내 */}
       {!current && (
-        <div className="bg-amber-50/80 border border-amber-200/60 rounded-2xl px-6 py-4 backdrop-blur-sm mb-8">
-          <div className="flex items-center gap-3">
-            <div className="text-2xl">⚠️</div>
-            <div>
-              <h3 className="font-semibold text-amber-800 mb-1">데이터 없음</h3>
-              <p className="text-sm text-amber-700">
-                {year}년 {month}월 월간장부 데이터가 없습니다. 월간장부 엑셀을 업로드하거나 다른 월을 선택하세요.
-              </p>
-            </div>
-          </div>
+        <div className="bg-[#fff9ec] border border-[#ffe3a3] rounded-2xl px-5 py-4">
+          <h3 className="text-[14px] font-semibold text-[#b25e00] mb-0.5">데이터 없음</h3>
+          <p className="text-[13px] text-[#a06a1b]">
+            {year}년 {month}월 월간장부 데이터가 없습니다. 월간장부 엑셀을 업로드하거나 다른 월을 선택하세요.
+          </p>
         </div>
       )}
 
       {/* 매출 트렌드 차트 */}
-      <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 mb-8">
-        <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-3">
-          📈 매출 트렌드
+      <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
+        <h2 className="text-[15px] font-bold text-[#191f28] mb-4">
+          매출 트렌드
         </h2>
         {sortedLast6.length > 0 ? (
           <RevenueChart data={sortedLast6.map((s) => ({
@@ -430,16 +452,16 @@ export default async function DashboardHome({
 
       {/* 리뷰 대시보드 */}
       <Suspense fallback={
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8">
+        <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
           <div className="animate-pulse">
-            <div className="h-6 bg-slate-200 rounded w-1/3 mb-4"></div>
-            <div className="h-32 bg-slate-200 rounded"></div>
+            <div className="h-5 bg-[#f2f4f6] rounded w-1/3 mb-4"></div>
+            <div className="h-32 bg-[#f2f4f6] rounded"></div>
           </div>
         </div>
       }>
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8">
-          <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-3">
-            ⭐ 리뷰 분석
+        <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
+          <h2 className="text-[15px] font-bold text-[#191f28] mb-4">
+            리뷰 분석
           </h2>
           <ReviewDashboard
             clinicId={clinicId}
@@ -450,14 +472,14 @@ export default async function DashboardHome({
       </Suspense>
 
       {/* 실행계획 대시보드 */}
-      <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-3">
-            🎯 실행계획 현황
+      <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-[15px] font-bold text-[#191f28]">
+            실행계획 현황
           </h2>
           <a
             href={`/dashboard/${clinicId}/action-plans`}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            className="text-[13px] text-[#3182f6] hover:underline font-medium"
           >
             전체 보기 →
           </a>

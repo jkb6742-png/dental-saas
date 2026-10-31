@@ -10,8 +10,11 @@ import {
   Tooltip,
   ResponsiveContainer,
   Area,
-  AreaChart
+  AreaChart,
+  LabelList
 } from 'recharts'
+
+const countLabel = (v: unknown) => (typeof v === 'number' && v > 0 ? v : '')
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
 interface MonthlyData {
@@ -90,10 +93,9 @@ export default function PatientMonthlyChart({
   const maxValue = Math.max(...chartData.map(d => d.count), 10)
   const hasData = summary?.hasData
 
-  // 성장률 계산
-  const currentMonth = new Date().getMonth() + 1
-  const currentCount = chartData[currentMonth - 1]?.count || 0
-  const previousCount = chartData[currentMonth - 2]?.count || 0
+  // 성장률 계산 (선택한 월 vs 전월) — 실제 현재월(new Date)을 쓰면 미래월=0이 되어 -100%로 잘못 나옴
+  const currentCount = chartData[selectedMonth - 1]?.count || 0
+  const previousCount = chartData[selectedMonth - 2]?.count || 0
   const growthRate = previousCount > 0 ? ((currentCount - previousCount) / previousCount) * 100 : 0
 
   if (loading) {
@@ -166,7 +168,7 @@ export default function PatientMonthlyChart({
       <div className="h-64 mb-4 w-full min-h-[256px] min-w-0">
         <ResponsiveContainer width="100%" height={256} minHeight={256}>
           {variant === 'area' ? (
-            <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+            <AreaChart data={chartData} margin={{ top: 22, right: 20, left: 0, bottom: 5 }}>
               <defs>
                 <linearGradient id={`gradient-${chartType}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={color} stopOpacity={0.3}/>
@@ -179,6 +181,8 @@ export default function PatientMonthlyChart({
                 tick={{ fontSize: 12, fill: "#64748b" }}
                 axisLine={false}
                 tickLine={false}
+                tickMargin={10}
+                padding={{ left: 14, right: 14 }}
               />
               <YAxis
                 domain={[0, maxValue]}
@@ -186,7 +190,8 @@ export default function PatientMonthlyChart({
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(value) => `${value}명`}
-                width={45}
+                width={52}
+                tickMargin={8}
               />
               <Tooltip
                 formatter={formatTooltip}
@@ -207,16 +212,20 @@ export default function PatientMonthlyChart({
                 fill={`url(#gradient-${chartType})`}
                 dot={{ fill: color, strokeWidth: 2, stroke: '#ffffff', r: 4 }}
                 activeDot={{ r: 6, fill: color, stroke: '#ffffff', strokeWidth: 3 }}
-              />
+              >
+                <LabelList dataKey="count" position="top" offset={10} formatter={countLabel} style={{ fontSize: 10, fontWeight: 700, fill: color }} />
+              </Area>
             </AreaChart>
           ) : (
-            <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+            <LineChart data={chartData} margin={{ top: 22, right: 20, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis
                 dataKey="month"
                 tick={{ fontSize: 12, fill: "#64748b" }}
                 axisLine={false}
                 tickLine={false}
+                tickMargin={10}
+                padding={{ left: 14, right: 14 }}
               />
               <YAxis
                 domain={[0, maxValue]}
@@ -224,7 +233,8 @@ export default function PatientMonthlyChart({
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(value) => `${value}명`}
-                width={45}
+                width={52}
+                tickMargin={8}
               />
               <Tooltip
                 formatter={formatTooltip}
@@ -244,7 +254,9 @@ export default function PatientMonthlyChart({
                 strokeWidth={3}
                 dot={{ fill: color, strokeWidth: 2, stroke: '#ffffff', r: 4 }}
                 activeDot={{ r: 6, fill: color, stroke: '#ffffff', strokeWidth: 3 }}
-              />
+              >
+                <LabelList dataKey="count" position="top" offset={10} formatter={countLabel} style={{ fontSize: 10, fontWeight: 700, fill: color }} />
+              </Line>
             </LineChart>
           )}
         </ResponsiveContainer>

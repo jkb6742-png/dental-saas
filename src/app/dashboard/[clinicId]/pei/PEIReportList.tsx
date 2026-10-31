@@ -96,21 +96,12 @@ export default function PEIReportList({ reports, isMaster }: PEIReportListProps)
             </div>
 
             <div className="flex items-center gap-2">
-              {/* 보기 버튼 */}
-              <Link
-                href={`/api/pei/html?reportId=${report.id}`}
-                target="_blank"
-                className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-300 rounded hover:bg-blue-50 transition-colors"
-              >
-                📄 보기
-              </Link>
-
-              {/* 다운로드 버튼 */}
+              {/* 다운로드 버튼만 표시 */}
               <a
                 href={`/api/pei/html?reportId=${report.id}&download=true`}
-                className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-medium"
               >
-                💾 다운로드
+                📥 원본 다운로드
               </a>
 
               {/* 삭제 버튼 - 마스터 계정만 */}

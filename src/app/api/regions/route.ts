@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     if (cached) {
       const queryTime = Date.now() - startTime
       return Response.json({
-        ...cached,
+        ...(cached as any),
         meta: {
           queryTime,
           cacheHit: true
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     if (cached) {
       const queryTime = Date.now() - startTime
       return Response.json({
-        ...cached,
+        ...(cached as any),
         meta: { queryTime, cacheHit: true }
       })
     }

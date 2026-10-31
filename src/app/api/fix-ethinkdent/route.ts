@@ -74,10 +74,12 @@ export async function GET(req: NextRequest) {
 
   } catch (error) {
     console.error('[FIX_ETHINKDENT] 실패:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorStack = error instanceof Error ? error.stack : undefined
     return NextResponse.json({
       success: false,
-      error: error.message,
-      stack: error.stack
+      error: errorMessage,
+      stack: errorStack
     }, { status: 500 })
   }
 }

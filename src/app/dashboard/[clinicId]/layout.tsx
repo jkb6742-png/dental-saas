@@ -24,40 +24,37 @@ export default async function DashboardLayout({
   // 실시간 사용자 정보 조회 (세션 정보가 아닌 DB에서 직접)
   const currentUser = await prisma.user.findUnique({
     where: { id: (session.user as any).id },
-    select: { agencyId: true }
+    select: { agencyId: true, clinicId: true, inviteCode: { select: { clinicId: true } } }
   })
 
-  console.log('🔍 [LAYOUT] 세션 agencyId:', (session.user as any).agencyId)
-  console.log('🔍 [LAYOUT] DB agencyId:', currentUser?.agencyId)
+  // 비마스터는 소속 치과(clinicId)에만 접근. 그 외 clinicId는 차단.
+  const userClinicId = currentUser?.clinicId ?? currentUser?.inviteCode?.clinicId ?? null
 
-  // 마스터는 모든 치과 접근 가능, 일반 사용자는 자신의 에이전시 치과만 접근
+  console.log('🔍 [LAYOUT] role:', userRole, 'DB agencyId:', currentUser?.agencyId, 'userClinicId:', userClinicId)
+
+  if (!isMaster) {
+    if (!userClinicId) {
+      // 소속 치과가 없는 비마스터 계정은 데이터 접근 불가
+      redirect("/dashboard")
+    }
+    if (clinicId !== userClinicId) {
+      // 남의 치과 URL 직접 접근 시 자신의 치과로 되돌림
+      console.log('🚫 [LAYOUT] 타 치과 접근 차단:', clinicId, '→', userClinicId)
+      redirect(`/dashboard/${userClinicId}`)
+    }
+  }
+
+  // 마스터는 모든 치과 접근 가능, 비마스터는 위에서 자신의 치과로 이미 제한됨
   const clinic = await prisma.clinic.findFirst({
     where: isMaster
-      ? { id: clinicId } // 마스터는 모든 치과 접근 가능
-      : {
-          id: clinicId,
-          agencyId: currentUser?.agencyId, // 실시간 DB agencyId 사용
-        },
+      ? { id: clinicId }
+      : { id: clinicId, agencyId: currentUser?.agencyId },
     include: {
       agency: {
         select: { name: true }
       }
     }
   })
-
-  // 접근 권한이 없는 치과면 사용자의 첫 번째 치과로 리다이렉트
-  if (!clinic && !isMaster) {
-    console.log('🔍 [LAYOUT] 접근 권한 없음, 사용자 치과로 리다이렉트')
-    const userClinic = await prisma.clinic.findFirst({
-      where: { agencyId: currentUser?.agencyId },
-      orderBy: { createdAt: "asc" }
-    })
-
-    if (userClinic) {
-      console.log('🔍 [LAYOUT] 리다이렉트 대상:', userClinic.name)
-      redirect(`/dashboard/${userClinic.id}`)
-    }
-  }
 
   if (!clinic) redirect("/dashboard")
 

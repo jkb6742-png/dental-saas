@@ -33,7 +33,7 @@ export async function POST(request: Request) {
         avgRating: averageRating || null,
         positiveCount: Math.round((totalReviews || 0) * 0.8), // 임시: 80% 긍정적이라 가정
         negativeCount: Math.round((totalReviews || 0) * 0.2), // 임시: 20% 부정적이라 가정
-        topKeywords: feedbackComments ? { feedback: feedbackComments } : null,
+        topKeywords: feedbackComments ? { feedback: feedbackComments } : {},
       },
       update: {
         totalReviews: totalReviews || 0,
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
         avgRating: averageRating || null,
         positiveCount: Math.round((totalReviews || 0) * 0.8),
         negativeCount: Math.round((totalReviews || 0) * 0.2),
-        topKeywords: feedbackComments ? { feedback: feedbackComments } : null,
+        topKeywords: feedbackComments ? { feedback: feedbackComments } : {},
         updatedAt: now,
       },
     })

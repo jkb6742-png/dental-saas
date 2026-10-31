@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
 
     // GPT로 HTML 보고서 생성
     console.log(`[PEI_ANALYZE] HTML 보고서 생성 시작...`)
-    const htmlReport = await analyzePEIData(analysisData, year, month)
+    const htmlReport = await analyzePEIData(analysisData as any, year, month)
     console.log(`[PEI_ANALYZE] HTML 보고서 생성 완료`)
 
     // HTML 보고서를 데이터베이스에 저장

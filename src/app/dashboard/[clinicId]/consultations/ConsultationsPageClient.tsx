@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import SectionCard from "@/components/ui/SectionCard"
 import KpiCard from "@/components/ui/KpiCard"
 import YearMonthFilter from "@/components/ui/YearMonthFilter"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, Cell, PieChart, Pie } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, Cell, PieChart, Pie, ComposedChart, LabelList } from "recharts"
 import { Users, TrendingUp, CheckCircle, DollarSign, MessageSquare, Target, Award, BarChart2 } from "lucide-react"
 
 type ConsultationStatData = {
@@ -267,20 +267,28 @@ export default function ConsultationsPageClient({
         {yearlyTrendData.some(d => d.계획수 > 0) ? (
           <div className="h-[450px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={yearlyTrendData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <ComposedChart data={yearlyTrendData} margin={{ top: 28, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
                 <XAxis
                   dataKey="month"
                   tick={{ fontSize: 12, fill: "#6b7280" }}
                   stroke="#9ca3af"
+                  tickMargin={10}
+                  padding={{ left: 14, right: 14 }}
                 />
                 <YAxis
                   tick={{ fontSize: 12, fill: "#6b7280" }}
                   stroke="#9ca3af"
+                  tickMargin={8}
+                  width={52}
                 />
-                <Legend />
-                <Bar dataKey="계획수" fill="#3182f6" name="총 계획수" />
-                <Bar dataKey="확정건수" fill="#10b981" name="총 확정건수" />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                <Bar dataKey="계획수" fill="#3182f6" name="총 계획수" radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="계획수" position="top" formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 10, fontWeight: 700, fill: "#3182f6" }} />
+                </Bar>
+                <Bar dataKey="확정건수" fill="#10b981" name="총 확정건수" radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="확정건수" position="top" formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 10, fontWeight: 700, fill: "#10b981" }} />
+                </Bar>
                 <Line
                   type="monotone"
                   dataKey="확정률"
@@ -289,7 +297,7 @@ export default function ConsultationsPageClient({
                   dot={{ fill: '#f59e0b', strokeWidth: 2, r: 5 }}
                   name="평균 확정률"
                 />
-              </BarChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         ) : (

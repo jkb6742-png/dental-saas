@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
 
       // 한글 폰트 지원을 위한 설정
       await page.setContent(htmlReport, {
-        waitUntil: ['networkidle0', 'load']
+        waitUntil: 'load'
       })
 
       // PDF 생성 옵션

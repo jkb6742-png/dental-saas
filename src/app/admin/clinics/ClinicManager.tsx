@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import type { Clinic } from "@prisma/client"
 import Button from "@/components/ui/Button"
 import SectionCard from "@/components/ui/SectionCard"
-import { Plus, Building2, RefreshCw } from "lucide-react"
+import { Plus, Building2, RefreshCw, Trash2, AlertTriangle } from "lucide-react"
 
 export default function ClinicManager({
   agencyId,
@@ -21,6 +21,7 @@ export default function ClinicManager({
   const [autoGenerate, setAutoGenerate] = useState(true)
   const [previewCode, setPreviewCode] = useState("")
   const [loading, setLoading] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // Generate code preview when name changes and auto-generate is enabled
   useEffect(() => {
@@ -71,6 +72,43 @@ export default function ClinicManager({
       alert("네트워크 오류가 발생했습니다.")
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function deleteClinic(clinic: Clinic) {
+    // 삭제 확인
+    const confirmed = window.confirm(
+      `⚠️ 치과 삭제 확인\n\n` +
+      `치과: ${clinic.name} (${clinic.code})\n\n` +
+      `모든 데이터가 영구 삭제됩니다.\n` +
+      `정말로 삭제하시겠습니까?`
+    )
+
+    if (!confirmed) return
+
+    setDeletingId(clinic.id)
+
+    try {
+      const res = await fetch(`/api/clinics/${clinic.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        // 성공적으로 삭제됨
+        setClinics((c) => c.filter(cl => cl.id !== clinic.id))
+        alert(`✅ ${data.message}`)
+        router.refresh()
+      } else {
+        alert(`❌ 삭제 실패: ${data.error}`)
+      }
+    } catch (error) {
+      alert("네트워크 오류가 발생했습니다.")
+      console.error("Delete error:", error)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -139,6 +177,17 @@ export default function ClinicManager({
       </SectionCard>
 
       <SectionCard title={`등록된 치과 (${clinics.length}개)`}>
+        {clinics.length > 0 && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="text-[12px] text-yellow-800">
+                <p className="font-semibold">⚠️ 삭제 시 주의사항</p>
+                <p className="mt-1">치과를 삭제하면 환자정보, 수익데이터, 리포트 등 모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.</p>
+              </div>
+            </div>
+          </div>
+        )}
         {clinics.length === 0 ? (
           <p className="text-[14px] text-[#8b95a1] text-center py-4">등록된 치과가 없습니다</p>
         ) : (
@@ -146,10 +195,12 @@ export default function ClinicManager({
             {clinics.map((c) => (
               <div
                 key={c.id}
-                className="flex items-center justify-between p-4 rounded-xl bg-[#f9fafb] hover:bg-[#f2f4f6] cursor-pointer transition-colors"
-                onClick={() => router.push(`/dashboard/${c.id}`)}
+                className="flex items-center justify-between p-4 rounded-xl bg-[#f9fafb] hover:bg-[#f2f4f6] transition-colors"
               >
-                <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center gap-3 flex-1 cursor-pointer"
+                  onClick={() => router.push(`/dashboard/${c.id}`)}
+                >
                   <div className="w-9 h-9 bg-[#ebf3fe] rounded-xl flex items-center justify-center">
                     <Building2 className="w-4 h-4 text-[#3182f6]" />
                   </div>
@@ -158,7 +209,31 @@ export default function ClinicManager({
                     <div className="text-[12px] text-[#8b95a1]">{c.code}</div>
                   </div>
                 </div>
-                <span className="text-[13px] text-[#3182f6] font-medium">대시보드 →</span>
+
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-[13px] text-[#3182f6] font-medium cursor-pointer hover:text-[#1e40af]"
+                    onClick={() => router.push(`/dashboard/${c.id}`)}
+                  >
+                    대시보드 →
+                  </span>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      deleteClinic(c)
+                    }}
+                    disabled={deletingId === c.id}
+                    className="ml-3 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="치과 삭제 (모든 데이터 삭제됨)"
+                  >
+                    {deletingId === c.id ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

@@ -16,6 +16,8 @@ export default async function AgeDataPage({
 }) {
   const session = await auth()
   if (!session) redirect("/login")
+  // 데이터베이스 관리는 마스터 전용
+  if ((session.user as any).role !== "MASTER") redirect("/dashboard")
 
   const { clinicId } = await params
   const sp = await searchParams

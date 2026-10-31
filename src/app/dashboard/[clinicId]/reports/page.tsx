@@ -1,20 +1,30 @@
 import { prisma } from "@/lib/db"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import SectionCard from "@/components/ui/SectionCard"
-import ReportsClient from "./ReportsClient"
-import { FileText } from "lucide-react"
+import ReportManagementClient from "./ReportManagementClient"
 
 export default async function ReportsPage({ params }: { params: Promise<{ clinicId: string }> }) {
   const session = await auth()
   if (!session) redirect("/login")
   const { clinicId } = await params
+  const userRole = (session.user as any).role || "VIEWER"
 
-  const reports = await prisma.report.findMany({
+  const sectors = await prisma.reportSector.findMany({
     where: { clinicId },
-    orderBy: [{ year: "desc" }, { month: "desc" }],
-    take: 12,
+    orderBy: { sortOrder: "asc" },
+    include: {
+      reports: {
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, title: true, month: true, memo: true, fileType: true, fileName: true, sortOrder: true, createdAt: true },
+      },
+    },
   })
 
-  return <ReportsClient clinicId={clinicId} initialReports={reports} />
+  return (
+    <ReportManagementClient
+      clinicId={clinicId}
+      userRole={userRole}
+      initialSectors={JSON.parse(JSON.stringify(sectors))}
+    />
+  )
 }

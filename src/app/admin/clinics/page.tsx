@@ -6,6 +6,8 @@ import ClinicManager from "./ClinicManager"
 export default async function ClinicsAdminPage() {
   const session = await auth()
   if (!session) redirect("/login")
+  // 치과 관리(전체 치과 목록/추가/삭제)는 마스터 전용. 비마스터는 자신의 치과로.
+  if ((session.user as any).role !== "MASTER") redirect("/dashboard")
 
   const agencyId = (session.user as any).agencyId
   const clinics = await prisma.clinic.findMany({

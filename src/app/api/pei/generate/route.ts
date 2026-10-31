@@ -55,9 +55,9 @@ export async function POST(req: NextRequest) {
         console.log(`[PEI_GENERATE] HTML 컨텐츠 감지, rawData 사용`)
         analysis = {
           overview: {
-            totalResponses: existingReport.rawData?.summary?.totalRecords || 0,
+            totalResponses: (existingReport.rawData as any)?.summary?.totalRecords || 0,
             averageScore: existingReport.peiScore || 0,
-            genderRatio: existingReport.rawData?.summary?.genderCounts || { male: 0, female: 0 },
+            genderRatio: (existingReport.rawData as any)?.summary?.genderCounts || { male: 0, female: 0 },
             ageGroup: "30~50대 중심"
           },
           sectionalSummary: {
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       clinicName: existingReport.clinic.name,
       year,
       month,
-      peiScore: existingReport.peiScore,
+      peiScore: existingReport.peiScore || 0,
       categoryScores: existingReport.categoryScores,
       analysis,
       rawData: existingReport.rawData,
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       month,
       reportContent,
       analysis,
-      peiScore: existingReport.peiScore,
+      peiScore: existingReport.peiScore || 0,
       categoryScores: existingReport.categoryScores
     })
 
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
           clinicName: existingReport.clinic.name,
           period: `${year}년 ${month}월`,
           generatedAt: new Date().toISOString(),
-          peiScore: existingReport.peiScore,
+          peiScore: existingReport.peiScore || 0,
           reportType
         }
       }
@@ -448,17 +448,17 @@ function generateHTMLReport(params: {
     ${analysis?.recommendations ? `
     <div class="recommendations">
         <h2>핵심 권고사항</h2>
-        ${analysis.recommendations.immediate?.map(rec => `
+        ${analysis.recommendations.immediate?.map((rec: any) => `
             <div class="recommendation-item priority-high">
                 <strong>🔴 긴급:</strong> ${rec.action} (${rec.timeframe})
             </div>
         `).join('') || ''}
-        ${analysis.recommendations.shortTerm?.map(rec => `
+        ${analysis.recommendations.shortTerm?.map((rec: any) => `
             <div class="recommendation-item priority-medium">
                 <strong>🟡 단기:</strong> ${rec.action} (${rec.timeframe})
             </div>
         `).join('') || ''}
-        ${analysis.recommendations.longTerm?.map(rec => `
+        ${analysis.recommendations.longTerm?.map((rec: any) => `
             <div class="recommendation-item priority-low">
                 <strong>🟢 장기:</strong> ${rec.action} (${rec.timeframe})
             </div>
