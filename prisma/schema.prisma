@@ -1341,6 +1341,7 @@ model SiteLeadSource {
   lastSyncAt     DateTime?
   lastSyncStatus String? // SUCCESS | FAILED
   lastSyncError  String?
+  alertEmails    String? // 새 문의 메일 알림 수신(쉼표 구분). 이름·연락처는 가려서 보낸다
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   clinic         Clinic     @relation(fields: [clinicId], references: [id], onDelete: Cascade)

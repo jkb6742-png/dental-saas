@@ -68,7 +68,7 @@ export default function PEIReportList({ reports, isMaster }: PEIReportListProps)
       {message && (
         <div className={`mx-6 mt-4 p-3 rounded-lg text-sm ${
           message.includes('✅')
-            ? 'bg-green-50 text-green-800 border border-green-200'
+            ? 'bg-green-50 text-green-800 border border-[#d1d1cc]'
             : 'bg-red-50 text-red-800 border border-red-200'
         }`}>
           {message}
@@ -76,7 +76,7 @@ export default function PEIReportList({ reports, isMaster }: PEIReportListProps)
       )}
 
       {reports.map((report) => (
-        <div key={report.id} className="p-6 hover:bg-gray-50 transition-colors">
+        <div key={report.id} className="p-4 hover:bg-gray-50 transition-colors">
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
@@ -88,7 +88,7 @@ export default function PEIReportList({ reports, isMaster }: PEIReportListProps)
                 </span>
               </div>
 
-              <div className="flex items-center gap-4 text-sm text-gray-500">
+              <div className="flex items-center gap-3 text-sm text-gray-500">
                 <span>🏥 {report.clinic.name}</span>
                 <span>📅 업로드: {new Date(report.generatedAt).toLocaleDateString('ko-KR')}</span>
                 <span>🕐 {new Date(report.generatedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -99,7 +99,7 @@ export default function PEIReportList({ reports, isMaster }: PEIReportListProps)
               {/* 다운로드 버튼만 표시 */}
               <a
                 href={`/api/pei/html?reportId=${report.id}&download=true`}
-                className="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-medium"
+                className="px-4 py-2 text-sm text-white bg-[#0062ff] hover:bg-[#0052d6] rounded-lg transition-colors font-medium"
               >
                 📥 원본 다운로드
               </a>
@@ -111,7 +111,7 @@ export default function PEIReportList({ reports, isMaster }: PEIReportListProps)
                   disabled={deletingIds.has(report.id)}
                   className={`px-3 py-1 text-sm border rounded transition-colors ${
                     deletingIds.has(report.id)
-                      ? 'text-gray-400 border-gray-200 cursor-not-allowed'
+                      ? 'text-gray-400 border-[#d1d1cc] cursor-not-allowed'
                       : 'text-red-600 hover:text-red-800 border-red-300 hover:bg-red-50'
                   }`}
                 >

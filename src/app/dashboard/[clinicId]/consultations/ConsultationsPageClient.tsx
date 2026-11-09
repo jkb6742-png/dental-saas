@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import SectionCard from "@/components/ui/SectionCard"
 import KpiCard from "@/components/ui/KpiCard"
 import YearMonthFilter from "@/components/ui/YearMonthFilter"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, Cell, PieChart, Pie, ComposedChart, LabelList } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, Cell, PieChart, Pie, ComposedChart, LabelList } from "@/components/charts/recharts"
 import { Users, TrendingUp, CheckCircle, DollarSign, MessageSquare, Target, Award, BarChart2 } from "lucide-react"
 
 type ConsultationStatData = {
@@ -176,11 +176,11 @@ export default function ConsultationsPageClient({
   const { planChange, confirmedChange, amountChange } = getPreviousMonthComparison()
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 년도 헤더 */}
-      <div className="text-center border-b border-[#e5e8eb] pb-6">
-        <h1 className="text-[32px] font-bold text-[#191f28] mb-2">{selectedYear}년</h1>
-        <p className="text-[16px] text-[#6b7280]">상담 성과 분석 리포트</p>
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-[16px] font-bold text-[#0a0a0a]">{selectedYear}년</h2>
+        <p className="text-[12px] text-[#6f6f6a]">상담 성과 분석 리포트</p>
       </div>
 
       {/* 년도/월 필터 */}
@@ -193,7 +193,7 @@ export default function ConsultationsPageClient({
 
       {/* 월별 핵심 지표 */}
       <SectionCard title={`${selectedYear}년 ${selectedMonth}월 상담 성과`} description="필수 지표 요약">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mb-3">
           <KpiCard
             label="총 계획수"
             value={currentStats.총계획수.toLocaleString()}
@@ -228,35 +228,32 @@ export default function ConsultationsPageClient({
         </div>
 
         {/* 추가 분석 지표 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-blue-50 rounded-xl p-6 border-l-4 border-blue-500">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="bg-white rounded p-3 border border-[#d1d1cc]">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[14px] text-blue-600 font-medium">활성 상담자 수</div>
-                <div className="text-[24px] font-bold text-blue-700 mt-1">{currentStats.상담자수}</div>
-                <div className="text-[12px] text-blue-600 mt-1">이번 달 활동한 상담자</div>
+                <div className="text-[12px] text-[#555555]">활성 상담자 수</div>
+                <div className="text-[20px] font-bold text-[#0a0a0a] mt-1 tabular-nums">{currentStats.상담자수}</div>
+                <div className="text-[11px] text-[#6f6f6a] mt-0.5">이번 달 활동한 상담자</div>
               </div>
-              <div className="text-[32px] text-blue-500">👥</div>
             </div>
           </div>
-          <div className="bg-green-50 rounded-xl p-6 border-l-4 border-green-500">
+          <div className="bg-white rounded p-3 border border-[#d1d1cc]">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[14px] text-green-600 font-medium">환자 확정률</div>
-                <div className="text-[24px] font-bold text-green-700 mt-1">{currentStats.환자확정률.toFixed(1)}%</div>
-                <div className="text-[12px] text-green-600 mt-1">실제 확정한 환자 비율</div>
+                <div className="text-[12px] text-[#555555]">환자 확정률</div>
+                <div className="text-[20px] font-bold text-[#0a0a0a] mt-1 tabular-nums">{currentStats.환자확정률.toFixed(1)}%</div>
+                <div className="text-[11px] text-[#6f6f6a] mt-0.5">실제 확정한 환자 비율</div>
               </div>
-              <div className="text-[32px] text-green-500">✅</div>
             </div>
           </div>
-          <div className="bg-yellow-50 rounded-xl p-6 border-l-4 border-yellow-500">
+          <div className="bg-white rounded p-3 border border-[#d1d1cc]">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[14px] text-yellow-600 font-medium">건당 평균 금액</div>
-                <div className="text-[24px] font-bold text-yellow-700 mt-1">{formatAmount(currentStats.건당평균금액)}</div>
-                <div className="text-[12px] text-yellow-600 mt-1">확정 건당 평균 금액</div>
+                <div className="text-[12px] text-[#555555]">건당 평균 금액</div>
+                <div className="text-[20px] font-bold text-[#0a0a0a] mt-1 tabular-nums">{formatAmount(currentStats.건당평균금액)}</div>
+                <div className="text-[11px] text-[#6f6f6a] mt-0.5">확정 건당 평균 금액</div>
               </div>
-              <div className="text-[32px] text-yellow-500">💰</div>
             </div>
           </div>
         </div>
@@ -265,35 +262,35 @@ export default function ConsultationsPageClient({
       {/* 연간 상담 성과 추이 */}
       <SectionCard title={`${selectedYear}년 월별 상담 성과 추이`} description="연간 전체 트렌드">
         {yearlyTrendData.some(d => d.계획수 > 0) ? (
-          <div className="h-[450px]">
+          <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={yearlyTrendData} margin={{ top: 28, right: 30, left: 20, bottom: 5 }}>
+              <ComposedChart data={yearlyTrendData} margin={{ top: 20, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e8eb" />
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 12, fill: "#6b7280" }}
+                  tick={{ fontSize: 11, fill: "#6b7280" }}
                   stroke="#9ca3af"
                   tickMargin={10}
                   padding={{ left: 14, right: 14 }}
                 />
                 <YAxis
-                  tick={{ fontSize: 12, fill: "#6b7280" }}
+                  tick={{ fontSize: 11, fill: "#6b7280" }}
                   stroke="#9ca3af"
                   tickMargin={8}
                   width={52}
                 />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-                <Bar dataKey="계획수" fill="#3182f6" name="총 계획수" radius={[4, 4, 0, 0]}>
-                  <LabelList dataKey="계획수" position="top" formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 10, fontWeight: 700, fill: "#3182f6" }} />
-                </Bar>
-                <Bar dataKey="확정건수" fill="#10b981" name="총 확정건수" radius={[4, 4, 0, 0]}>
+                <Line isAnimationActive={false} type="monotone" strokeWidth={2} dot={{ r: 3 }} dataKey="계획수" stroke="#0062ff" name="총 계획수">
+                  <LabelList dataKey="계획수" position="top" formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 10, fontWeight: 700, fill: "#0062ff" }} />
+                </Line>
+                <Line isAnimationActive={false} type="monotone" strokeWidth={2} dot={{ r: 3 }} dataKey="확정건수" stroke="#10b981" name="총 확정건수">
                   <LabelList dataKey="확정건수" position="top" formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 10, fontWeight: 700, fill: "#10b981" }} />
-                </Bar>
-                <Line
+                </Line>
+                <Line isAnimationActive={false}
                   type="monotone"
                   dataKey="확정률"
                   stroke="#f59e0b"
-                  strokeWidth={3}
+                  strokeWidth={2}
                   dot={{ fill: '#f59e0b', strokeWidth: 2, r: 5 }}
                   name="평균 확정률"
                 />
@@ -301,7 +298,7 @@ export default function ConsultationsPageClient({
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="flex items-center justify-center h-[400px] text-[#8b95a1]">
+          <div className="flex items-center justify-center h-[200px] text-[#8b95a1]">
             연간 데이터가 없습니다.
           </div>
         )}
@@ -313,7 +310,7 @@ export default function ConsultationsPageClient({
           <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="border-b border-[#f2f4f6]">
+                <tr className="border-b border-[#e0e0db]">
                   <th className="text-left py-3 px-3 text-[#8b95a1] font-medium">순위</th>
                   <th className="text-left py-3 px-3 text-[#8b95a1] font-medium">상담자</th>
                   <th className="text-left py-3 px-3 text-[#8b95a1] font-medium">계획수</th>
@@ -326,7 +323,7 @@ export default function ConsultationsPageClient({
               </thead>
               <tbody>
                 {counselorData.map((counselor, index) => (
-                  <tr key={counselor.name} className="border-b border-[#f9fafb] hover:bg-[#f9fafb]">
+                  <tr key={counselor.name} className="border-b border-[#f2f2ef] hover:bg-[#f2f2ef]">
                     <td className="py-3 px-3 font-bold text-[#191f28]">{index + 1}</td>
                     <td className="py-3 px-3 font-semibold text-[#191f28]">{counselor.name}</td>
                     <td className="py-3 px-3 tabular-nums text-[#6b7684]">{counselor.계획수.toLocaleString()}</td>
@@ -337,7 +334,7 @@ export default function ConsultationsPageClient({
                     }`}>
                       {counselor.확정률.toFixed(1)}%
                     </td>
-                    <td className="py-3 px-3 tabular-nums font-semibold text-[#3182f6]">
+                    <td className="py-3 px-3 tabular-nums font-semibold text-[#0062ff]">
                       {formatAmount(counselor.확정금액)}
                     </td>
                     <td className="py-3 px-3 tabular-nums text-[#6b7684]">
@@ -357,14 +354,14 @@ export default function ConsultationsPageClient({
       {/* 확정률 분포 분석 */}
       {counselorData.length > 0 && (
         <SectionCard title="상담자 확정률 분포" description="성과 분포 현황">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {/* 확정률 구간별 분포 */}
             <div>
-              <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">확정률 구간별 분포</h4>
-              <div className="h-[300px]">
+              <h4 className="text-[16px] font-semibold text-[#191f28] mb-2.5">확정률 구간별 분포</h4>
+              <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie
+                    <Pie isAnimationActive={false}
                       data={[
                         {
                           name: '80% 이상',
@@ -403,13 +400,13 @@ export default function ConsultationsPageClient({
             </div>
 
             {/* 성과 인사이트 */}
-            <div className="space-y-4">
-              <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">성과 분석 인사이트</h4>
+            <div className="space-y-2.5">
+              <h4 className="text-[16px] font-semibold text-[#191f28] mb-2.5">성과 요약</h4>
 
               {counselorData.length > 0 && (
                 <>
-                  <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-                    <div className="text-[14px] font-medium text-green-800 mb-1">🏆 최고 성과자</div>
+                  <div className="bg-green-50 rounded-xl p-4 border border-[#d1d1cc]">
+                    <div className="text-[14px] font-medium text-green-800 mb-1">최고 성과자</div>
                     <div className="text-[16px] font-bold text-green-700">
                       {counselorData[0].name} ({counselorData[0].확정률.toFixed(1)}%)
                     </div>
@@ -418,22 +415,13 @@ export default function ConsultationsPageClient({
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                    <div className="text-[14px] font-medium text-blue-800 mb-1">📊 평균 성과</div>
-                    <div className="text-[16px] font-bold text-blue-700">
+                  <div className="bg-blue-50 rounded-xl p-4 border border-[#d1d1cc]">
+                    <div className="text-[14px] font-medium text-blue-800 mb-1">평균 성과</div>
+                    <div className="text-[16px] font-bold text-[#0062ff]">
                       확정률 {currentStats.평균확정률.toFixed(1)}%
                     </div>
-                    <div className="text-[12px] text-blue-600">
+                    <div className="text-[12px] text-[#0062ff]">
                       상담자당 평균 {(currentStats.총확정금액 / currentStats.상담자수 / 10000).toFixed(0)}만원
-                    </div>
-                  </div>
-
-                  <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
-                    <div className="text-[14px] font-medium text-yellow-800 mb-1">💡 개선 포인트</div>
-                    <div className="text-[12px] text-yellow-700">
-                      • 확정률 60% 미만: {counselorData.filter(c => c.확정률 < 60).length}명<br/>
-                      • 상담 기법 교육 및 멘토링 필요<br/>
-                      • 우수 상담자의 노하우 공유 권장
                     </div>
                   </div>
                 </>

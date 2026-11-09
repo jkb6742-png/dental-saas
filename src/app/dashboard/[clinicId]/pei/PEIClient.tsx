@@ -380,18 +380,18 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-[#3182f6]" />
+        <Loader2 className="w-6 h-6 animate-spin text-[#0062ff]" />
         <span className="ml-2 text-[#8b95a1]">설정을 불러오는 중...</span>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[24px] font-bold text-[#191f28]">PEI 통계</h1>
+          <h1 className="text-[18px] font-bold text-[#191f28]">PEI 통계</h1>
           <p className="text-[14px] text-[#8b95a1] mt-1">
             환자경험평가 지표 분석 및 보고서 생성
           </p>
@@ -428,10 +428,10 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
           description="PEI 데이터 수집을 위한 스프레드시트 설정"
           icon={<Settings className="w-5 h-5" />}
         >
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           {hasConfig && sheetConfig ? (
             // 기존 설정 표시
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+            <div className="bg-green-50 border border-[#d1d1cc] rounded-xl p-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
@@ -475,8 +475,8 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
             </div>
           ) : showSetupForm ? (
             // 설정 폼
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="space-y-4">
+            <div className="bg-blue-50 border border-[#d1d1cc] rounded-xl p-4">
+              <div className="space-y-2.5">
                 <div>
                   <label className="block text-[13px] font-medium text-[#4e5968] mb-2">
                     구글 스프레드시트 URL *
@@ -486,7 +486,7 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
                     value={sheetUrl}
                     onChange={(e) => setSheetUrl(e.target.value)}
                     placeholder="https://docs.google.com/spreadsheets/d/..."
-                    className="w-full px-3 py-2 rounded-lg border border-[#e5e8eb] text-[14px]"
+                    className="w-full px-3 py-2 rounded-lg border border-[#d1d1cc] text-[14px]"
                   />
                 </div>
 
@@ -499,7 +499,7 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
                     value={sheetName}
                     onChange={(e) => setSheetName(e.target.value)}
                     placeholder="Sheet1"
-                    className="w-full px-3 py-2 rounded-lg border border-[#e5e8eb] text-[14px]"
+                    className="w-full px-3 py-2 rounded-lg border border-[#d1d1cc] text-[14px]"
                   />
                 </div>
 
@@ -552,7 +552,7 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
             </div>
           ) : (
             // 설정 없음
-            <div className="bg-[#f9fafb] rounded-xl p-4">
+            <div className="bg-[#f2f2ef] rounded-xl p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[14px] font-medium text-[#191f28]">스프레드시트 URL</p>
@@ -574,8 +574,8 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
 
           {/* PEI 데이터 미리보기 */}
           {hasConfig && peiData && (
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-4 border border-green-200">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="bg-white rounded-xl p-4 border border-[#d1d1cc]">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <div className="text-center">
                   <p className="text-[20px] font-bold text-[#191f28]">
                     {peiData.summary.peiScore}
@@ -613,7 +613,7 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[13px] text-[#6b7684]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[13px] text-[#6b7684]">
             <div className="space-y-2">
               <p className="font-medium text-[#4e5968]">📋 필요한 데이터</p>
               <ul className="space-y-1">
@@ -644,14 +644,14 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
           description="생성된 PEI 분석 보고서를 조회할 수 있습니다"
           icon={<FileText className="w-5 h-5" />}
         >
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+          <div className="bg-blue-50 border border-[#d1d1cc] rounded-xl p-4 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Users className="w-5 h-5 text-blue-600" />
+              <Users className="w-5 h-5 text-[#0062ff]" />
               <p className="text-[14px] font-medium text-blue-900">
                 일반 사용자 모드
               </p>
             </div>
-            <p className="text-[13px] text-blue-700">
+            <p className="text-[13px] text-[#0062ff]">
               보고서 생성은 마스터 계정에서만 가능합니다.<br/>
               생성된 보고서는 아래 목록에서 확인하실 수 있습니다.
             </p>
@@ -666,7 +666,7 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
           description="원하는 기간의 PEI 분석 보고서를 자동 생성합니다"
           icon={<FileText className="w-5 h-5" />}
         >
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           {!hasConfig && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center gap-3">
               <AlertCircle className="w-5 h-5 text-yellow-600 shrink-0" />
@@ -681,7 +681,7 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
             </div>
           )}
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div>
               <label className="block text-[13px] font-medium text-[#4e5968] mb-1">
                 연도
@@ -689,7 +689,7 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="px-3 py-2 rounded-lg border border-[#e5e8eb] text-[14px] bg-white min-w-[100px]"
+                className="px-3 py-2 rounded-lg border border-[#d1d1cc] text-[14px] bg-white min-w-[100px]"
                 disabled={!hasConfig}
               >
                 {years.map(year => (
@@ -704,7 +704,7 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="px-3 py-2 rounded-lg border border-[#e5e8eb] text-[14px] bg-white min-w-[80px]"
+                className="px-3 py-2 rounded-lg border border-[#d1d1cc] text-[14px] bg-white min-w-[80px]"
                 disabled={!hasConfig}
               >
                 {months.map(month => (
@@ -714,7 +714,7 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+          <div className="bg-white rounded-xl p-4 border border-[#d1d1cc]">
             <div className="flex items-start justify-between">
               <div className="space-y-2">
                 <h4 className="text-[15px] font-semibold text-[#191f28]">
@@ -724,7 +724,7 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
                   선택하신 기간의 스프레드시트 데이터를 분석하여<br/>
                   인사이트와 개선 방안이 포함된 보고서를 생성합니다.
                 </p>
-                <div className="flex items-center gap-4 text-[12px] text-[#8b95a1]">
+                <div className="flex items-center gap-3 text-[12px] text-[#8b95a1]">
                   <span>📊 데이터 분석</span>
                   <span>🤖 GPT 인사이트</span>
                   <span>📄 HTML 출력</span>
@@ -751,14 +751,14 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
         icon={<BarChart3 className="w-5 h-5" />}
       >
         {isLoadingReports ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-[#3182f6]" />
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="w-5 h-5 animate-spin text-[#0062ff]" />
             <span className="ml-2 text-[#8b95a1]">보고서 목록을 불러오는 중...</span>
           </div>
         ) : reports.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-2.5">
             {reports.map((report, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-[#f9fafb] rounded-xl">
+              <div key={index} className="flex items-center justify-between p-4 bg-[#f2f2ef] rounded-xl">
                 <div>
                   <p className="text-[14px] font-medium text-[#191f28]">
                     {report.period} PEI 보고서
@@ -802,7 +802,7 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
           </div>
         ) : (
           <div className="text-center py-12">
-            <ClipboardCheck className="w-12 h-12 text-[#e5e8eb] mx-auto mb-4" />
+            <ClipboardCheck className="w-12 h-12 text-[#e5e8eb] mx-auto mb-2.5" />
             <p className="text-[14px] text-[#8b95a1] mb-2">
               아직 생성된 PEI 보고서가 없습니다
             </p>
@@ -814,7 +814,7 @@ export default function PEIClient({ clinicId }: PEIClientProps) {
       </SectionCard>
 
       {/* 도움말 */}
-      <div className="bg-[#f9fafb] rounded-xl p-4 text-[13px] text-[#6b7684] leading-relaxed">
+      <div className="bg-[#f2f2ef] rounded-xl p-4 text-[13px] text-[#6b7684] leading-relaxed">
         <p className="font-semibold text-[#4e5968] mb-2">💡 PEI 통계 사용 방법</p>
         <div className="space-y-1">
           <p>① <strong>구글 스프레드시트</strong>에 환자경험평가 데이터 입력</p>

@@ -1,8 +1,8 @@
 "use client"
 
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "@/components/charts/recharts"
 
-const COLORS = ["#3182f6", "#05c072", "#f59e0b", "#f04452", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"]
+const COLORS = ["#0062ff", "#05c072", "#f59e0b", "#f04452", "#191f28", "#ec4899", "#14b8a6", "#f97316"]
 
 export default function RouteChart({ data }: { data: { name: string; value: number }[] }) {
   return (

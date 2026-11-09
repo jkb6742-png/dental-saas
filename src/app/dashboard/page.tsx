@@ -146,18 +146,18 @@ export default async function DashboardRedirect() {
 
   // No clinic yet — show setup screen
   return (
-    <div className="min-h-screen bg-[#f9fafb] flex items-center justify-center p-4">
+    <div className=" flex items-center justify-center p-4">
       <div className="text-center max-w-sm">
-        <div className="text-[48px] mb-4">🦷</div>
+        <div className="text-[48px] mb-2.5">🦷</div>
         <h2 className="text-[20px] font-bold text-[#191f28] mb-2">
           치과를 먼저 추가해주세요
         </h2>
-        <p className="text-[14px] text-[#8b95a1] mb-6">
+        <p className="text-[14px] text-[#8b95a1] mb-3">
           설정 메뉴에서 관리할 치과를 등록하면 대시보드가 활성화됩니다.
         </p>
         <a
           href="/admin/clinics"
-          className="inline-flex items-center justify-center px-5 py-3 bg-[#3182f6] hover:bg-[#1b64da] text-white text-[15px] font-semibold rounded-[12px] transition-colors"
+          className="inline-flex items-center justify-center px-5 py-3 bg-[#0062ff] hover:bg-[#0052d6] text-white text-[15px] font-semibold rounded-[12px] transition-colors"
         >
           치과 등록하기
         </a>

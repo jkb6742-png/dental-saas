@@ -16,9 +16,9 @@ export default async function ClinicsAdminPage() {
   })
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] p-6">
+    <div className=" p-4">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-[22px] font-bold text-[#191f28] mb-6">치과 관리</h1>
+        <h1 className="text-[22px] font-bold text-[#191f28] mb-3">치과 관리</h1>
         <ClinicManager agencyId={agencyId} clinics={clinics} />
       </div>
     </div>

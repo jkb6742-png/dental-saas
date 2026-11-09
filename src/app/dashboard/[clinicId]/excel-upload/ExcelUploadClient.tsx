@@ -211,18 +211,18 @@ export default function ExcelUploadPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-4">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">📊 엑셀 데이터 업로드</h1>
+        <h1 className="text-3xl font-bold mb-3">📊 엑셀 데이터 업로드</h1>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg p-4">
           {!result ? (
             <>
               {/* 파일 업로드 영역 */}
               <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
                   dragActive
-                    ? 'border-blue-500 bg-blue-50'
+                    ? 'border-[#d1d1cc] bg-blue-50'
                     : 'border-gray-300 hover:border-gray-400'
                 }`}
                 onDragEnter={handleDrag}
@@ -230,7 +230,7 @@ export default function ExcelUploadPage() {
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
               >
-                <div className="space-y-4">
+                <div className="space-y-2.5">
                   <div className="text-4xl">📁</div>
 
                   {file ? (
@@ -243,7 +243,7 @@ export default function ExcelUploadPage() {
                       </p>
                       <button
                         onClick={resetUpload}
-                        className="text-sm text-blue-600 hover:underline"
+                        className="text-sm text-[#0062ff] hover:underline"
                       >
                         다른 파일 선택
                       </button>
@@ -270,7 +270,7 @@ export default function ExcelUploadPage() {
                   {!file && (
                     <label
                       htmlFor="file-input"
-                      className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors"
+                      className="inline-block px-4 py-3 bg-[#0062ff] text-white rounded-lg cursor-pointer hover:bg-[#0052d6] transition-colors"
                     >
                       파일 선택
                     </label>
@@ -280,11 +280,11 @@ export default function ExcelUploadPage() {
 
               {/* 업로드 버튼 */}
               {file && (
-                <div className="mt-6 text-center">
+                <div className="mt-3 text-center">
                   <button
                     onClick={handleUpload}
                     disabled={uploading}
-                    className="px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-4 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {uploading ? (
                       <span className="flex items-center justify-center space-x-2">
@@ -300,15 +300,15 @@ export default function ExcelUploadPage() {
             </>
           ) : (
             /* 결과 표시 */
-            <div className="space-y-6">
+            <div className="space-y-3">
               {result.success ? (
-                <div className="space-y-4">
+                <div className="space-y-2.5">
                   <div className="flex items-center space-x-2 text-green-600">
                     <span className="text-2xl">✅</span>
                     <h2 className="text-xl font-semibold">업로드 및 분석 완료!</h2>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-lg">
                     <div>
                       <p className="font-semibold">파일명</p>
                       <p className="text-sm text-gray-600">{result.fileName}</p>
@@ -341,7 +341,7 @@ export default function ExcelUploadPage() {
                         <div>데이터 유형: {result.structuredData.dataType}</div>
                       </div>
                       {result.structuredData.summary?.dateRange && (
-                        <div className="mt-2 text-xs text-blue-700">
+                        <div className="mt-2 text-xs text-[#0062ff]">
                           기간: {result.structuredData.summary.dateRange.start} ~ {result.structuredData.summary.dateRange.end}
                         </div>
                       )}
@@ -350,8 +350,8 @@ export default function ExcelUploadPage() {
 
                   {result.saved ? (
                     /* 저장 완료 후 대시보드 링크들 */
-                    <div className="space-y-4">
-                      <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="space-y-2.5">
+                      <div className="p-4 bg-green-50 rounded-lg border border-[#d1d1cc]">
                         <h3 className="text-green-800 font-semibold mb-2">🎉 데이터 저장 완료!</h3>
                         <p className="text-green-700 text-sm">
                           데이터가 성공적으로 저장되어 모든 대시보드에서 확인할 수 있습니다.
@@ -361,7 +361,7 @@ export default function ExcelUploadPage() {
                       <div className="grid grid-cols-2 gap-3">
                         <a
                           href={`/dashboard/${clinicId}`}
-                          className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center"
+                          className="px-4 py-3 bg-[#0062ff] text-white rounded-lg hover:bg-[#0052d6] transition-colors text-center"
                         >
                           🏠 홈 대시보드
                         </a>
@@ -373,7 +373,7 @@ export default function ExcelUploadPage() {
                         </a>
                         <a
                           href={`/dashboard/${clinicId}/revenue`}
-                          className="px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-center"
+                          className="px-4 py-3 bg-[#191f28] text-white rounded-lg hover:bg-black transition-colors text-center"
                         >
                           💰 매출 분석
                         </a>
@@ -387,7 +387,7 @@ export default function ExcelUploadPage() {
 
                       <button
                         onClick={resetUpload}
-                        className="w-full px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         새 파일 업로드
                       </button>
@@ -398,7 +398,7 @@ export default function ExcelUploadPage() {
                       <button
                         onClick={handleSaveToDatabase}
                         disabled={uploading}
-                        className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        className="flex-1 px-4 py-3 bg-[#0062ff] text-white rounded-lg hover:bg-[#0052d6] disabled:opacity-50 transition-colors"
                       >
                         {uploading ? (
                           <span className="flex items-center justify-center space-x-2">
@@ -411,7 +411,7 @@ export default function ExcelUploadPage() {
                       </button>
                       <button
                         onClick={resetUpload}
-                        className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         새 파일 업로드
                       </button>
@@ -419,7 +419,7 @@ export default function ExcelUploadPage() {
                   )}
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-2.5">
                   <div className="flex items-center space-x-2 text-red-600">
                     <span className="text-2xl">❌</span>
                     <h2 className="text-xl font-semibold">업로드 실패</h2>
@@ -434,7 +434,7 @@ export default function ExcelUploadPage() {
 
                   <button
                     onClick={resetUpload}
-                    className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    className="w-full px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                   >
                     다시 시도
                   </button>
@@ -445,7 +445,7 @@ export default function ExcelUploadPage() {
         </div>
 
         {/* 사용법 안내 */}
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+        <div className="mt-3 p-4 bg-gray-50 rounded-lg">
           <h3 className="font-semibold mb-2">💡 사용법</h3>
           <ol className="text-sm text-gray-600 space-y-1">
             <li>1. <strong>전체접수수납목록</strong> 엑셀 파일(.xlsx, .xls)을 선택합니다.</li>
@@ -456,7 +456,7 @@ export default function ExcelUploadPage() {
           </ol>
 
           <div className="mt-4 space-y-2">
-            <div className="p-3 bg-green-50 rounded border border-green-200">
+            <div className="p-3 bg-green-50 rounded border border-[#d1d1cc]">
               <h4 className="font-semibold text-green-800 mb-1">✅ 처리되는 필드 (헤더명 기준)</h4>
               <p className="text-xs text-green-700">접수시각, 상태, 연령성별, 보험구분, 신구, 대기, 예약시각, 총진료비, 최초내원, 내원경로, 고객구분, 리콜구분 등</p>
             </div>

@@ -75,10 +75,10 @@ export default function PerformanceDashboard() {
 
   if (loading && !stats) {
     return (
-      <div className="p-8">
-        <div className="animate-pulse space-y-6">
+      <div className="p-4">
+        <div className="animate-pulse space-y-3">
           <div className="h-8 bg-gray-200 rounded w-64"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-32 bg-gray-200 rounded"></div>
             ))}
@@ -89,14 +89,14 @@ export default function PerformanceDashboard() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 space-y-3">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">성능 모니터링</h1>
           <p className="text-gray-600 mt-1">시스템 성능 및 캐시 상태를 실시간으로 모니터링합니다</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {lastUpdated && (
             <span className="text-sm text-gray-500">
               마지막 업데이트: {lastUpdated.toLocaleTimeString('ko-KR')}
@@ -105,7 +105,7 @@ export default function PerformanceDashboard() {
           <button
             onClick={fetchStats}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-[#0062ff] text-white rounded-lg hover:bg-[#0052d6] disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             새로고침
@@ -116,10 +116,10 @@ export default function PerformanceDashboard() {
       {stats && (
         <>
           {/* 주요 지표 카드 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
             {/* 캐시 히트율 */}
-            <div className="bg-white rounded-lg shadow border p-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-lg shadow border p-4">
+              <div className="flex items-center justify-between mb-2.5">
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                   <Zap className="w-6 h-6 text-green-600" />
                 </div>
@@ -137,12 +137,12 @@ export default function PerformanceDashboard() {
             </div>
 
             {/* API 응답시간 */}
-            <div className="bg-white rounded-lg shadow border p-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-lg shadow border p-4">
+              <div className="flex items-center justify-between mb-2.5">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-blue-600" />
+                  <Clock className="w-6 h-6 text-[#0062ff]" />
                 </div>
-                <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                <span className="text-sm font-medium text-[#0062ff] bg-blue-100 px-2 py-1 rounded">
                   API
                 </span>
               </div>
@@ -156,12 +156,12 @@ export default function PerformanceDashboard() {
             </div>
 
             {/* 데이터베이스 성능 */}
-            <div className="bg-white rounded-lg shadow border p-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-lg shadow border p-4">
+              <div className="flex items-center justify-between mb-2.5">
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <Database className="w-6 h-6 text-purple-600" />
+                  <Database className="w-6 h-6 text-[#191f28]" />
                 </div>
-                <span className="text-sm font-medium text-purple-600 bg-purple-100 px-2 py-1 rounded">
+                <span className="text-sm font-medium text-[#191f28] bg-purple-100 px-2 py-1 rounded">
                   DB
                 </span>
               </div>
@@ -175,8 +175,8 @@ export default function PerformanceDashboard() {
             </div>
 
             {/* 오류율 */}
-            <div className="bg-white rounded-lg shadow border p-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-lg shadow border p-4">
+              <div className="flex items-center justify-between mb-2.5">
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                   <TrendingUp className="w-6 h-6 text-orange-600" />
                 </div>
@@ -195,17 +195,17 @@ export default function PerformanceDashboard() {
           </div>
 
           {/* 상세 정보 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {/* 캐시 상세 정보 */}
             <div className="bg-white rounded-lg shadow border">
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-4 border-b border-[#d1d1cc]">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <BarChart3 className="w-5 h-5" />
                   캐시 상세 정보
                 </h3>
               </div>
-              <div className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 space-y-2.5">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-sm text-gray-600">저장된 키</p>
                     <p className="text-2xl font-bold text-gray-900">
@@ -220,7 +220,7 @@ export default function PerformanceDashboard() {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-gray-200">
+                <div className="pt-4 border-t border-[#d1d1cc]">
                   <h4 className="text-sm font-medium text-gray-700 mb-3">캐시 성능</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
@@ -237,7 +237,7 @@ export default function PerformanceDashboard() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">히트율</span>
-                      <span className="text-sm font-bold text-blue-600">
+                      <span className="text-sm font-bold text-[#0062ff]">
                         {calculateHitRate(stats.cache.memory.hits, stats.cache.memory.misses)}%
                       </span>
                     </div>
@@ -248,13 +248,13 @@ export default function PerformanceDashboard() {
 
             {/* 시스템 상태 */}
             <div className="bg-white rounded-lg shadow border">
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-4 border-b border-[#d1d1cc]">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <Database className="w-5 h-5" />
                   시스템 상태
                 </h3>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-4 space-y-2.5">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">데이터베이스 연결</span>
@@ -291,13 +291,13 @@ export default function PerformanceDashboard() {
 
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">분당 요청수</span>
-                    <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                    <span className="text-sm font-medium text-[#0062ff] bg-blue-100 px-2 py-1 rounded">
                       {stats.api.requestsPerMinute}
                     </span>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-gray-200">
+                <div className="pt-4 border-t border-[#d1d1cc]">
                   <h4 className="text-sm font-medium text-gray-700 mb-2">권장사항</h4>
                   <div className="space-y-2 text-xs text-gray-600">
                     {stats.cache.memory.keys < 100 && (

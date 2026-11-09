@@ -2,8 +2,19 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/db"
 import bcrypt from "bcryptjs"
+import { cache } from "react"
+
+// auth() 는 레이아웃과 페이지에서 각각 불린다. 한 요청 안에서는 사용자 조회를 한 번만 한다.
+const loadSessionUser = cache((id: string) =>
+  prisma.user.findUnique({
+    where: { id },
+    include: { agency: true, inviteCode: { select: { clinicId: true } } },
+  })
+)
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  // 운영은 NAS 리버스 프록시 뒤에서 돌아 요청 호스트가 내부 주소와 다르다
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
@@ -85,10 +96,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       } else if (token.id) {
         // 기존 토큰이 있으면 최신 사용자 정보를 데이터베이스에서 가져오기
         try {
-          const latestUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            include: { agency: true, inviteCode: { select: { clinicId: true } } },
-          })
+          const latestUser = await loadSessionUser(token.id as string)
 
           if (latestUser) {
             token.role = latestUser.role
@@ -97,6 +105,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.agencySlug = latestUser.agency.slug
             token.agencyName = latestUser.agency.name
             token.clinicId = latestUser.clinicId ?? latestUser.inviteCode?.clinicId ?? null
+          } else {
+            // 사용자가 삭제됐으면 기존 토큰을 믿지 않는다
+            return null
           }
         } catch (error) {
           console.error("JWT 토큰 업데이트 오류:", error)

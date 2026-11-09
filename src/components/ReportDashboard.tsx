@@ -23,7 +23,7 @@ export default function ReportDashboard({ clinicId }: ReportDashboardProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* HTML 리포트 업로드 */}
       <ReportHtmlUpload
         clinicId={clinicId}

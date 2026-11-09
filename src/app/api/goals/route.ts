@@ -1,3 +1,4 @@
+import { denyClinic } from "@/lib/requests/access"
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
@@ -112,6 +113,8 @@ export async function POST(req: NextRequest) {
     }
 
     // 권한 확인
+    const denied = await denyClinic(clinicId)
+    if (denied) return denied
     const userAgencyId = (session.user as any).agencyId
     const clinic = await prisma.clinic.findFirst({
       where: { id: clinicId, agencyId: userAgencyId }
@@ -209,6 +212,9 @@ export async function DELETE(req: NextRequest) {
     if (!goal || goal.clinic.agencyId !== userAgencyId) {
       return NextResponse.json({ error: "접근 권한이 없습니다" }, { status: 403 })
     }
+
+    const denied = await denyClinic(goal.clinicId)
+    if (denied) return denied
 
     // 목표 삭제
     await prisma.revenueGoal.delete({

@@ -20,16 +20,18 @@ export type SurveyDTO = {
 
 export function toDTO(s: any): SurveyDTO {
   const treatments: string[] = Array.isArray(s.treatments) ? s.treatments.map(String) : []
+  const questions = normalizeQuestions(s.questions, s.facilityQuestion, treatments)
+  const recommendWords = !!DEFAULT_SURVEYS[s.clinic?.code as string]?.recommendWords
   return {
     id: s.id, clinicId: s.clinicId, token: s.token, slug: s.slug ?? null, title: s.title, slogan: s.slogan ?? null, logo: s.logo ?? null, intro: s.intro,
     doctors: normalizeDoctors(s.doctors),
     treatments, facilityQuestion: s.facilityQuestion, isActive: s.isActive,
-    questions: normalizeQuestions(s.questions, s.facilityQuestion, treatments),
+    questions: recommendWords ? questions.map((q) => (q.id === "recommend" ? { ...q, words: true } : q)) : questions,
   }
 }
 
 export async function getSurvey(clinicId: string): Promise<SurveyDTO | null> {
-  const s = await prisma.peiSurvey.findUnique({ where: { clinicId } })
+  const s = await prisma.peiSurvey.findUnique({ where: { clinicId }, include: { clinic: { select: { code: true } } } })
   return s ? toDTO(s) : null
 }
 
@@ -74,12 +76,12 @@ export async function getOrCreateSurvey(clinicId: string): Promise<SurveyDTO> {
 }
 
 export async function getSurveyByToken(token: string) {
-  const s = await prisma.peiSurvey.findUnique({ where: { token }, include: { clinic: { select: { name: true } } } })
+  const s = await prisma.peiSurvey.findUnique({ where: { token }, include: { clinic: { select: { name: true, code: true } } } })
   return s ? { ...toDTO(s), clinicName: s.clinic.name } : null
 }
 
 export async function getSurveyBySlug(slug: string) {
-  const s = await prisma.peiSurvey.findUnique({ where: { slug }, include: { clinic: { select: { name: true } } } })
+  const s = await prisma.peiSurvey.findUnique({ where: { slug }, include: { clinic: { select: { name: true, code: true } } } })
   return s ? { ...toDTO(s), clinicName: s.clinic.name } : null
 }
 

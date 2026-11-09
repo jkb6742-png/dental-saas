@@ -32,49 +32,20 @@ type StatCardProps = {
   children?: ReactNode
 }
 
+// 색은 숫자의 의미(진행 막대)에만 쓰고, 카드 자체는 모두 흰 면 + 1px 선으로 둔다.
 const variants = {
-  default: {
-    card: "bg-white border-slate-200 hover:border-slate-300",
-    header: "text-slate-600",
-    value: "text-slate-900",
-    icon: "bg-slate-100 text-slate-600"
-  },
-  success: {
-    card: "bg-gradient-to-br from-emerald-50/50 to-green-50/50 border-emerald-200 hover:border-emerald-300",
-    header: "text-emerald-700",
-    value: "text-emerald-900",
-    icon: "bg-emerald-100 text-emerald-600"
-  },
-  warning: {
-    card: "bg-gradient-to-br from-amber-50/50 to-orange-50/50 border-amber-200 hover:border-amber-300",
-    header: "text-amber-700",
-    value: "text-amber-900",
-    icon: "bg-amber-100 text-amber-600"
-  },
-  danger: {
-    card: "bg-gradient-to-br from-red-50/50 to-rose-50/50 border-red-200 hover:border-red-300",
-    header: "text-red-700",
-    value: "text-red-900",
-    icon: "bg-red-100 text-red-600"
-  },
-  premium: {
-    card: "bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 border-violet-200 hover:border-violet-300 shadow-lg shadow-violet-500/10",
-    header: "text-violet-700",
-    value: "text-violet-900",
-    icon: "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/25"
-  },
-  info: {
-    card: "bg-gradient-to-br from-cyan-50/50 to-blue-50/50 border-cyan-200 hover:border-cyan-300",
-    header: "text-cyan-700",
-    value: "text-cyan-900",
-    icon: "bg-cyan-100 text-cyan-600"
-  }
+  default: { card: "", icon: "text-[#6f6f6a]", bar: "bg-[#0062ff]" },
+  success: { card: "", icon: "text-[#0f9f55]", bar: "bg-[#0f9f55]" },
+  warning: { card: "", icon: "text-[#b97300]", bar: "bg-[#b97300]" },
+  danger: { card: "", icon: "text-[#e0383b]", bar: "bg-[#e0383b]" },
+  premium: { card: "", icon: "text-[#0a0a0a]", bar: "bg-[#191f28]" },
+  info: { card: "", icon: "text-[#0062ff]", bar: "bg-[#0062ff]" },
 }
 
 const sizes = {
-  sm: "p-4",
-  md: "p-6",
-  lg: "p-8"
+  sm: "px-3.5 py-3",
+  md: "px-3.5 py-3",
+  lg: "px-3.5 py-3"
 }
 
 export default function StatCard({
@@ -101,31 +72,25 @@ export default function StatCard({
 
   return (
     <div className={cn(
-      "relative rounded-2xl border transition-all duration-300 hover:shadow-lg group overflow-hidden",
+      "relative bg-white rounded border border-[#d1d1cc] overflow-hidden",
       sizeClass,
       variantStyles.card,
       className
     )}>
-      {/* Background decoration */}
-      {variant === "premium" && (
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-600/5 via-purple-600/3 to-indigo-600/5" />
-      )}
-
       {/* Header */}
-      <div className="relative flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-1">
         <div className="flex-1">
-          <h3 className={cn("text-sm font-medium mb-1", variantStyles.header)}>
+          <h3 className="text-[12px] font-normal text-[#555555]">
             {title}
           </h3>
           {subtitle && (
-            <p className="text-xs text-slate-500">{subtitle}</p>
+            <p className="text-[11px] text-[#6f6f6a]">{subtitle}</p>
           )}
         </div>
 
         {icon && (
           <div className={cn(
-            "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ml-3",
-            "transition-all duration-200 group-hover:scale-110",
+            "flex items-center justify-center shrink-0 ml-3",
             variantStyles.icon
           )}>
             {icon}
@@ -134,36 +99,31 @@ export default function StatCard({
       </div>
 
       {/* Value */}
-      <div className="relative mb-4">
+      <div>
         <div className="flex items-end gap-1">
           <span className={cn(
-            "text-3xl font-bold leading-none tabular-nums",
-            variantStyles.value
+            "text-[22px] font-bold leading-none tabular-nums text-[#0a0a0a]"
           )}>
             {typeof value === "number" ? value.toLocaleString("ko-KR") : value}
           </span>
           {unit && (
-            <span className="text-lg font-medium text-slate-500 mb-1">{unit}</span>
+            <span className="text-[12px] text-[#6f6f6a]">{unit}</span>
           )}
         </div>
       </div>
 
       {/* Progress Bar */}
       {progress && (
-        <div className="mb-4">
-          <div className="flex justify-between items-center text-xs text-slate-600 mb-2">
+        <div className="mt-2">
+          <div className="flex justify-between items-center text-[11px] text-[#555555] mb-1">
             <span>{progress.label || "목표 달성률"}</span>
             <span className="font-medium">{progressPercent.toFixed(1)}%</span>
           </div>
-          <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+          <div className="w-full bg-[#ecece9] rounded-[1px] h-1 overflow-hidden">
             <div
               className={cn(
-                "h-full rounded-full transition-all duration-1000 ease-out",
-                variant === "success" ? "bg-gradient-to-r from-emerald-500 to-green-500" :
-                variant === "warning" ? "bg-gradient-to-r from-amber-500 to-orange-500" :
-                variant === "danger" ? "bg-gradient-to-r from-red-500 to-rose-500" :
-                variant === "premium" ? "bg-gradient-to-r from-violet-500 to-purple-500" :
-                "bg-gradient-to-r from-blue-500 to-indigo-500"
+                "h-full",
+                variantStyles.bar
               )}
               style={{ width: `${Math.min(progressPercent, 100)}%` }}
             />
@@ -173,7 +133,7 @@ export default function StatCard({
 
       {/* Mini Chart */}
       {chart && chart.data.length > 0 && (
-        <div className="mb-4">
+        <div className="mb-2.5">
           <MiniChart
             data={chart.data}
             type={chart.type}
@@ -181,8 +141,8 @@ export default function StatCard({
               variant === "success" ? "#10b981" :
               variant === "warning" ? "#f59e0b" :
               variant === "danger" ? "#ef4444" :
-              variant === "premium" ? "#8b5cf6" :
-              "#3b82f6"
+              variant === "premium" ? "#191f28" :
+              "#0062ff"
             )}
             height={32}
             animate={true}
@@ -225,9 +185,6 @@ export default function StatCard({
           {children}
         </div>
       )}
-
-      {/* Hover effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
     </div>
   )
 }

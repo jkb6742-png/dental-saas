@@ -83,10 +83,10 @@ export default function ReportGenerator({ clinicId, onReportGenerated }: ReportG
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-9 h-9 bg-[#ebf3fe] rounded-xl flex items-center justify-center">
-          <FileText className="w-4 h-4 text-[#3182f6]" />
+    <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+      <div className="flex items-center gap-3 mb-2.5">
+        <div className="w-9 h-9 bg-[#e8f0ff] rounded-xl flex items-center justify-center">
+          <FileText className="w-4 h-4 text-[#0062ff]" />
         </div>
         <div>
           <h3 className="text-[16px] font-semibold text-[#191f28]">새 리포트 생성</h3>
@@ -94,14 +94,14 @@ export default function ReportGenerator({ clinicId, onReportGenerated }: ReportG
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2.5">
         <div className="flex items-center gap-3">
           <Calendar className="w-4 h-4 text-[#8b95a1]" />
           <div className="flex gap-3">
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="px-3 py-2 border border-[#e5e8eb] rounded-lg text-[14px] bg-white focus:border-[#3182f6] focus:outline-none"
+              className="px-3 py-2 border border-[#d1d1cc] rounded-lg text-[14px] bg-white focus:border-[#0062ff] focus:outline-none"
               disabled={isGenerating}
             >
               {years.map((year) => (
@@ -113,7 +113,7 @@ export default function ReportGenerator({ clinicId, onReportGenerated }: ReportG
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className="px-3 py-2 border border-[#e5e8eb] rounded-lg text-[14px] bg-white focus:border-[#3182f6] focus:outline-none"
+              className="px-3 py-2 border border-[#d1d1cc] rounded-lg text-[14px] bg-white focus:border-[#0062ff] focus:outline-none"
               disabled={isGenerating}
             >
               {months.map((month) => (
@@ -128,7 +128,7 @@ export default function ReportGenerator({ clinicId, onReportGenerated }: ReportG
         <Button
           onClick={handleGenerate}
           disabled={isGenerating || status === "loading" || status === "unauthenticated"}
-          className="w-full bg-[#3182f6] hover:bg-[#2563eb] text-white text-[14px] font-medium rounded-xl h-11 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-[#0062ff] hover:bg-[#2563eb] text-white text-[14px] font-medium rounded-xl h-11 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {status === "loading" ? (
             <>

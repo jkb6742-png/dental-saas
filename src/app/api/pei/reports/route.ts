@@ -1,3 +1,4 @@
+import { denyClinic } from "@/lib/requests/access"
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
@@ -108,6 +109,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "보고서를 찾을 수 없습니다" }, { status: 404 })
     }
 
+    const denied = await denyClinic(existingReport.clinicId)
+    if (denied) return denied
+
     // 보고서 삭제
     await prisma.peiReport.delete({
       where: { id: reportId }
@@ -138,6 +142,12 @@ export async function POST(req: NextRequest) {
     const { reportId } = await req.json()
     if (!reportId) {
       return NextResponse.json({ error: "reportId가 필요합니다" }, { status: 400 })
+    }
+
+    const access = await prisma.peiReport.findUnique({ where: { id: reportId }, select: { clinicId: true } })
+    if (access) {
+      const denied = await denyClinic(access.clinicId)
+      if (denied) return denied
     }
 
     const report = await prisma.peiReport.findUnique({

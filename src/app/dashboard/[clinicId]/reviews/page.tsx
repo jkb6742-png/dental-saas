@@ -42,11 +42,11 @@ export default async function ReviewsPage({
   const month = sp.month ? parseInt(sp.month) : defaultMonth
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 페이지 헤더 */}
-      <div className="border-b border-[#e5e8eb] pb-6">
+      <div className="border-b border-[#d1d1cc] pb-6">
         <div className="flex items-center space-x-3 mb-2">
-          <MessageCircle className="w-8 h-8 text-blue-600" />
+          <MessageCircle className="w-8 h-8 text-[#0062ff]" />
           <h1 className="text-[28px] font-bold text-[#191f28]">온라인 리뷰 관리</h1>
         </div>
         <p className="text-[16px] text-[#6b7280]">
@@ -64,9 +64,9 @@ export default async function ReviewsPage({
 
       {/* 도움말 섹션 - 조회 계정에서는 숨김 */}
       {userRole !== 'VIEWER' && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+        <div className="bg-blue-50 border border-[#d1d1cc] rounded-xl p-4">
           <h3 className="text-lg font-semibold text-blue-800 mb-3">리뷰 관리 가이드</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-700">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-[#0062ff]">
             <div>
               <h4 className="font-medium mb-2">📝 수동 입력</h4>
               <ul className="space-y-1 list-disc list-inside">

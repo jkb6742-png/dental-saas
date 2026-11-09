@@ -82,33 +82,33 @@ export default function RevenueDetailPage({
     .sort((a, b) => b - a)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
-      <div className="space-y-6 p-6">
+    <div className="">
+      <div className="space-y-3 p-4">
         {/* 헤더 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+        <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
               <Link href={`/dashboard/${clinicId}/database`}>
                 <button className="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center transition-colors">
                   <ArrowLeft className="w-5 h-5 text-slate-600" />
                 </button>
               </Link>
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-[#191f28] rounded-xl flex items-center justify-center">
                 <DollarSign className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-slate-900">💰 매출 데이터</h1>
-                <p className="text-slate-600">일별 매출, 지출, 순이익 상세 정보</p>
+                <p className="text-slate-600">일별 매출, 기록된 지출, 장부 수지 상세 정보</p>
               </div>
             </div>
 
             {/* 필터 */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-slate-500" />
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm"
+                className="px-4 py-2 bg-white border border-[#d1d1cc] rounded-xl text-sm"
               >
                 {uniqueYears.map(year => (
                   <option key={year} value={year}>{year}년</option>
@@ -117,7 +117,7 @@ export default function RevenueDetailPage({
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm"
+                className="px-4 py-2 bg-white border border-[#d1d1cc] rounded-xl text-sm"
               >
                 <option value="">전체 월</option>
                 {monthsForYear.map(month => (
@@ -126,7 +126,7 @@ export default function RevenueDetailPage({
               </select>
               <button
                 onClick={handleFilterChange}
-                className="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm hover:bg-blue-600 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-[#0062ff] text-white rounded-xl text-sm hover:bg-[#0052d6] transition-colors flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
                 적용
@@ -135,7 +135,7 @@ export default function RevenueDetailPage({
           </div>
 
           {/* 통계 카드 */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="bg-green-50 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="w-5 h-5 text-green-600" />
@@ -156,27 +156,27 @@ export default function RevenueDetailPage({
 
             <div className="bg-blue-50 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="w-5 h-5 text-blue-600" />
-                <span className="text-sm font-medium text-blue-700">순 이익</span>
+                <DollarSign className="w-5 h-5 text-[#0062ff]" />
+                <span className="text-sm font-medium text-[#0062ff]">장부 수지</span>
               </div>
               <div className="text-2xl font-bold text-blue-900">{formatCurrency(stats.netProfit)}</div>
-              <div className="text-sm text-blue-600">수입 - 지출</div>
+              <div className="text-sm text-[#0062ff]">수입 - 기록된 지출 (인건비 등 미포함)</div>
             </div>
 
             <div className="bg-purple-50 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-5 h-5 text-purple-600" />
-                <span className="text-sm font-medium text-purple-700">일평균 수입</span>
+                <Calendar className="w-5 h-5 text-[#191f28]" />
+                <span className="text-sm font-medium text-[#191f28]">일평균 수입</span>
               </div>
-              <div className="text-2xl font-bold text-purple-900">{formatCurrency(stats.avgDailyIncome)}</div>
-              <div className="text-sm text-purple-600">하루 평균</div>
+              <div className="text-2xl font-bold text-[#191f28]">{formatCurrency(stats.avgDailyIncome)}</div>
+              <div className="text-sm text-[#191f28]">하루 평균</div>
             </div>
           </div>
         </div>
 
         {/* 데이터 테이블 */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <FileText className="w-6 h-6 text-slate-600" />
               <h3 className="text-xl font-bold text-slate-900">일별 매출 데이터</h3>
@@ -188,7 +188,7 @@ export default function RevenueDetailPage({
 
           {revenueData.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-4xl mb-4">📊</div>
+              <div className="text-4xl mb-2.5">📊</div>
               <p className="text-slate-600">선택된 기간에 데이터가 없습니다.</p>
             </div>
           ) : (
@@ -196,14 +196,14 @@ export default function RevenueDetailPage({
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
+                    <tr className="border-b border-[#d1d1cc] bg-slate-50">
                       <th className="text-left p-4 font-semibold text-slate-700">날짜</th>
                       <th className="text-right p-4 font-semibold text-slate-700">현금수입</th>
                       <th className="text-right p-4 font-semibold text-slate-700">카드수입</th>
                       <th className="text-right p-4 font-semibold text-slate-700">온라인수입</th>
                       <th className="text-right p-4 font-semibold text-slate-700">총수입</th>
                       <th className="text-right p-4 font-semibold text-slate-700">총지출</th>
-                      <th className="text-right p-4 font-semibold text-slate-700">순이익</th>
+                      <th className="text-right p-4 font-semibold text-slate-700">장부 수지</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -227,7 +227,7 @@ export default function RevenueDetailPage({
 
               {/* 페이지네이션 */}
               {pagination.totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-6">
+                <div className="flex justify-center items-center gap-2 mt-3">
                   {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(pageNum => (
                     <Link
                       key={pageNum}
@@ -235,7 +235,7 @@ export default function RevenueDetailPage({
                     >
                       <button className={`px-3 py-1 rounded ${
                         pageNum === pagination.currentPage
-                          ? 'bg-blue-500 text-white'
+                          ? 'bg-[#0062ff] text-white'
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}>
                         {pageNum}

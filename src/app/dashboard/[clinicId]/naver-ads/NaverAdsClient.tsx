@@ -35,9 +35,9 @@ function delta(cur: number, prev: number) {
   return +(((cur - prev) / prev) * 100).toFixed(1)
 }
 
-const inputCls = "w-full px-3.5 py-2.5 rounded-[10px] border border-[#e5e8eb] bg-white text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#3182f6]/15 transition disabled:bg-[#f9fafb] disabled:text-[#8b95a1]"
+const inputCls = "w-full px-3.5 py-2.5 rounded-[10px] border border-[#d1d1cc] bg-white text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#0062ff]/15 transition disabled:bg-[#f2f2ef] disabled:text-[#8b95a1]"
 const labelCls = "block text-[13px] font-semibold text-[#4e5968] mb-1.5"
-const card = "bg-white rounded-2xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06)]"
+const card = "bg-white rounded-2xl border border-[#d1d1cc]"
 // 세션이 풀린 상태(401)면 메시지 대신 로그인 화면으로 보낸다
 const toLoginIf401 = (res: Response) => {
   if (res.status === 401 && typeof window !== "undefined") {
@@ -129,13 +129,13 @@ export default function NaverAdsClient({ clinicId, initial, isMaster }: Props) {
   const lowBalance = bizmoney !== null && !!alert && (alert.days ? daysLeft !== null && daysLeft <= alert.days : bizmoney <= alert.threshold)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 헤더 */}
-      <div className="flex items-start justify-between gap-4 border-b border-[#e5e8eb] pb-6">
+      <div className="flex items-start justify-between gap-3 border-b border-[#d1d1cc] pb-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <Megaphone className="w-8 h-8 text-[#03c75a]" />
-            <h1 className="text-[28px] font-bold text-[#191f28]">네이버 검색광고</h1>
+            <h1 className="text-[18px] font-bold text-[#191f28]">네이버 검색광고</h1>
             {stats.account.connected ? (
               isMaster && stats.account.lastSyncStatus === "FAILED" ? <Badge variant="red">동기화 실패</Badge> : <Badge variant="green">연결됨</Badge>
             ) : <Badge variant="gray">미연결</Badge>}
@@ -147,10 +147,10 @@ export default function NaverAdsClient({ clinicId, initial, isMaster }: Props) {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-          <select className="px-3 py-2 rounded-[10px] border border-[#e5e8eb] text-[13px] bg-white" value={year} onChange={(e) => changeMonth(Number(e.target.value), month)}>
+          <select className="px-3 py-2 rounded-[10px] border border-[#d1d1cc] text-[13px] bg-white" value={year} onChange={(e) => changeMonth(Number(e.target.value), month)}>
             {years.map((y) => <option key={y} value={y}>{y}년</option>)}
           </select>
-          <select className="px-3 py-2 rounded-[10px] border border-[#e5e8eb] text-[13px] bg-white" value={month} onChange={(e) => changeMonth(year, Number(e.target.value))}>
+          <select className="px-3 py-2 rounded-[10px] border border-[#d1d1cc] text-[13px] bg-white" value={month} onChange={(e) => changeMonth(year, Number(e.target.value))}>
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => <option key={m} value={m}>{m}월</option>)}
           </select>
           {isMaster && stats.account.connected && (
@@ -222,7 +222,7 @@ export default function NaverAdsClient({ clinicId, initial, isMaster }: Props) {
             <>
               {/* 캠페인 표 */}
               <div className={`${card} overflow-hidden`}>
-                <div className="px-6 py-5 border-b border-[#f2f4f6] flex items-center justify-between">
+                <div className="px-4 py-3 border-b border-[#e0e0db] flex items-center justify-between">
                   <div>
                     <h3 className="text-[16px] font-semibold text-[#191f28]">캠페인별 성과</h3>
                     <p className="text-[13px] text-[#8b95a1] mt-0.5">광고비 많은 순</p>
@@ -232,40 +232,40 @@ export default function NaverAdsClient({ clinicId, initial, isMaster }: Props) {
                 <div className="overflow-x-auto">
                   <table className="w-full text-[13px]">
                     <thead>
-                      <tr className="text-[#8b95a1] text-left border-b border-[#f2f4f6]">
-                        <th className="px-6 py-3 font-medium">캠페인</th>
+                      <tr className="text-[#8b95a1] text-left border-b border-[#e0e0db]">
+                        <th className="px-4 py-3 font-medium">캠페인</th>
                         <th className="px-3 py-3 font-medium">유형</th>
                         <th className="px-3 py-3 font-medium text-right">노출</th>
                         <th className="px-3 py-3 font-medium text-right">클릭</th>
                         <th className="px-3 py-3 font-medium text-right">CTR</th>
                         <th className="px-3 py-3 font-medium text-right">CPC</th>
                         <th className="px-3 py-3 font-medium text-right">평균순위</th>
-                        <th className="px-6 py-3 font-medium text-right">광고비</th>
+                        <th className="px-4 py-3 font-medium text-right">광고비</th>
                       </tr>
                     </thead>
                     <tbody>
                       {stats.campaigns.map((c) => (
-                        <tr key={c.campaignId} className="border-b border-[#f2f4f6] last:border-0 hover:bg-[#f9fafb]">
-                          <td className="px-6 py-3 font-medium text-[#191f28]">{c.name}</td>
+                        <tr key={c.campaignId} className="border-b border-[#e0e0db] last:border-0 hover:bg-[#f2f2ef]">
+                          <td className="px-4 py-3 font-medium text-[#191f28]">{c.name}</td>
                           <td className="px-3 py-3"><Badge variant="gray">{c.type}</Badge></td>
                           <td className="px-3 py-3 text-right text-[#4e5968]">{num(c.impressions)}</td>
                           <td className="px-3 py-3 text-right text-[#4e5968]">{num(c.clicks)}</td>
                           <td className="px-3 py-3 text-right text-[#4e5968]">{pct(c.ctr)}</td>
                           <td className="px-3 py-3 text-right text-[#4e5968]">{won(c.cpc)}</td>
                           <td className="px-3 py-3 text-right text-[#4e5968]">{c.avgRank ?? "-"}</td>
-                          <td className="px-6 py-3 text-right font-semibold text-[#191f28]">{won(c.cost)}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-[#191f28]">{won(c.cost)}</td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="bg-[#f9fafb] font-semibold text-[#191f28]">
-                        <td className="px-6 py-3" colSpan={2}>합계</td>
+                      <tr className="bg-[#f2f2ef] font-semibold text-[#191f28]">
+                        <td className="px-4 py-3" colSpan={2}>합계</td>
                         <td className="px-3 py-3 text-right">{num(t.impressions)}</td>
                         <td className="px-3 py-3 text-right">{num(t.clicks)}</td>
                         <td className="px-3 py-3 text-right">{pct(t.ctr)}</td>
                         <td className="px-3 py-3 text-right">{won(t.cpc)}</td>
                         <td className="px-3 py-3 text-right">-</td>
-                        <td className="px-6 py-3 text-right">{won(t.cost)}</td>
+                        <td className="px-4 py-3 text-right">{won(t.cost)}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -276,22 +276,22 @@ export default function NaverAdsClient({ clinicId, initial, isMaster }: Props) {
 
           {/* 운영 보고서 */}
           <div className={`${card} overflow-hidden`}>
-            <div className="px-6 py-5 border-b border-[#f2f4f6] flex items-center justify-between gap-3">
+            <div className="px-4 py-3 border-b border-[#e0e0db] flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-[16px] font-semibold text-[#191f28] flex items-center gap-2"><FileText className="w-4 h-4 text-[#3182f6]" /> 운영 보고서</h3>
+                <h3 className="text-[16px] font-semibold text-[#191f28] flex items-center gap-2"><FileText className="w-4 h-4 text-[#0062ff]" /> 운영 보고서</h3>
                 <p className="text-[13px] text-[#8b95a1] mt-0.5">{isMaster ? `기간을 정하면 직전 기간과 비교한 보고서를 자동으로 만듭니다. ${alert?.autoMonthlyReport ? "매월 1일 전월 보고서가 자동 생성됩니다." : ""}` : "THINKLAB 이 작성한 네이버 광고 운영 보고서입니다."}</p>
               </div>
               {isMaster && <Button size="md" onClick={() => setReportModal(true)}><Plus className="w-4 h-4" /> 보고서 만들기</Button>}
             </div>
             {reports.filter((r) => isMaster || r.status === "DONE").length === 0 ? (
-              <div className="px-6 py-10 text-center text-[13px] text-[#8b95a1]">아직 만들어진 보고서가 없습니다.</div>
+              <div className="px-4 py-10 text-center text-[13px] text-[#8b95a1]">아직 만들어진 보고서가 없습니다.</div>
             ) : (
               <ul className="divide-y divide-[#f2f4f6]">
                 {reports.filter((r) => isMaster || r.status === "DONE").map((r) => (
-                  <li key={r.id} className="px-6 py-4 flex items-center gap-4 hover:bg-[#f9fafb]">
+                  <li key={r.id} className="px-4 py-4 flex items-center gap-3 hover:bg-[#f2f2ef]">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Link href={`/dashboard/${clinicId}/naver-ads/reports/${r.id}`} className="text-[14px] font-semibold text-[#191f28] hover:text-[#3182f6] truncate">{r.title}</Link>
+                        <Link href={`/dashboard/${clinicId}/naver-ads/reports/${r.id}`} className="text-[14px] font-semibold text-[#191f28] hover:text-[#0062ff] truncate">{r.title}</Link>
                         {r.status === "DONE" ? <Badge variant="green">완료</Badge> : r.status === "FAILED" ? <Badge variant="red">실패</Badge> : <Badge variant="yellow"><Loader2 className="w-3 h-3 animate-spin inline mr-1" />생성 중</Badge>}
                         {isMaster && r.createdBy === "scheduler" && <Badge variant="gray">자동</Badge>}
                       </div>
@@ -373,7 +373,7 @@ function SetupPanel({ clinicId, account, onDone }: { clinicId: string; account: 
   }
 
   return (
-    <div className={`${card} p-6 space-y-4`}>
+    <div className={`${card} p-4 space-y-2.5`}>
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-[16px] font-semibold text-[#191f28] flex items-center gap-2"><Link2 className="w-4 h-4 text-[#03c75a]" /> 광고계정 연결 (마스터)</h3>
@@ -413,7 +413,7 @@ type AlertSettings = NonNullable<MonthlyStats["account"]["alert"]>
 function Toggle({ on, onChange, label, help }: { on: boolean; onChange: (v: boolean) => void; label: string; help?: string }) {
   return (
     <div className="flex items-start gap-3 select-none">
-      <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)} className={`relative mt-0.5 w-11 h-6 rounded-full transition shrink-0 ${on ? "bg-[#3182f6]" : "bg-[#d1d6db]"}`}>
+      <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)} className={`relative mt-0.5 w-11 h-6 rounded-full transition shrink-0 ${on ? "bg-[#0062ff]" : "bg-[#d1d6db]"}`}>
         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${on ? "translate-x-5" : ""}`} />
       </button>
       <button type="button" onClick={() => onChange(!on)} className="text-left">
@@ -473,9 +473,9 @@ function AlertPanel({ clinicId, alert, mailConfigured, bizmoney, onSaved }: { cl
   }
 
   return (
-    <div className={`${card} p-6 space-y-5`}>
+    <div className={`${card} p-4 space-y-5`}>
       <div>
-        <h3 className="text-[16px] font-semibold text-[#191f28] flex items-center gap-2"><Bell className="w-4 h-4 text-[#3182f6]" /> 알림 · 자동화 설정 (마스터)</h3>
+        <h3 className="text-[16px] font-semibold text-[#191f28] flex items-center gap-2"><Bell className="w-4 h-4 text-[#0062ff]" /> 알림 · 자동화 설정 (마스터)</h3>
         <p className="text-[13px] text-[#8b95a1] mt-1">서버가 매시간(08~22시) 비즈머니 잔액을 확인하고, 매일 아침 최근 7일 성과를 자동으로 동기화합니다. 알림은 화면 상단 종 아이콘(마스터 전원)으로 항상 가고, 메일은 아래 주소로 함께 보냅니다.</p>
       </div>
       {!mailConfigured && (
@@ -485,13 +485,13 @@ function AlertPanel({ clinicId, alert, mailConfigured, bizmoney, onSaved }: { cl
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           <Toggle on={enabled} onChange={setEnabled} label="비즈머니 부족 알림" help="잔액이 기준 이하로 내려오면 앱 알림과 메일을 보냅니다. 기준마다 1회씩 보내고, 충전돼서 1차 기준 위로 올라오면 다시 보냅니다." />
           <div>
             <label className={labelCls}>알림 기준</label>
             <div className="flex gap-2 mb-2">
-              <button type="button" onClick={() => setMode("days")} className={`px-3 py-1.5 rounded-[8px] text-[12px] font-semibold border ${mode === "days" ? "bg-[#191f28] border-[#191f28] text-white" : "bg-white border-[#e5e8eb] text-[#4e5968]"}`}>남은 일수</button>
-              <button type="button" onClick={() => setMode("won")} className={`px-3 py-1.5 rounded-[8px] text-[12px] font-semibold border ${mode === "won" ? "bg-[#191f28] border-[#191f28] text-white" : "bg-white border-[#e5e8eb] text-[#4e5968]"}`}>금액</button>
+              <button type="button" onClick={() => setMode("days")} className={`px-3 py-1.5 rounded-[8px] text-[12px] font-semibold border ${mode === "days" ? "bg-[#191f28] border-[#191f28] text-white" : "bg-white border-[#d1d1cc] text-[#4e5968]"}`}>남은 일수</button>
+              <button type="button" onClick={() => setMode("won")} className={`px-3 py-1.5 rounded-[8px] text-[12px] font-semibold border ${mode === "won" ? "bg-[#191f28] border-[#191f28] text-white" : "bg-white border-[#d1d1cc] text-[#4e5968]"}`}>금액</button>
             </div>
             {mode === "days" ? (
               <div className="flex items-center gap-2">
@@ -521,7 +521,7 @@ function AlertPanel({ clinicId, alert, mailConfigured, bizmoney, onSaved }: { cl
             <input className={inputCls} value={emails} onChange={(e) => setEmails(e.target.value)} placeholder="name@example.com, other@example.com" />
           </div>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           <Toggle on={onSyncFail} onChange={setOnSyncFail} label="동기화 실패 알림" help="자동 동기화가 새로 실패하면(키 만료 등) 메일을 보냅니다." />
           <Toggle on={autoReport} onChange={setAutoReport} label="월간 보고서 자동 생성" help="매월 1일 전월 운영 보고서를 자동으로 만들어 아래 목록에 넣습니다." />
         </div>
@@ -594,20 +594,20 @@ function CreateReportModal({ clinicId, onClose, onCreated }: { clinicId: string;
   }
 
   const presetBtn = (k: "last" | "this" | "custom", label: string) => (
-    <button type="button" onClick={() => choose(k)} className={`px-3.5 py-2 rounded-[10px] text-[13px] font-semibold border transition ${preset === k ? "bg-[#3182f6] border-[#3182f6] text-white" : "bg-white border-[#e5e8eb] text-[#4e5968] hover:bg-[#f9fafb]"}`}>{label}</button>
+    <button type="button" onClick={() => choose(k)} className={`px-3.5 py-2 rounded-[10px] text-[13px] font-semibold border transition ${preset === k ? "bg-[#0062ff] border-[#0062ff] text-white" : "bg-white border-[#d1d1cc] text-[#4e5968] hover:bg-[#f2f2ef]"}`}>{label}</button>
   )
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={busy ? undefined : onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-[560px] shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 py-5 border-b border-[#f2f4f6] flex items-center justify-between">
+      <div className="bg-white rounded-2xl w-full max-w-[560px] shadow-xl border border-[#d1d1cc]" onClick={(e) => e.stopPropagation()}>
+        <div className="px-4 py-3 border-b border-[#e0e0db] flex items-center justify-between">
           <div>
             <h3 className="text-[17px] font-bold text-[#191f28]">운영 보고서 만들기</h3>
             <p className="text-[12px] text-[#8b95a1] mt-0.5">네이버에서 최신 수치를 받아 집계하고, GPT 가 해석 문장을 씁니다. 1~2분 걸리며 완료되면 목록에 표시됩니다.</p>
           </div>
           <button onClick={onClose} disabled={busy} className="p-2 rounded-lg text-[#8b95a1] hover:bg-[#f2f4f6]"><X className="w-4 h-4" /></button>
         </div>
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-4 py-3 space-y-2.5">
           <div>
             <label className={labelCls}>보고 기간</label>
             <div className="flex gap-2 mb-2">{presetBtn("last", "지난달")}{presetBtn("this", "이번달 (어제까지)")}{presetBtn("custom", "직접 입력")}</div>
@@ -632,7 +632,7 @@ function CreateReportModal({ clinicId, onClose, onCreated }: { clinicId: string;
           </div>
           {err && <div className="flex items-center gap-2 text-[13px] text-[#f04452] bg-[#fff0f1] rounded-lg px-3 py-2"><AlertCircle className="w-4 h-4" /> {err}</div>}
         </div>
-        <div className="px-6 py-4 border-t border-[#f2f4f6] flex justify-end gap-2">
+        <div className="px-4 py-4 border-t border-[#e0e0db] flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose} disabled={busy}>취소</Button>
           <Button onClick={submit} loading={busy} disabled={!since || !until || since > until || !cmpSince || !cmpUntil}>{busy ? <><Loader2 className="w-4 h-4 animate-spin" /> 생성 중…</> : "보고서 생성"}</Button>
         </div>
@@ -667,7 +667,7 @@ function presetRange(p: Preset): { since: string; until: string } {
 const G_LABEL: Record<Granularity, string> = { day: "일별", week: "주별", month: "월별" }
 
 // 광고비는 연한 막대로 항상 뒤에 깔고, 버튼으로 고른 지표 하나를 선으로 그린다(내원경로 화면 형태)
-const COST_METRIC: SwitchMetric = { key: "cost", name: "광고비", color: "#3182f6", light: "#ebf3fe", unit: "원", type: "bar", summary: "sum" }
+const COST_METRIC: SwitchMetric = { key: "cost", name: "광고비", color: "#0062ff", light: "#e8f0ff", unit: "원", type: "bar", summary: "sum" }
 const PERF_METRICS: SwitchMetric[] = [
   COST_METRIC,
   { key: "impressions", name: "노출수", color: "#6366f1", light: "#eef2ff", unit: "회", summary: "sum" },
@@ -707,12 +707,12 @@ function TimelineSection({ clinicId }: { clinicId: string }) {
   const t = data?.total
   const rows = data?.buckets ?? []
   const chartData = rows.map((b) => ({ label: g === "day" ? b.label.replace(/ \(.\)$/, "") : b.label, cost: b.cost, clicks: b.clicks, impressions: b.impressions, ctr: b.impressions ? b.ctr : null, cpc: b.clicks ? b.cpc : null, conversions: b.conversions }))
-  const tab = (active: boolean) => `px-3.5 py-1.5 rounded-[8px] text-[13px] font-semibold transition ${active ? "bg-white text-[#191f28] shadow-sm" : "text-[#6b7684] hover:text-[#191f28]"}`
-  const chip = (active: boolean) => `px-3 py-1.5 rounded-full text-[12px] font-semibold border transition ${active ? "bg-[#191f28] border-[#191f28] text-white" : "bg-white border-[#e5e8eb] text-[#4e5968] hover:bg-[#f9fafb]"}`
+  const tab = (active: boolean) => `px-3.5 py-1.5 rounded-[8px] text-[13px] font-semibold transition ${active ? "bg-white text-[#191f28]" : "text-[#6b7684] hover:text-[#191f28]"}`
+  const chip = (active: boolean) => `px-3 py-1.5 rounded-full text-[12px] font-semibold border transition ${active ? "bg-[#191f28] border-[#191f28] text-white" : "bg-white border-[#d1d1cc] text-[#4e5968] hover:bg-[#f2f2ef]"}`
 
   return (
     <div className={`${card} overflow-hidden`}>
-      <div className="px-6 py-5 border-b border-[#f2f4f6] flex items-start justify-between gap-4 flex-wrap">
+      <div className="px-4 py-3 border-b border-[#e0e0db] flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h3 className="text-[16px] font-semibold text-[#191f28]">광고비 현황</h3>
           <p className="text-[13px] text-[#8b95a1] mt-0.5">{dot(range.since)} ~ {dot(range.until)} · {G_LABEL[g]} 집계{data?.lastDataDate ? ` · ${dot(data.lastDataDate)}까지 수집됨` : ""}</p>
@@ -721,21 +721,21 @@ function TimelineSection({ clinicId }: { clinicId: string }) {
           {(["day", "week", "month"] as Granularity[]).map((k) => <button key={k} className={tab(g === k)} onClick={() => chooseG(k)}>{G_LABEL[k]}</button>)}
         </div>
       </div>
-      <div className="px-6 py-3 border-b border-[#f2f4f6] flex items-center gap-2 flex-wrap">
+      <div className="px-4 py-3 border-b border-[#e0e0db] flex items-center gap-2 flex-wrap">
         {PRESETS.map((p) => <button key={p.key} className={chip(preset === p.key)} onClick={() => choosePreset(p.key)}>{p.label}</button>)}
         {preset === "custom" && (
           <div className="flex items-center gap-2 ml-1">
-            <input type="date" className="px-2.5 py-1.5 rounded-[8px] border border-[#e5e8eb] text-[12px]" value={range.since} max={range.until} onChange={(e) => e.target.value && setRange((r) => ({ ...r, since: e.target.value }))} />
+            <input type="date" className="px-2.5 py-1.5 rounded-[8px] border border-[#d1d1cc] text-[12px]" value={range.since} max={range.until} onChange={(e) => e.target.value && setRange((r) => ({ ...r, since: e.target.value }))} />
             <span className="text-[12px] text-[#8b95a1]">~</span>
-            <input type="date" className="px-2.5 py-1.5 rounded-[8px] border border-[#e5e8eb] text-[12px]" value={range.until} min={range.since} onChange={(e) => e.target.value && setRange((r) => ({ ...r, until: e.target.value }))} />
+            <input type="date" className="px-2.5 py-1.5 rounded-[8px] border border-[#d1d1cc] text-[12px]" value={range.until} min={range.since} onChange={(e) => e.target.value && setRange((r) => ({ ...r, until: e.target.value }))} />
           </div>
         )}
       </div>
 
-      {err && <div className="px-6 py-3 text-[13px] text-[#f04452] bg-[#fff0f1]">{err}</div>}
+      {err && <div className="px-4 py-3 text-[13px] text-[#f04452] bg-[#fff0f1]">{err}</div>}
 
       {t && (
-        <div className="px-6 py-4 grid grid-cols-2 md:grid-cols-4 gap-3 border-b border-[#f2f4f6]">
+        <div className="px-4 py-4 grid grid-cols-2 md:grid-cols-4 gap-3 border-b border-[#e0e0db]">
           <Mini label="기간 광고비" value={won(t.cost)} />
           <Mini label={`${G_LABEL[g]} 평균 광고비`} value={won(t.avgBucketCost)} />
           <Mini label="송출일 일평균" value={won(t.avgCost)} sub={`${t.activeDays}일 송출`} />
@@ -743,11 +743,11 @@ function TimelineSection({ clinicId }: { clinicId: string }) {
         </div>
       )}
 
-      <div className={`p-6 space-y-6 ${loading ? "opacity-50" : ""}`}>
+      <div className={`p-4 space-y-3 ${loading ? "opacity-50" : ""}`}>
         {rows.length === 0 ? (
-          <div className="py-8 text-center text-[13px] text-[#8b95a1]">{loading ? "불러오는 중…" : "이 기간에 수집된 데이터가 없습니다. 동기화 후 다시 확인해 주세요."}</div>
+          <div className="py-4 text-center text-[13px] text-[#8b95a1]">{loading ? "불러오는 중…" : "이 기간에 수집된 데이터가 없습니다. 동기화 후 다시 확인해 주세요."}</div>
         ) : (
-          <div className="rounded-2xl border border-[#f2f4f6] p-5">
+          <div className="rounded-2xl border border-[#e0e0db] p-3.5">
             <div className="flex items-center gap-2 mb-1">
               <h4 className="text-[15px] font-bold text-[#191f28]">광고비 · 성과 지표</h4>
               <span className="text-[12px] text-[#8b95a1]">{G_LABEL[g]} 광고비는 막대로 항상 보이고, 버튼으로 고른 지표가 선으로 겹쳐집니다</span>
@@ -758,11 +758,11 @@ function TimelineSection({ clinicId }: { clinicId: string }) {
       </div>
 
       {rows.length > 0 && (
-        <div className="overflow-x-auto border-t border-[#f2f4f6]">
+        <div className="overflow-x-auto border-t border-[#e0e0db]">
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="text-[#8b95a1] text-left border-b border-[#f2f4f6]">
-                <th className="px-6 py-3 font-medium">구간</th>
+              <tr className="text-[#8b95a1] text-left border-b border-[#e0e0db]">
+                <th className="px-4 py-3 font-medium">구간</th>
                 <th className="px-3 py-3 font-medium text-right">송출일</th>
                 <th className="px-3 py-3 font-medium text-right">노출</th>
                 <th className="px-3 py-3 font-medium text-right">클릭</th>
@@ -770,13 +770,13 @@ function TimelineSection({ clinicId }: { clinicId: string }) {
                 <th className="px-3 py-3 font-medium text-right">CPC</th>
                 <th className="px-3 py-3 font-medium text-right">광고비</th>
                 <th className="px-3 py-3 font-medium text-right">전 구간 대비</th>
-                <th className="px-6 py-3 font-medium text-right">누적 광고비</th>
+                <th className="px-4 py-3 font-medium text-right">누적 광고비</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((b) => (
-                <tr key={b.key} className={`border-b border-[#f2f4f6] last:border-0 hover:bg-[#f9fafb] ${b.activeDays === 0 ? "text-[#b0b8c1]" : ""}`}>
-                  <td className="px-6 py-2.5 font-medium text-[#191f28]">{b.label}{b.activeDays === 0 && <span className="ml-2 text-[11px] text-[#b45309] bg-[#fff8ec] rounded px-1.5 py-0.5">미송출</span>}</td>
+                <tr key={b.key} className={`border-b border-[#e0e0db] last:border-0 hover:bg-[#f2f2ef] ${b.activeDays === 0 ? "text-[#b0b8c1]" : ""}`}>
+                  <td className="px-4 py-2.5 font-medium text-[#191f28]">{b.label}{b.activeDays === 0 && <span className="ml-2 text-[11px] text-[#b45309] bg-[#fff8ec] rounded px-1.5 py-0.5">미송출</span>}</td>
                   <td className="px-3 py-2.5 text-right text-[#4e5968]">{g === "day" ? (b.activeDays ? "○" : "-") : `${b.activeDays}일`}</td>
                   <td className="px-3 py-2.5 text-right text-[#4e5968]">{num(b.impressions)}</td>
                   <td className="px-3 py-2.5 text-right text-[#4e5968]">{num(b.clicks)}</td>
@@ -784,14 +784,14 @@ function TimelineSection({ clinicId }: { clinicId: string }) {
                   <td className="px-3 py-2.5 text-right text-[#4e5968]">{b.clicks ? won(b.cpc) : "-"}</td>
                   <td className="px-3 py-2.5 text-right font-semibold text-[#191f28]">{won(b.cost)}</td>
                   <td className={`px-3 py-2.5 text-right ${b.costDelta === null ? "text-[#b0b8c1]" : b.costDelta > 0 ? "text-[#f04452]" : "text-[#05c072]"}`}>{b.costDelta === null ? "-" : `${b.costDelta > 0 ? "+" : ""}${b.costDelta}%`}</td>
-                  <td className="px-6 py-2.5 text-right text-[#4e5968]">{won(b.cumCost)}</td>
+                  <td className="px-4 py-2.5 text-right text-[#4e5968]">{won(b.cumCost)}</td>
                 </tr>
               ))}
             </tbody>
             {t && (
               <tfoot>
-                <tr className="bg-[#f9fafb] font-semibold text-[#191f28]">
-                  <td className="px-6 py-3">합계</td>
+                <tr className="bg-[#f2f2ef] font-semibold text-[#191f28]">
+                  <td className="px-4 py-3">합계</td>
                   <td className="px-3 py-3 text-right">{t.activeDays}일</td>
                   <td className="px-3 py-3 text-right">{num(t.impressions)}</td>
                   <td className="px-3 py-3 text-right">{num(t.clicks)}</td>
@@ -799,7 +799,7 @@ function TimelineSection({ clinicId }: { clinicId: string }) {
                   <td className="px-3 py-3 text-right">{won(t.cpc)}</td>
                   <td className="px-3 py-3 text-right">{won(t.cost)}</td>
                   <td className="px-3 py-3 text-right text-[#8b95a1]">{G_LABEL[g]} 평균 {won(t.avgBucketCost)}</td>
-                  <td className="px-6 py-3 text-right">-</td>
+                  <td className="px-4 py-3 text-right">-</td>
                 </tr>
               </tfoot>
             )}
@@ -812,7 +812,7 @@ function TimelineSection({ clinicId }: { clinicId: string }) {
 
 function Mini({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-xl bg-[#f9fafb] px-4 py-3">
+    <div className="rounded-xl bg-[#f2f2ef] px-4 py-3">
       <div className="text-[12px] text-[#8b95a1]">{label}</div>
       <div className="text-[16px] font-bold text-[#191f28] mt-0.5 truncate">{value}</div>
       {sub && <div className="text-[11px] text-[#8b95a1] mt-0.5">{sub}</div>}

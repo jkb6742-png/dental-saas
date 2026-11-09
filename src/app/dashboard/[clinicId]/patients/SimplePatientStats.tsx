@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Users, UserPlus, UserCheck, TrendingUp, Calendar, BarChart3, Clock } from "lucide-react"
 import SectionCard from "@/components/ui/SectionCard"
 import StatCard from "@/components/ui/StatCard"
-import PatientMonthlyChart from "@/components/charts/PatientMonthlyChart"
+import MonthlyCompare, { type CompareRow } from "@/components/charts/MonthlyCompare"
 import RevenuePerPatientChart from "@/components/charts/RevenuePerPatientChart"
 
 interface PatientStatsData {
@@ -50,12 +50,14 @@ interface SimplePatientStatsProps {
   clinicId: string
   initialYear?: number
   initialMonth?: number
+  compareRows?: CompareRow[]
 }
 
 export default function SimplePatientStats({
   clinicId,
   initialYear = 2026,
-  initialMonth = 5
+  initialMonth = 5,
+  compareRows = []
 }: SimplePatientStatsProps) {
   const [data, setData] = useState<PatientStatsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -126,7 +128,7 @@ export default function SimplePatientStats({
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {[1, 2, 3].map((i) => (
           <SectionCard key={i} className="animate-pulse">
             <div className="h-20 bg-gray-200 rounded"></div>
@@ -139,12 +141,12 @@ export default function SimplePatientStats({
   if (error) {
     return (
       <SectionCard>
-        <div className="text-center py-8">
+        <div className="text-center py-4">
           <div className="text-red-600 mb-2">⚠️ 오류</div>
           <div className="text-sm text-gray-600">{error}</div>
           <button
             onClick={fetchData}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="mt-4 px-4 py-2 bg-[#0062ff] text-white rounded hover:bg-[#0052d6]"
           >
             다시 시도
           </button>
@@ -182,23 +184,23 @@ export default function SimplePatientStats({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
-      <div className="space-y-8 p-6">
+    <div className="">
+      <div className="space-y-3">
         {/* 헤더 섹션 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="bg-white rounded border border-[#d1d1cc] p-3">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
             <div>
               <h1 className="text-2xl font-bold text-slate-900 mb-2">환자 통계 대시보드</h1>
               <p className="text-slate-600">당월 신환, 구환, 전체 환자 현황을 확인하세요.</p>
             </div>
 
             {/* 기간 선택 */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-slate-500" />
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="px-4 py-2 bg-white/90 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="px-4 py-2 bg-white border border-[#d1d1cc] rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
               >
                 <option value={2025}>2025년</option>
                 <option value={2026}>2026년</option>
@@ -206,7 +208,7 @@ export default function SimplePatientStats({
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                className="px-4 py-2 bg-white/90 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="px-4 py-2 bg-white border border-[#d1d1cc] rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
               >
                 {availableMonths.map(month => (
                   <option key={month} value={month}>{month}월</option>
@@ -225,7 +227,7 @@ export default function SimplePatientStats({
         </div>
 
         {/* 메인 환자 통계 카드 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* 신환 총인원 */}
           <StatCard
             title="당월 신환 총인원"
@@ -259,9 +261,9 @@ export default function SimplePatientStats({
 
         {/* 데이터 없음 알림 */}
         {displayData.totalPatientCount === 0 && (
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 rounded-2xl p-6 backdrop-blur-sm">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
+          <div className="bg-white border border-amber-200/60 rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-[#191f28] rounded-xl flex items-center justify-center">
                 <span className="text-white text-lg">📊</span>
               </div>
               <div>
@@ -275,18 +277,17 @@ export default function SimplePatientStats({
         )}
 
         {/* 상세 분석 */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <TrendingUp className="w-6 h-6 text-blue-600" />
+        <div className="bg-white rounded border border-[#d1d1cc] p-3">
+          <div className="flex items-center gap-3 mb-3">
             <h3 className="text-xl font-bold text-slate-900">상세 분석</h3>
             {displayData.totalPatientCount > 0 && (
-              <span className="bg-gradient-to-r from-emerald-500 to-green-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+              <span className="bg-[#191f28] text-white text-xs px-3 py-1 rounded-full font-medium">
                 데이터 있음
               </span>
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <StatCard
               title="신환 비율"
               value={displayData.totalPatientCount > 0
@@ -368,12 +369,11 @@ export default function SimplePatientStats({
         </div>
 
         {/* 요일별 대기시간 분석 */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div className="bg-white rounded border border-[#d1d1cc] p-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
             <div className="flex items-center gap-3">
-              <Clock className="w-6 h-6 text-emerald-600" />
               <h3 className="text-xl font-bold text-slate-900">요일별 대기시간 분석</h3>
-              <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+              <span className="bg-[#191f28] text-white text-xs px-3 py-1 rounded-full font-medium">
                 {waitingTimeView === 'total' && '전체통계'}
                 {waitingTimeView === 'new' && '신환통계'}
                 {waitingTimeView === 'returning' && '구환통계'}
@@ -386,7 +386,7 @@ export default function SimplePatientStats({
                 onClick={() => setWaitingTimeView('total')}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                   waitingTimeView === 'total'
-                    ? 'bg-white text-emerald-600 shadow-sm'
+                    ? 'bg-white text-emerald-600'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -396,7 +396,7 @@ export default function SimplePatientStats({
                 onClick={() => setWaitingTimeView('new')}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                   waitingTimeView === 'new'
-                    ? 'bg-white text-blue-600 shadow-sm'
+                    ? 'bg-white text-[#0062ff]'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -406,7 +406,7 @@ export default function SimplePatientStats({
                 onClick={() => setWaitingTimeView('returning')}
                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                   waitingTimeView === 'returning'
-                    ? 'bg-white text-orange-600 shadow-sm'
+                    ? 'bg-white text-orange-600'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -415,14 +415,14 @@ export default function SimplePatientStats({
             </div>
           </div>
 
-          <p className="text-slate-600 mb-6">
+          <p className="text-slate-600 mb-3">
             {waitingTimeView === 'total' && '일요일부터 토요일까지 전체 요일별 평균 및 최대 대기시간'}
             {waitingTimeView === 'new' && '일요일부터 토요일까지 신환 요일별 평균 및 최대 대기시간'}
             {waitingTimeView === 'returning' && '일요일부터 토요일까지 구환 요일별 평균 및 최대 대기시간'}
             <span className="text-sm text-slate-500 ml-2">(0분은 제외하고 계산, 데이터 없으면 0으로 표시)</span>
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
             {(() => {
               const currentStats = waitingTimeView === 'new'
                 ? displayData.newPatientWaitingStats
@@ -431,14 +431,14 @@ export default function SimplePatientStats({
                 : displayData.weekdayWaitingStats;
 
               return currentStats && Object.entries(currentStats).map(([day, stats]) => (
-              <div key={day} className="bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-200 rounded-xl p-4">
+              <div key={day} className="bg-white border border-[#d1d1cc] rounded-xl p-4">
                 <div className="text-center">
                   <h4 className="text-lg font-bold text-slate-700 mb-2">{day}요일</h4>
 
                   <div className="space-y-3">
                     <div>
                       <div className={`text-2xl font-bold ${
-                        waitingTimeView === 'new' ? 'text-blue-600' :
+                        waitingTimeView === 'new' ? 'text-[#0062ff]' :
                         waitingTimeView === 'returning' ? 'text-orange-600' :
                         'text-emerald-600'
                       }`}>
@@ -449,7 +449,7 @@ export default function SimplePatientStats({
 
                     <div>
                       <div className={`text-lg font-semibold ${
-                        waitingTimeView === 'new' ? 'text-blue-500' :
+                        waitingTimeView === 'new' ? 'text-[#0062ff]' :
                         waitingTimeView === 'returning' ? 'text-orange-500' :
                         'text-emerald-500'
                       }`}>
@@ -458,7 +458,7 @@ export default function SimplePatientStats({
                       <div className="text-xs text-slate-500">최대 대기시간 (분)</div>
                     </div>
 
-                    <div className="text-xs text-slate-400 border-t border-slate-200 pt-2">
+                    <div className="text-xs text-slate-400 border-t border-[#d1d1cc] pt-2">
                       {stats.count}건의 데이터
                     </div>
                   </div>
@@ -473,82 +473,18 @@ export default function SimplePatientStats({
               ))
             })()}
           </div>
-
-          {/* 요일별 분석 혜택 설명 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            <div className="flex items-center gap-2 text-sm text-slate-700 bg-emerald-50 p-3 rounded-lg">
-              <span className="text-emerald-600">👥</span>
-              <span>요일별 직원 배치 최적화</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-slate-700 bg-emerald-50 p-3 rounded-lg">
-              <span className="text-emerald-600">⏰</span>
-              <span>바쁜 요일 예약 간격 조정</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-slate-700 bg-emerald-50 p-3 rounded-lg">
-              <span className="text-emerald-600">📈</span>
-              <span>환자 만족도 향상</span>
-            </div>
-          </div>
         </div>
 
-        {/* 월별 그래프 섹션 */}
-        <div className="space-y-6">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <BarChart3 className="w-6 h-6 text-blue-600" />
-              <h3 className="text-xl font-bold text-slate-900">월별 추이 분석</h3>
-              <span className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs px-3 py-1 rounded-full font-medium">
-                {selectedYear}년
-              </span>
-            </div>
-            <p className="text-slate-600">
-              각 환자 유형별 월별 추이를 분리하여 확인하세요
-            </p>
-          </div>
+        {/* 총환자·신환·구환 월별 비교 */}
+        <MonthlyCompare rows={compareRows} year={selectedYear} month={selectedMonth} />
 
-          {/* 신환 월별 그래프 */}
-          <PatientMonthlyChart
-            clinicId={clinicId}
-            year={selectedYear}
-            chartType="new"
-            title="신환 총인원"
-            color="#3b82f6"
-            variant="area"
-            selectedMonth={selectedMonth}
-          />
-
-          {/* 구환 월별 그래프 */}
-          <PatientMonthlyChart
-            clinicId={clinicId}
-            year={selectedYear}
-            chartType="returning"
-            title="구환 총인원"
-            color="#10b981"
-            variant="area"
-            selectedMonth={selectedMonth}
-          />
-
-          {/* 전체 환자 월별 그래프 */}
-          <PatientMonthlyChart
-            clinicId={clinicId}
-            year={selectedYear}
-            chartType="total"
-            title="전체 총인원"
-            color="#8b5cf6"
-            variant="area"
-            selectedMonth={selectedMonth}
-          />
-        </div>
 
         {/* 1인 객단가 분석 섹션 */}
-        <div className="space-y-6">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-6 h-6 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
-                <span className="text-white text-sm font-bold">₩</span>
-              </div>
+        <div className="space-y-3">
+          <div className="bg-white rounded border border-[#d1d1cc] p-3">
+            <div className="flex items-center gap-3 mb-2.5">
               <h3 className="text-xl font-bold text-slate-900">1인 객단가 분석</h3>
-              <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+              <span className="bg-[#191f28] text-white text-xs px-3 py-1 rounded-full font-medium">
                 {selectedYear}년
               </span>
             </div>
@@ -557,13 +493,14 @@ export default function SimplePatientStats({
             </p>
           </div>
 
+          <div className="space-y-3">
           {/* 전체 환자 1인 객단가 */}
           <RevenuePerPatientChart
             clinicId={clinicId}
             year={selectedYear}
             chartType="total"
             title="전체 환자"
-            color="#8b5cf6"
+            color="#191f28"
             variant="area"
             selectedMonth={selectedMonth}
           />
@@ -574,7 +511,7 @@ export default function SimplePatientStats({
             year={selectedYear}
             chartType="new"
             title="신환"
-            color="#3b82f6"
+            color="#0062ff"
             variant="area"
             selectedMonth={selectedMonth}
           />
@@ -589,6 +526,7 @@ export default function SimplePatientStats({
             variant="area"
             selectedMonth={selectedMonth}
           />
+          </div>
         </div>
 
 

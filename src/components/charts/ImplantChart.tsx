@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "@/components/charts/recharts"
 
 type Props = {
   data: { name: string; value: number }[]
@@ -16,7 +16,7 @@ export default function ImplantChart({ data, type = "horizontal" }: Props) {
           <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#8b95a1" }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 11, fill: "#8b95a1" }} axisLine={false} tickLine={false} width={28} />
           <Tooltip formatter={(v) => [`${Number(v)}건`]} contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 12px 0 rgb(0 0 0 / 0.10)", fontSize: 13 }} />
-          <Bar dataKey="value" name="수술횟수" fill="#3182f6" radius={[4, 4, 0, 0]} maxBarSize={32} />
+          <Bar dataKey="value" name="수술횟수" fill="#0062ff" radius={[4, 4, 0, 0]} maxBarSize={32} />
         </BarChart>
       </ResponsiveContainer>
     )
@@ -29,7 +29,7 @@ export default function ImplantChart({ data, type = "horizontal" }: Props) {
         <XAxis type="number" tick={{ fontSize: 11, fill: "#8b95a1" }} axisLine={false} tickLine={false} />
         <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#4e5968" }} axisLine={false} tickLine={false} width={130} />
         <Tooltip formatter={(v) => [`${Number(v)}건`]} contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 12px 0 rgb(0 0 0 / 0.10)", fontSize: 13 }} />
-        <Bar dataKey="value" name="수술횟수" fill="#3182f6" radius={[0, 4, 4, 0]} maxBarSize={20} />
+        <Bar dataKey="value" name="수술횟수" fill="#0062ff" radius={[0, 4, 4, 0]} maxBarSize={20} />
       </BarChart>
     </ResponsiveContainer>
   )

@@ -46,7 +46,7 @@ export default function ReviewDashboardReadOnly({ clinicId }: ReviewDashboardRea
   }, [clinicId])
 
   if (loading) {
-    return <div className="text-center py-8">데이터를 불러오는 중...</div>
+    return <div className="text-center py-4">데이터를 불러오는 중...</div>
   }
 
   const thisYearReviews = reviews.filter(r => r.year === currentDate.getFullYear())
@@ -57,10 +57,10 @@ export default function ReviewDashboardReadOnly({ clinicId }: ReviewDashboardRea
     : 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 현재 월 요약 */}
-      <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl border border-green-200 p-6">
-        <div className="flex items-center space-x-3 mb-4">
+      <div className="bg-white rounded-xl border border-[#d1d1cc] p-4">
+        <div className="flex items-center space-x-3 mb-2.5">
           <MessageCircle className="w-6 h-6 text-green-600" />
           <div>
             <h3 className="text-lg font-semibold text-green-800">
@@ -70,7 +70,7 @@ export default function ReviewDashboardReadOnly({ clinicId }: ReviewDashboardRea
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="bg-white rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-gray-800">
               {currentMonth?.totalReviews || 0}
@@ -79,7 +79,7 @@ export default function ReviewDashboardReadOnly({ clinicId }: ReviewDashboardRea
           </div>
 
           <div className="bg-white rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-[#0062ff]">
               {currentMonth?.newReviews || 0}
             </div>
             <div className="text-sm text-gray-600">이번 달 신규</div>
@@ -127,13 +127,13 @@ export default function ReviewDashboardReadOnly({ clinicId }: ReviewDashboardRea
       </div>
 
       {/* 연간 성과 요약 */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold mb-4">{currentDate.getFullYear()}년 연간 성과</h3>
+      <div className="bg-white rounded-xl border border-[#d1d1cc] p-4">
+        <h3 className="text-lg font-semibold mb-2.5">{currentDate.getFullYear()}년 연간 성과</h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
           <div className="bg-blue-50 rounded-lg p-4 text-center">
-            <div className="text-xl font-bold text-blue-700">{totalNewThisYear}</div>
-            <div className="text-sm text-blue-600">올해 총 신규 리뷰</div>
+            <div className="text-xl font-bold text-[#0062ff]">{totalNewThisYear}</div>
+            <div className="text-sm text-[#0062ff]">올해 총 신규 리뷰</div>
           </div>
 
           <div className="bg-green-50 rounded-lg p-4 text-center">
@@ -149,13 +149,13 @@ export default function ReviewDashboardReadOnly({ clinicId }: ReviewDashboardRea
       </div>
 
       {/* 최근 6개월 트렌드 */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold mb-4">최근 6개월 트렌드</h3>
+      <div className="bg-white rounded-xl border border-[#d1d1cc] p-4">
+        <h3 className="text-lg font-semibold mb-2.5">최근 6개월 트렌드</h3>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200">
+              <tr className="border-b border-[#d1d1cc]">
                 <th className="text-left py-2 px-3 font-medium text-gray-700">월</th>
                 <th className="text-center py-2 px-3 font-medium text-gray-700">총 리뷰</th>
                 <th className="text-center py-2 px-3 font-medium text-gray-700">신규</th>
@@ -189,7 +189,7 @@ export default function ReviewDashboardReadOnly({ clinicId }: ReviewDashboardRea
           </table>
 
           {reviews.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-4 text-gray-500">
               아직 등록된 리뷰 데이터가 없습니다.
             </div>
           )}

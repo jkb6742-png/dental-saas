@@ -1,8 +1,8 @@
 "use client"
 
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "@/components/charts/recharts"
 
-const COLORS = ["#3182f6", "#f59e0b"]
+const COLORS = ["#0062ff", "#f59e0b"]
 
 export default function TreatmentChart({ data }: { data: { name: string; value: number }[] }) {
   const fmt = (v: number) => `${(v / 10000).toFixed(0)}만원`

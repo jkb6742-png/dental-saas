@@ -6,7 +6,7 @@ type Variant = "primary" | "secondary" | "ghost" | "danger"
 type Size = "sm" | "md" | "lg"
 
 const variants: Record<Variant, string> = {
-  primary: "bg-[#3182f6] hover:bg-[#1b64da] text-white",
+  primary: "bg-[#0062ff] hover:bg-[#0052d6] text-white",
   secondary: "bg-[#f2f4f6] hover:bg-[#e5e8eb] text-[#191f28]",
   ghost: "bg-transparent hover:bg-[#f2f4f6] text-[#4e5968]",
   danger: "bg-[#f04452] hover:bg-[#d63a47] text-white",
@@ -31,8 +31,7 @@ const Button = forwardRef<HTMLButtonElement, Props>(
         ref={ref}
         disabled={disabled || loading}
         className={`
-          inline-flex items-center justify-center gap-2 font-semibold
-          transition-all duration-150 cursor-pointer select-none
+          inline-flex items-center justify-center gap-2 font-semibold cursor-pointer select-none
           disabled:opacity-50 disabled:cursor-not-allowed
           ${variants[variant]} ${sizes[size]} ${className}
         `}

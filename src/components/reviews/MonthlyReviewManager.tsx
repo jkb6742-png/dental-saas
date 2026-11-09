@@ -275,15 +275,15 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
   }, [clinicId, activeYear])
 
   if (loading) {
-    return <div className="text-center py-8">데이터를 불러오는 중...</div>
+    return <div className="text-center py-4">데이터를 불러오는 중...</div>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <Calendar className="w-6 h-6 text-blue-600" />
+          <Calendar className="w-6 h-6 text-[#0062ff]" />
           <div>
             <h3 className="text-lg font-semibold">리뷰 월별 관리</h3>
             <p className="text-sm text-gray-600">
@@ -308,7 +308,7 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
       </div>
 
       {/* 연도 탭 */}
-      <div className="flex items-center space-x-4 mb-6">
+      <div className="flex items-center space-x-4 mb-3">
         <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
           {availableYears.map(year => (
             <button
@@ -316,7 +316,7 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
               onClick={() => setActiveYear(year)}
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 activeYear === year
-                  ? "bg-white text-gray-900 shadow-sm"
+                  ? "bg-white text-gray-900"
                   : "text-gray-600 hover:text-gray-900"
               }`}
             >
@@ -332,7 +332,7 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
           onClick={() => setActiveTab("NAVER")}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === "NAVER"
-              ? "bg-white text-green-600 shadow-sm"
+              ? "bg-white text-green-600"
               : "text-gray-600 hover:text-gray-900"
           }`}
         >
@@ -345,12 +345,12 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
           onClick={() => setActiveTab("GOOGLE")}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === "GOOGLE"
-              ? "bg-white text-blue-600 shadow-sm"
+              ? "bg-white text-[#0062ff]"
               : "text-gray-600 hover:text-gray-900"
           }`}
         >
           <span className="flex items-center space-x-1">
-            <span className="w-4 h-4 bg-blue-500 rounded text-white text-xs flex items-center justify-center font-bold">G</span>
+            <span className="w-4 h-4 bg-[#0062ff] rounded text-white text-xs flex items-center justify-center font-bold">G</span>
             <span>구글</span>
           </span>
         </button>
@@ -358,17 +358,17 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
 
       {/* 구글 설정 섹션 */}
       {activeTab === "GOOGLE" && isMaster && (
-        <div className="bg-blue-50 rounded-xl border border-blue-200 p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-blue-50 rounded-xl border border-[#d1d1cc] p-4">
+          <div className="flex items-center justify-between mb-2.5">
             <div className="flex items-center space-x-3">
-              <Settings className="w-5 h-5 text-blue-600" />
+              <Settings className="w-5 h-5 text-[#0062ff]" />
               <h4 className="text-lg font-semibold text-blue-800">구글 리뷰 설정</h4>
             </div>
             {googleConfig && (
               <button
                 onClick={collectGoogleReviews}
                 disabled={saving === "CRAWL"}
-                className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium disabled:opacity-50 flex items-center space-x-1"
+                className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-[#0062ff] rounded-lg text-sm font-medium disabled:opacity-50 flex items-center space-x-1"
               >
                 <RefreshCw className={`w-4 h-4 ${saving === "CRAWL" ? "animate-spin" : ""}`} />
                 <span>{saving === "CRAWL" ? "수집중..." : "자동 수집"}</span>
@@ -376,31 +376,31 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-blue-700 mb-2">업체명</label>
+              <label className="block text-sm font-medium text-[#0062ff] mb-2">업체명</label>
               <input
                 type="text"
                 value={configForm.placeName}
                 onChange={(e) => setConfigForm(prev => ({ ...prev, placeName: e.target.value }))}
                 placeholder="구글 비즈니스에 등록된 치과 이름"
-                className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-[#d1d1cc] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-blue-700 mb-2">Google Place ID</label>
+              <label className="block text-sm font-medium text-[#0062ff] mb-2">Google Place ID</label>
               <input
                 type="text"
                 value={configForm.placeId}
                 onChange={(e) => setConfigForm(prev => ({ ...prev, placeId: e.target.value }))}
                 placeholder="ChIJ..."
-                className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-[#d1d1cc] rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
           <div className="mt-4 flex justify-between items-center">
-            <p className="text-xs text-blue-600">
+            <p className="text-xs text-[#0062ff]">
               <a
                 href="https://developers.google.com/maps/documentation/places/web-service/place-id"
                 target="_blank"
@@ -413,14 +413,14 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
             <button
               onClick={saveGoogleConfig}
               disabled={saving === "CONFIG" || !configForm.placeName || !configForm.placeId}
-              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium disabled:opacity-50"
+              className="px-4 py-2 bg-[#0062ff] hover:bg-[#0052d6] text-white rounded-lg font-medium disabled:opacity-50"
             >
               {saving === "CONFIG" ? "저장 중..." : "설정 저장"}
             </button>
           </div>
 
           {googleConfig?.lastSyncAt && (
-            <p className="mt-2 text-xs text-blue-600">
+            <p className="mt-2 text-xs text-[#0062ff]">
               마지막 동기화: {new Date(googleConfig.lastSyncAt).toLocaleString()}
             </p>
           )}
@@ -428,13 +428,13 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
       )}
 
       {/* 월별 테이블 */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-[#d1d1cc] p-4">
 
       {/* 테이블 */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200">
+            <tr className="border-b border-[#d1d1cc]">
               <th className="text-left py-3 px-2 font-medium text-gray-700">월</th>
               <th className="text-center py-3 px-2 font-medium text-gray-700">총 리뷰</th>
               <th className="text-center py-3 px-2 font-medium text-gray-700">신규 리뷰</th>
@@ -455,7 +455,7 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">{year}.{String(month).padStart(2, '0')}</span>
                       {isCurrentMonth && (
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">현재</span>
+                        <span className="text-xs bg-blue-100 text-[#0062ff] px-2 py-1 rounded">현재</span>
                       )}
                     </div>
                   </td>
@@ -545,12 +545,12 @@ export default function MonthlyReviewManager({ clinicId, userRole }: MonthlyRevi
       </div>
 
         {/* 요약 통계 */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className={`${activeTab === "NAVER" ? "bg-green-50" : "bg-blue-50"} rounded-lg p-3 text-center`}>
-            <div className={`text-lg font-bold ${activeTab === "NAVER" ? "text-green-700" : "text-blue-700"}`}>
+            <div className={`text-lg font-bold ${activeTab === "NAVER" ? "text-green-700" : "text-[#0062ff]"}`}>
               {currentReviews.filter(r => r.year === activeYear).reduce((sum, r) => sum + r.newReviews, 0)}
             </div>
-            <div className={`text-xs ${activeTab === "NAVER" ? "text-green-600" : "text-blue-600"}`}>{activeYear}년 총 신규</div>
+            <div className={`text-xs ${activeTab === "NAVER" ? "text-green-600" : "text-[#0062ff]"}`}>{activeYear}년 총 신규</div>
           </div>
           <div className="bg-green-50 rounded-lg p-3 text-center">
             <div className="text-lg font-bold text-green-700">

@@ -43,7 +43,7 @@ export async function runNaverAdsJobs(force = false) {
       if (force || (kstHour >= 8 && kstHour < 22)) {
         try {
           const r = await checkBizmoneyAlert(acc.clinicId)
-          if (r.sent) console.log(`[naver-ads] ${acc.clinicId} 비즈머니 부족 메일 발송 (${r.balance}원)`)
+          if (r.sent) console.info(`[naver-ads] ${acc.clinicId} 비즈머니 부족 메일 발송 (${r.balance}원)`)
         } catch (e: any) {
           console.error(`[naver-ads] ${acc.clinicId} 비즈머니 점검 실패:`, e?.message)
         }
@@ -56,7 +56,7 @@ export async function runNaverAdsJobs(force = false) {
         if (!exists) {
           try {
             await generateReport({ clinicId: acc.clinicId, since: r.since, until: r.until, createdBy: "scheduler" })
-            console.log(`[naver-ads] ${acc.clinicId} ${r.since}~${r.until} 보고서 자동 생성`)
+            console.info(`[naver-ads] ${acc.clinicId} ${r.since}~${r.until} 보고서 자동 생성`)
           } catch (e: any) {
             console.error(`[naver-ads] ${acc.clinicId} 보고서 자동 생성 실패:`, e?.message)
           }
@@ -72,7 +72,7 @@ export function startNaverAdsScheduler() {
   if (process.env.NAVER_ADS_AUTO_SYNC === "off") return
   if ((globalThis as any).__naverAdsSchedulerStarted) return
   ;(globalThis as any).__naverAdsSchedulerStarted = true
-  console.log("[naver-ads] 검색광고 자동 동기화·알림 시작 (1시간 간격 점검)")
+  console.info("[naver-ads] 검색광고 자동 동기화·알림 시작 (1시간 간격 점검)")
   setTimeout(() => runNaverAdsJobs().catch((e) => console.error("[naver-ads]", e)), 90 * 1000)
   setInterval(() => runNaverAdsJobs().catch((e) => console.error("[naver-ads]", e)), CHECK_EVERY)
 }

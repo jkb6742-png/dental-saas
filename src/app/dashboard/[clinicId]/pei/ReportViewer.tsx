@@ -92,7 +92,7 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case '매우 양호': return 'text-green-700 bg-green-100'
-      case '양호': return 'text-blue-700 bg-blue-100'
+      case '양호': return 'text-[#0062ff] bg-blue-100'
       case '보통': return 'text-yellow-700 bg-yellow-100'
       case '개선 필요': return 'text-red-700 bg-red-100'
       default: return 'text-gray-700 bg-gray-100'
@@ -104,7 +104,7 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-[#3182f6]" />
+        <Loader2 className="w-6 h-6 animate-spin text-[#0062ff]" />
         <span className="ml-2 text-[#8b95a1]">보고서를 불러오는 중...</span>
       </div>
     )
@@ -113,8 +113,8 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
   if (error || !report) {
     return (
       <div className="text-center py-12">
-        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <p className="text-[14px] text-red-600 mb-4">{error}</p>
+        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-2.5" />
+        <p className="text-[14px] text-red-600 mb-2.5">{error}</p>
         <Button variant="secondary" onClick={onBack}>
           <ArrowLeft className="w-4 h-4" />
           목록으로 돌아가기
@@ -126,16 +126,16 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
   const analysisData = report.analysis || {}
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <Button variant="ghost" onClick={onBack}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-[24px] font-bold text-[#191f28]">PEI 보고서</h1>
-            <div className="flex items-center gap-4 text-[13px] text-[#8b95a1] mt-1">
+            <h1 className="text-[18px] font-bold text-[#191f28]">PEI 보고서</h1>
+            <div className="flex items-center gap-3 text-[13px] text-[#8b95a1] mt-1">
               <span><Building className="w-3 h-3 inline mr-1" />{report.clinic.name}</span>
               <span><Calendar className="w-3 h-3 inline mr-1" />{report.period}</span>
               <span><User className="w-3 h-3 inline mr-1" />생성자: {report.generatedBy}</span>
@@ -156,7 +156,7 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
         description="기본 통계 및 전월 대비 현황"
         icon={<BarChart3 className="w-5 h-5" />}
       >
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           {/* 기본 통계 테이블 */}
           <div className="overflow-x-auto">
             <table className="w-full border-collapse border border-gray-300 text-[13px]">
@@ -251,7 +251,7 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
         description="영역별 강점 및 개선 사항"
         icon={<Target className="w-5 h-5" />}
       >
-        <div className="space-y-6">
+        <div className="space-y-3">
           {/* 영역별 요약 테이블 */}
           <div className="overflow-x-auto">
             <table className="w-full border-collapse border border-gray-300 text-[13px]">
@@ -295,9 +295,9 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
           </div>
 
           {/* 월 종합 평가 의견 */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="bg-blue-50 border border-[#d1d1cc] rounded-xl p-4">
             <h4 className="text-[15px] font-semibold text-[#191f28] mb-3 flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-blue-600" />
+              <MessageSquare className="w-4 h-4 text-[#0062ff]" />
               월 종합 평가 의견
             </h4>
             <p className="text-[13px] text-[#4e5968] leading-relaxed">
@@ -331,7 +331,7 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
                   <td className="border border-gray-300 px-3 py-2">{analysisData.monthlyComparison.medicalStaff?.current}</td>
                   <td className="border border-gray-300 px-3 py-2">
                     <span className={`px-2 py-1 rounded-full text-[11px] font-medium ${
-                      analysisData.monthlyComparison.medicalStaff?.status === '개선' ? 'text-green-700 bg-green-100' : 'text-blue-700 bg-blue-100'
+                      analysisData.monthlyComparison.medicalStaff?.status === '개선' ? 'text-green-700 bg-green-100' : 'text-[#0062ff] bg-blue-100'
                     }`}>
                       {analysisData.monthlyComparison.medicalStaff?.status}
                     </span>
@@ -343,7 +343,7 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
                   <td className="border border-gray-300 px-3 py-2">{analysisData.monthlyComparison.deskStaff?.current}</td>
                   <td className="border border-gray-300 px-3 py-2">
                     <span className={`px-2 py-1 rounded-full text-[11px] font-medium ${
-                      analysisData.monthlyComparison.deskStaff?.status === '개선' ? 'text-green-700 bg-green-100' : 'text-blue-700 bg-blue-100'
+                      analysisData.monthlyComparison.deskStaff?.status === '개선' ? 'text-green-700 bg-green-100' : 'text-[#0062ff] bg-blue-100'
                     }`}>
                       {analysisData.monthlyComparison.deskStaff?.status}
                     </span>
@@ -355,7 +355,7 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
                   <td className="border border-gray-300 px-3 py-2">{analysisData.monthlyComparison.facilities?.current}</td>
                   <td className="border border-gray-300 px-3 py-2">
                     <span className={`px-2 py-1 rounded-full text-[11px] font-medium ${
-                      analysisData.monthlyComparison.facilities?.status === '개선' ? 'text-green-700 bg-green-100' : 'text-blue-700 bg-blue-100'
+                      analysisData.monthlyComparison.facilities?.status === '개선' ? 'text-green-700 bg-green-100' : 'text-[#0062ff] bg-blue-100'
                     }`}>
                       {analysisData.monthlyComparison.facilities?.status}
                     </span>
@@ -374,9 +374,9 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
           description="구체적인 개선 제안사항"
           icon={<Lightbulb className="w-5 h-5" />}
         >
-          <div className="space-y-4">
+          <div className="space-y-2.5">
             {analysisData.improvementSuggestions.map((suggestion: any, index: number) => (
-              <div key={index} className="border border-orange-200 bg-orange-50 rounded-lg p-4">
+              <div key={index} className="border border-[#d1d1cc] bg-orange-50 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" />
                   <div>
@@ -396,21 +396,21 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
         description="실제 환자 피드백 분석"
         icon={<Users className="w-5 h-5" />}
       >
-        <div className="space-y-6">
+        <div className="space-y-3">
           {/* 의료진 1 */}
           {analysisData.staffFeedback?.doctor1 && (
-            <div className="border border-gray-200 rounded-lg p-4">
+            <div className="border border-[#d1d1cc] rounded-lg p-4">
               <h4 className="text-[15px] font-semibold text-[#191f28] mb-3">원장 (의료진 1)</h4>
 
               {analysisData.staffFeedback.doctor1.positive.length > 0 && (
-                <div className="mb-4">
+                <div className="mb-2.5">
                   <h5 className="text-[14px] font-medium text-green-800 mb-2 flex items-center gap-2">
                     <CheckCircle className="w-4 h-4" />
                     긍정적 의견
                   </h5>
                   <div className="space-y-2">
                     {analysisData.staffFeedback.doctor1.positive.map((feedback: string, index: number) => (
-                      <div key={index} className="bg-green-50 p-3 rounded-lg border-l-4 border-green-500">
+                      <div key={index} className="bg-green-50 p-3 rounded-lg border-l-4 border-[#d1d1cc]">
                         <p className="text-[13px] text-green-800">"{feedback}"</p>
                       </div>
                     ))}
@@ -442,18 +442,18 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
 
           {/* 의료진 2 */}
           {analysisData.staffFeedback?.doctor2 && (
-            <div className="border border-gray-200 rounded-lg p-4">
+            <div className="border border-[#d1d1cc] rounded-lg p-4">
               <h4 className="text-[15px] font-semibold text-[#191f28] mb-3">원장 (의료진 2)</h4>
 
               {analysisData.staffFeedback.doctor2.positive.length > 0 && (
-                <div className="mb-4">
+                <div className="mb-2.5">
                   <h5 className="text-[14px] font-medium text-green-800 mb-2 flex items-center gap-2">
                     <CheckCircle className="w-4 h-4" />
                     긍정적 의견
                   </h5>
                   <div className="space-y-2">
                     {analysisData.staffFeedback.doctor2.positive.map((feedback: string, index: number) => (
-                      <div key={index} className="bg-green-50 p-3 rounded-lg border-l-4 border-green-500">
+                      <div key={index} className="bg-green-50 p-3 rounded-lg border-l-4 border-[#d1d1cc]">
                         <p className="text-[13px] text-green-800">"{feedback}"</p>
                       </div>
                     ))}
@@ -485,18 +485,18 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
 
           {/* 데스크/진료실 직원 */}
           {analysisData.staffFeedback?.staff && (
-            <div className="border border-gray-200 rounded-lg p-4">
+            <div className="border border-[#d1d1cc] rounded-lg p-4">
               <h4 className="text-[15px] font-semibold text-[#191f28] mb-3">데스크 / 진료실 (스탭)</h4>
 
               {analysisData.staffFeedback.staff.positive.length > 0 && (
-                <div className="mb-4">
+                <div className="mb-2.5">
                   <h5 className="text-[14px] font-medium text-green-800 mb-2 flex items-center gap-2">
                     <CheckCircle className="w-4 h-4" />
                     긍정적 의견
                   </h5>
                   <div className="space-y-2">
                     {analysisData.staffFeedback.staff.positive.map((feedback: string, index: number) => (
-                      <div key={index} className="bg-green-50 p-3 rounded-lg border-l-4 border-green-500">
+                      <div key={index} className="bg-green-50 p-3 rounded-lg border-l-4 border-[#d1d1cc]">
                         <p className="text-[13px] text-green-800">"{feedback}"</p>
                       </div>
                     ))}
@@ -528,18 +528,18 @@ export default function ReportViewer({ reportId, onBack }: ReportViewerProps) {
 
           {/* 시설 및 편의 */}
           {analysisData.staffFeedback?.facilities && (
-            <div className="border border-gray-200 rounded-lg p-4">
+            <div className="border border-[#d1d1cc] rounded-lg p-4">
               <h4 className="text-[15px] font-semibold text-[#191f28] mb-3">시설 및 편의 관련 의견</h4>
 
               {analysisData.staffFeedback.facilities.positive.length > 0 && (
-                <div className="mb-4">
+                <div className="mb-2.5">
                   <h5 className="text-[14px] font-medium text-green-800 mb-2 flex items-center gap-2">
                     <CheckCircle className="w-4 h-4" />
                     긍정적 의견
                   </h5>
                   <div className="space-y-2">
                     {analysisData.staffFeedback.facilities.positive.map((feedback: string, index: number) => (
-                      <div key={index} className="bg-green-50 p-3 rounded-lg border-l-4 border-green-500">
+                      <div key={index} className="bg-green-50 p-3 rounded-lg border-l-4 border-[#d1d1cc]">
                         <p className="text-[13px] text-green-800">"{feedback}"</p>
                       </div>
                     ))}

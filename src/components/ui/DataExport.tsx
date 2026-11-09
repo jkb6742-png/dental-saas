@@ -98,7 +98,7 @@ export default function DataExport({ data, year, month, filename }: DataExportPr
       <button
         onClick={exportToJSON}
         disabled={isExporting}
-        className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+        className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-[#0062ff] rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
       >
         <FileText className="w-4 h-4" />
         {isExporting ? '내보내는 중...' : 'JSON'}

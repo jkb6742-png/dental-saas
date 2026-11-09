@@ -19,8 +19,8 @@ export default function ReportViewer({ clinicId, report }: { clinicId: string; r
   const print = () => frame.current?.contentWindow?.print()
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="space-y-2.5">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <Link href={`/dashboard/${clinicId}/naver-ads`} className="inline-flex items-center gap-1 text-[13px] text-[#8b95a1] hover:text-[#191f28] mb-2"><ArrowLeft className="w-4 h-4" /> 네이버 검색광고</Link>
           <div className="flex items-center gap-2">
@@ -46,7 +46,7 @@ export default function ReportViewer({ clinicId, report }: { clinicId: string; r
       )}
 
       {report.status === "DONE" && (
-        <div className="bg-[#E9EDF2] rounded-2xl overflow-hidden shadow-[0_1px_3px_0_rgb(0_0_0/0.06)]">
+        <div className="bg-[#E9EDF2] rounded-2xl overflow-hidden">
           <iframe ref={frame} src={src} title={report.title} className="w-full border-0" style={{ height: "calc(100vh - 200px)", minHeight: 800 }} />
         </div>
       )}

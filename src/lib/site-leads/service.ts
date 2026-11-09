@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db"
 import { protect, reveal, mask } from "@/lib/naver-ads/service"
 import { createNotifications } from "@/lib/notifications"
+import { isMailConfigured, sendMail, parseEmails } from "@/lib/mail"
 
 export { protect, reveal, mask }
 
@@ -119,12 +120,39 @@ export async function syncSiteLeads(clinicId: string, opts: { full?: boolean; no
         clinicId,
         audience: "all",
       }).catch((e) => console.error("[site-leads] 알림 실패", e))
+      const to = parseEmails(src.alertEmails)
+      if (to.length && isMailConfigured()) await sendLeadMail(clinicId, src.siteUrl, to, fresh).catch((e) => console.error("[site-leads] 메일 실패", e?.message))
     }
     return { fetched: rows.length, added: fresh.length, removed, full }
   } catch (e: any) {
     await prisma.siteLeadSource.update({ where: { id: src.id }, data: { lastSyncAt: src.lastSyncAt, lastSyncStatus: "FAILED", lastSyncError: String(e?.message ?? e).slice(0, 500) } })
     throw e
   }
+}
+
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!)
+// 메일은 외부(Gmail 등)로 나가므로 이름·연락처는 가린다 — 홍*동 · 010-****-5678
+export const maskName = (n: string | null) => (!n ? "이름 없음" : n.length <= 1 ? "*" : n.length === 2 ? `${n[0]}*` : `${n[0]}${"*".repeat(n.length - 2)}${n[n.length - 1]}`)
+export const maskPhone = (p: string | null) => {
+  const d = (p ?? "").replace(/\D/g, "")
+  return d.length >= 8 ? `${d.slice(0, 3)}-****-${d.slice(-4)}` : "—"
+}
+
+async function sendLeadMail(clinicId: string, siteUrl: string, to: string[], rows: SiteLeadRow[]) {
+  const clinic = await prisma.clinic.findUnique({ where: { id: clinicId }, select: { name: true } })
+  const name = clinic?.name ?? "치과"
+  const base = process.env.NEXTAUTH_URL?.startsWith("https://") ? process.env.NEXTAUTH_URL : "https://thinklabinsight.com"
+  const kst = (iso: string) => new Date(new Date(iso).getTime() + 9 * 3600 * 1000).toISOString().slice(0, 16).replace("T", " ")
+  const lines = rows.map((r) => `<tr><td style="padding:6px 10px;border-bottom:1px solid #eee">${kst(r.created_at)}</td><td style="padding:6px 10px;border-bottom:1px solid #eee">${esc(maskName(r.name))}</td><td style="padding:6px 10px;border-bottom:1px solid #eee">${maskPhone(r.phone)}</td><td style="padding:6px 10px;border-bottom:1px solid #eee">${esc([r.category, r.subject].filter(Boolean).join(" · ") || "-")}</td><td style="padding:6px 10px;border-bottom:1px solid #eee">${esc([r.src_label, r.med_label].filter(Boolean).join(" · ") || "-")}</td></tr>`).join("")
+  await sendMail({
+    to,
+    subject: `[${name}] 홈페이지 상담문의 ${rows.length}건`,
+    html: `<div style="font-family:sans-serif;font-size:14px;color:#191f28"><p><b>${esc(name)}</b> 홈페이지에 상담문의가 들어왔습니다.</p>
+<table style="border-collapse:collapse;font-size:13px"><tr style="background:#f9fafb"><th style="padding:6px 10px;text-align:left">접수</th><th style="padding:6px 10px;text-align:left">이름</th><th style="padding:6px 10px;text-align:left">연락처</th><th style="padding:6px 10px;text-align:left">분류 · 제목</th><th style="padding:6px 10px;text-align:left">유입</th></tr>${lines}</table>
+<p style="margin-top:16px"><a href="${base}/dashboard/${clinicId}/site-leads">Insight 에서 보기</a> · <a href="${siteUrl}/dashboard/leads.php">홈페이지 관리 화면</a></p>
+<p style="color:#8b95a1;font-size:12px">개인정보 보호를 위해 이름·연락처 일부를 가렸습니다. 전체 정보는 Insight 또는 홈페이지 관리 화면에서 확인하세요.</p></div>`,
+    text: `[${name}] 홈페이지 상담문의 ${rows.length}건\n` + rows.map((r) => `${kst(r.created_at)} ${maskName(r.name)} ${maskPhone(r.phone)} ${[r.category, r.subject].filter(Boolean).join(" · ")}`).join("\n"),
+  })
 }
 
 /** 접수 후 보관기간 지난 문의 삭제 (이름·연락처 포함 행 전체) */

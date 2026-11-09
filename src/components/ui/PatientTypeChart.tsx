@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, PieChart, Pie, Cell } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, PieChart, Pie, Cell } from "@/components/charts/recharts"
 
 interface PatientTypeChartProps {
   data: Array<{
@@ -22,12 +22,12 @@ export default function PatientTypeChart({
 }: PatientTypeChartProps) {
   // 색상 테마
   const colors = {
-    newPatients: "#3182f6",      // 신환 - 블루
+    newPatients: "#0062ff",      // 신환 - 블루
     returningPatients: "#10b981", // 구환 - 그린
     background: "#f8fafc"
   }
 
-  const pieColors = ["#3182f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"]
+  const pieColors = ["#0062ff", "#10b981", "#f59e0b", "#ef4444", "#191f28", "#06b6d4"]
 
   if (type === "pie") {
     // 파이차트용 데이터 변환
@@ -39,7 +39,7 @@ export default function PatientTypeChart({
 
     return (
       <div className="w-full">
-        <h3 className="text-[16px] font-semibold text-[#191f28] mb-4">{title}</h3>
+        <h3 className="text-[16px] font-semibold text-[#191f28] mb-2.5">{title}</h3>
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -68,7 +68,7 @@ export default function PatientTypeChart({
   // 바차트 (기본)
   return (
     <div className="w-full">
-      <h3 className="text-[16px] font-semibold text-[#191f28] mb-4">{title}</h3>
+      <h3 className="text-[16px] font-semibold text-[#191f28] mb-2.5">{title}</h3>
       <div className="h-[400px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -115,9 +115,9 @@ export default function PatientTypeChart({
       </div>
 
       {/* 요약 통계 */}
-      <div className="grid grid-cols-3 gap-4 mt-6">
+      <div className="grid grid-cols-3 gap-3 mt-3">
         <div className="bg-[#f8fafc] rounded-xl p-4 text-center">
-          <div className="text-[20px] font-bold text-[#3182f6]">
+          <div className="text-[20px] font-bold text-[#0062ff]">
             {data.reduce((sum, item) => sum + (item.newPatients || 0), 0).toLocaleString()}
           </div>
           <div className="text-[13px] text-[#6b7280] mt-1">총 신환</div>

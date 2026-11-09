@@ -1,3 +1,4 @@
+import { denyClinic } from "@/lib/requests/access"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
@@ -79,6 +80,9 @@ export async function POST(request: NextRequest) {
     if (!clinicId || !goal || !description || !targetDate) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
+
+    const denied = await denyClinic(clinicId)
+    if (denied) return denied
 
     // 한국어 상태를 Enum으로 변환
     const dbStatus = status === '시작전' ? 'PENDING' : status === '진행중' ? 'IN_PROGRESS' : 'COMPLETED'

@@ -45,7 +45,7 @@ export default function DatabaseDashboard({
         {
           id: 'revenue',
           name: '💰 매출 데이터',
-          description: '일별 매출, 지출, 순이익 정보',
+          description: '일별 매출, 기록된 지출, 장부 수지 정보',
           icon: <DollarSign className="w-6 h-6" />,
           stats: tableStats.revenue,
           color: 'from-green-500 to-emerald-600'
@@ -139,12 +139,12 @@ export default function DatabaseDashboard({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
-      <div className="space-y-8 p-6">
+    <div className="">
+      <div className="space-y-3">
         {/* 헤더 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center">
+        <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-[#191f28] rounded-xl flex items-center justify-center">
               <Database className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -156,7 +156,7 @@ export default function DatabaseDashboard({
           {/* 데이터 품질 상태 */}
           <div className="bg-slate-50 rounded-xl p-4">
             <h3 className="font-semibold text-slate-800 mb-3">데이터 품질 상태</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="flex items-center gap-2">
                 {dataQuality.revenueIntegrity ?
                   <CheckCircle className="w-5 h-5 text-green-600" /> :
@@ -189,17 +189,17 @@ export default function DatabaseDashboard({
         </div>
 
         {/* 카테고리 탭 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-[#d1d1cc] overflow-hidden">
           {/* 탭 헤더 */}
-          <div className="border-b border-slate-200/60">
+          <div className="border-b border-[#d1d1cc]">
             <div className="flex">
               {Object.values(tableCategories).map((category) => (
                 <button
                   key={category.id}
                   onClick={() => setActiveTab(category.id)}
-                  className={`flex-1 flex items-center justify-center gap-3 px-6 py-4 text-sm font-medium border-b-2 transition-all duration-200 ${
+                  className={`flex-1 flex items-center justify-center gap-3 px-4 py-4 text-sm font-medium border-b-2 ${
                     activeTab === category.id
-                      ? 'border-blue-500 text-blue-600 bg-blue-50/50'
+                      ? 'border-[#d1d1cc] text-[#0062ff] bg-blue-50/50'
                       : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
@@ -214,17 +214,17 @@ export default function DatabaseDashboard({
           </div>
 
           {/* 탭 컨텐츠 */}
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {tableCategories[activeTab as keyof typeof tableCategories].tables.map((table) => (
                 <Link
                   key={table.id}
                   href={`/dashboard/${clinicId}/database/${table.id}`}
                   className="group"
                 >
-                  <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-slate-200/60 p-6 hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
+                  <div className="bg-white rounded-xl border border-[#d1d1cc] p-4">
                     {/* 헤더 */}
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-2.5">
                       <div className={`w-12 h-12 bg-gradient-to-br ${table.color} rounded-xl flex items-center justify-center text-white`}>
                         {table.icon}
                       </div>
@@ -234,7 +234,7 @@ export default function DatabaseDashboard({
                     </div>
 
                     {/* 제목 & 설명 */}
-                    <div className="mb-4">
+                    <div className="mb-2.5">
                       <h3 className="text-lg font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">
                         {table.name}
                       </h3>
@@ -242,7 +242,7 @@ export default function DatabaseDashboard({
                     </div>
 
                     {/* 통계 정보 */}
-                    <div className="mb-4 space-y-2">
+                    <div className="mb-2.5 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-600">레코드 수</span>
                         <span className="font-semibold text-slate-900">{table.stats.count.toLocaleString()}건</span>
@@ -274,11 +274,11 @@ export default function DatabaseDashboard({
             </div>
 
             {/* 카테고리별 요약 */}
-            <div className="mt-6 p-4 bg-slate-50/50 rounded-xl">
+            <div className="mt-3 p-4 bg-slate-50/50 rounded-xl">
               <h4 className="font-semibold text-slate-800 mb-2">
                 {tableCategories[activeTab as keyof typeof tableCategories].name} 요약
               </h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-slate-900">
                     {tableCategories[activeTab as keyof typeof tableCategories].tables.length}
@@ -312,9 +312,9 @@ export default function DatabaseDashboard({
         </div>
 
         {/* 빠른 작업 */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">빠른 작업</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+          <h3 className="text-lg font-bold text-slate-900 mb-2.5">빠른 작업</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <button className="p-4 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors text-left">
               <div className="font-medium text-slate-900 mb-1">전체 데이터 새로고침</div>
               <div className="text-sm text-slate-600">모든 테이블 재계산</div>

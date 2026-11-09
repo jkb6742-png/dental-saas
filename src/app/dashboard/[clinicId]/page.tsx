@@ -4,10 +4,64 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import ProfessionalDashboard from "@/components/dashboard/ProfessionalDashboard"
-import RevenueChart from "@/components/charts/RevenueChart"
+import YearCompareChart from "@/components/charts/YearCompareChart"
+import HomeCard from "@/components/dashboard/HomeCard"
+import { getHomeStats } from "@/lib/dashboard/home-stats"
+import { getHomeChecks } from "@/lib/dashboard/insights"
+import Link from "next/link"
 import MonthSelector from "@/components/ui/MonthSelector"
-import ReviewDashboard from "@/components/reviews/ReviewDashboard"
 import { Suspense } from "react"
+
+function won(v: number) {
+  if (v >= 100_000_000) {
+    const eok = Math.floor(v / 100_000_000)
+    const man = Math.round((v % 100_000_000) / 10_000)
+    return man ? `${eok}억 ${man.toLocaleString("ko-KR")}만` : `${eok}억`
+  }
+  return `${Math.round(v / 10_000).toLocaleString("ko-KR")}만`
+}
+
+const deltaText = (v: number | null | undefined, digits = 0) =>
+  v == null ? "—" : `${v > 0 ? "+" : ""}${digits ? v.toFixed(digits) : Math.round(v)}%`
+const deltaTone = (v: number | null | undefined) =>
+  v == null ? "text-[#9b9b95]" : v > 0 ? "text-[#0f9f55]" : v < 0 ? "text-[#e0383b]" : "text-[#555555]"
+
+/** 그래프 아래에 숫자표를 둔다 */
+function ChartRow({ chart, table }: { chart: React.ReactNode; table: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <div className="min-w-0">{chart}</div>
+      <div className="min-w-0">{table}</div>
+    </div>
+  )
+}
+
+function YearTable({ head, rows }: { head: string[]; rows: Array<Array<React.ReactNode>> }) {
+  return (
+    <table className="w-full mt-1 text-[13px] tabular-nums">
+      <thead>
+        <tr className="text-[12px] text-[#6f6f6a] border-b border-[#e0e0db]">
+          {head.map((h, i) => (
+            <th key={h} className={`py-1 font-normal ${i === 0 ? "text-left" : "text-right"}`}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r, ri) => (
+          <tr key={ri} className="border-b border-[#ecece9] last:border-b-0">
+            {r.map((c, i) => (
+              <td key={i} className={`py-1 ${i === 0 ? "text-left text-[#0a0a0a]" : i === 1 ? "text-right font-semibold text-[#0a0a0a]" : "text-right text-[#555555]"}`}>{c}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+function EmptyChart() {
+  return <div className="h-[230px] flex items-center justify-center text-[12px] text-[#6f6f6a]">자료 없음</div>
+}
 
 export default async function DashboardHome({
   params,
@@ -56,82 +110,60 @@ export default async function DashboardHome({
   const prevMonth = month === 1 ? 12 : month - 1
   const prevYear = month === 1 ? year - 1 : year
 
-  // Goals API 데이터 가져오기
-  const goals = await prisma.revenueGoal.findMany({
-    where: {
-      clinicId,
-      year,
-      month: month
-    }
-  })
+  // KPI 전월 대비용: 선택 월과 전월
+  const recentWhere = { clinicId, OR: [{ year, month }, { year: prevYear, month: prevMonth }] }
 
-  const yearlyGoals = await prisma.revenueGoal.findMany({
-    where: {
-      clinicId,
-      year,
-      month: null
+  // 화면에 필요한 컬럼만, 한 번에 조회한다.
+  const [goals, yearlyGoals, cashRows, ledgerRows, receptionRows, clinic, stats, home, sourcePatients] = await Promise.all([
+    prisma.revenueGoal.findMany({ where: { clinicId, year, month } }),
+    prisma.revenueGoal.findMany({ where: { clinicId, year, month: null } }),
+    prisma.cashRevenue.findMany({
+      where: { clinicId },
+      select: { year: true, month: true, amount: true },
+    }).catch(() => [] as Array<{ year: number; month: number; amount: number }>),
+    prisma.dailyLedger.findMany({
+      where: recentWhere,
+      select: { year: true, month: true, cashIncome: true, cardIncome: true, onlineIncome: true, insuranceClaim: true, cashExpense: true, cardExpense: true },
+    }),
+    prisma.receptionRecord.findMany({
+      where: recentWhere,
+      select: { year: true, month: true, chartNumber: true, patientType: true, totalRevenue: true },
+    }),
+    prisma.clinic.findUnique({ where: { id: clinicId }, select: { name: true } }),
+    getHomeStats(clinicId, year, month),
+    getHomeChecks(clinicId, year, month),
+    // 환자 수 기준: 원본 엑셀(연령별 분포) 합계
+    prisma.ageDist.groupBy({
+      by: ["year", "month"],
+      where: { clinicId, OR: [{ year, month }, { year: prevYear, month: prevMonth }], NOT: { ageGroup: { contains: "평균" } } },
+      _sum: { totalPatients: true, newPatients: true, returningPatients: true },
+    }),
+  ])
+
+  const groupByMonth = <T extends { year: number; month: number }>(rows: T[]) => {
+    const map = new Map<string, T[]>()
+    for (const row of rows) {
+      const key = `${row.year}-${row.month}`
+      const list = map.get(key)
+      if (list) list.push(row)
+      else map.set(key, [row])
     }
-  })
+    return (y: number, m: number) => map.get(`${y}-${m}`) ?? []
+  }
+  const ledgerOf = groupByMonth(ledgerRows)
+  const receptionOf = groupByMonth(receptionRows)
 
   const monthlyGoal = goals[0]
   const yearlyGoal = yearlyGoals[0]
 
-  // 실제 액션플랜 데이터 가져오기
-  const rawActionPlans = await prisma.actionPlan.findMany({
-    where: { clinicId },
-    include: {
-      attachments: true,
-      comments: {
-        include: {
-          user: {
-            select: { name: true, role: true }
-          }
-        },
-        orderBy: { createdAt: 'asc' }
-      },
-      user: {
-        select: { name: true, role: true }
-      }
-    },
-    orderBy: [
-      { priority: 'asc' }, // HIGH(0) > MEDIUM(1) > LOW(2)
-      { createdAt: 'desc' }
-    ]
-  })
-
-  // Enum 값을 한국어로 변환하여 actionPlans 생성
-  const actionPlans = rawActionPlans.map(plan => ({
-    id: plan.id,
-    goal: plan.goal,
-    targetDate: plan.targetDate,
-    description: plan.description,
-    status: plan.status === 'PENDING' ? '시작전' : plan.status === 'IN_PROGRESS' ? '진행중' : '완료' as const,
-    createdAt: plan.createdAt,
-    progress: plan.progress || 0,
-    priority: plan.priority === 'HIGH' ? '상' : plan.priority === 'MEDIUM' ? '중' : '하' as const,
-    attachments: plan.attachments || [],
-    comments: plan.comments?.map(comment => ({
-      id: comment.id,
-      content: comment.content,
-      author: comment.user?.name || '알 수 없음',
-      authorRole: comment.user?.role || 'USER',
-      createdAt: comment.createdAt
-    })) || []
-  }))
 
   // 마스터가 입력한 월별 현금매출 → 총매출에 가산
-  const cashRows = await prisma.cashRevenue.findMany({
-    where: { clinicId },
-    select: { year: true, month: true, amount: true },
-  }).catch(() => [] as Array<{ year: number; month: number; amount: number }>)
   const cashMap = new Map(cashRows.map((c) => [`${c.year}-${c.month}`, c.amount || 0]))
   const cashOf = (y: number, m: number) => cashMap.get(`${y}-${m}`) ?? 0
 
   // 실제 월간장부 데이터(DailyLedger)에서 집계
-  const [currentLedger, previousLedger] = await Promise.all([
-    prisma.dailyLedger.findMany({ where: { clinicId, year, month } }),
-    prisma.dailyLedger.findMany({ where: { clinicId, year: prevYear, month: prevMonth } }),
-  ])
+  const currentLedger = ledgerOf(year, month)
+  const previousLedger = ledgerOf(prevYear, prevMonth)
 
   // DailyLedger에서 월간 집계 계산
   const calculateMonthlyTotal = (ledgerData: any[]) => {
@@ -162,10 +194,8 @@ export default async function DashboardHome({
   if (previous) previous.totalRevenue += cashOf(prevYear, prevMonth)
 
   // 환자 수 정보는 ReceptionRecord에서 별도 조회
-  const [currentPatients, previousPatients] = await Promise.all([
-    prisma.receptionRecord.findMany({ where: { clinicId, year, month } }),
-    prisma.receptionRecord.findMany({ where: { clinicId, year: prevYear, month: prevMonth } }),
-  ])
+  const currentPatients = receptionOf(year, month)
+  const previousPatients = receptionOf(prevYear, prevMonth)
 
   const calculatePatientStats = (records: any[]) => {
     if (records.length === 0) return { newPatients: 0, totalPatients: 0, newPatientRevenue: 0 }
@@ -209,19 +239,25 @@ export default async function DashboardHome({
     }
   }
 
-  const currentPatientStats = calculatePatientStats(currentPatients)
-  const previousPatientStats = calculatePatientStats(previousPatients)
+  // 원본 엑셀 값을 쓰고, 그 달 파일이 없을 때만 접수 기록으로 계산한다
+  const patientStatsOf = (y: number, m: number, records: any[]) => {
+    const source = sourcePatients.find((r) => r.year === y && r.month === m)?._sum
+    if (source && source.totalPatients != null) {
+      return {
+        totalPatients: Math.round(source.totalPatients),
+        newPatients: Math.round(source.newPatients ?? 0),
+        newPatientRevenue: 0,
+      }
+    }
+    return calculatePatientStats(records)
+  }
+  const currentPatientStats = patientStatsOf(year, month, currentPatients)
+  const previousPatientStats = patientStatsOf(prevYear, prevMonth, previousPatients)
 
   // MonthlySummary가 없는 경우 ReceptionRecord에서 직접 계산
   let currentData = current
   if (!current) {
-    const receptionRecords = await prisma.receptionRecord.findMany({
-      where: {
-        clinicId,
-        year,
-        month
-      }
-    })
+    const receptionRecords = currentPatients
 
     if (receptionRecords.length > 0) {
       // 신환/구환 분류 (환자통계와 동일한 로직)
@@ -270,42 +306,6 @@ export default async function DashboardHome({
     }
   }
 
-  // 최근 6개월 실제 월간장부 데이터 조회 및 집계
-  const last6Months = []
-  for (let i = 5; i >= 0; i--) {
-    let targetMonth = month - i
-    let targetYear = year
-
-    if (targetMonth <= 0) {
-      targetMonth += 12
-      targetYear -= 1
-    }
-
-    const monthlyLedger = await prisma.dailyLedger.findMany({
-      where: { clinicId, year: targetYear, month: targetMonth }
-    })
-
-    const monthlyPatients = await prisma.receptionRecord.findMany({
-      where: { clinicId, year: targetYear, month: targetMonth }
-    })
-
-    const totalRevenue = monthlyLedger.reduce((sum, day) =>
-      sum + (day.cashIncome || 0) + (day.cardIncome || 0) + (day.onlineIncome || 0) + (day.insuranceClaim || 0), 0 // 매출=청구포함총수입
-    )
-
-    const patientStats = calculatePatientStats(monthlyPatients)
-
-    last6Months.push({
-      year: targetYear,
-      month: targetMonth,
-      totalRevenue: totalRevenue + cashOf(targetYear, targetMonth),
-      newPatients: patientStats.newPatients,
-      totalPatients: patientStats.totalPatients
-    })
-  }
-
-  const sortedLast6 = last6Months
-
   function pct(a?: number | null, b?: number | null) {
     if (!b || b === 0) return undefined
     return (((a ?? 0) - b) / b) * 100
@@ -339,11 +339,6 @@ export default async function DashboardHome({
 
   const goalAnalysis = getGoalAnalysis()
 
-  // 치과 정보 가져오기
-  const clinic = await prisma.clinic.findUnique({
-    where: { id: clinicId }
-  })
-
   // 금액 포맷팅 함수
   const formatAmount = (amount: number): string => {
     if (amount >= 100000000) {
@@ -374,7 +369,7 @@ export default async function DashboardHome({
       current: current?.totalRevenue ?? currentData?.totalRevenue ?? cashOf(year, month),
       previous: previous?.totalRevenue ?? cashOf(prevYear, prevMonth),
       target: monthlyGoal?.revenueGoal,
-      monthlyData: sortedLast6.map(s => s.totalRevenue ?? 0) // 실제 월별 매출 데이터
+      monthlyData: [],
     },
     patients: {
       total: currentPatientStats.totalPatients,
@@ -386,17 +381,13 @@ export default async function DashboardHome({
         currentPatientStats.totalPatients - currentPatientStats.newPatients,
         previousPatientStats.totalPatients - previousPatientStats.newPatients
       ),
-      monthlyData: sortedLast6.map(s => s.totalPatients ?? 0) // 실제 월별 환자수 데이터
+      monthlyData: [],
     },
     performance: {
       satisfaction: 4.5, // 추후 실제 만족도 데이터 연결
       efficiency: goalAnalysis.monthlyRevenueRate || 0,
       growth: pct(currentData?.totalRevenue, previous?.totalRevenue) ?? 0
     },
-    // 실제 데이터 반영을 위한 추가 데이터
-    revenueHistory: sortedLast6.length > 0 ? sortedLast6.map(s => s.totalRevenue ?? 0) : [0, current?.totalRevenue ?? 0], // 매출 추이
-    newPatientHistory: sortedLast6.length > 0 ? sortedLast6.map(s => s.newPatients ?? 0) : [0, currentPatientStats.newPatients], // 신환 추이
-    returningPatientHistory: sortedLast6.length > 0 ? sortedLast6.map(s => (s.totalPatients ?? 0) - (s.newPatients ?? 0)) : [0, currentPatientStats.totalPatients - currentPatientStats.newPatients], // 구환 추이
     lastUpdateDate: current ?
       `${year}년 ${month}월 월간장부 데이터` :
       new Date().toLocaleDateString('ko-KR', {
@@ -406,9 +397,18 @@ export default async function DashboardHome({
       })
   }
 
+  const detail = `/dashboard/${clinicId}`
+  const query = `?year=${year}&month=${month}`
+  const compareSeries = [
+    { key: "cur", name: `${year}년`, color: "#0062ff" },
+    { key: "prev", name: `${year - 1}년`, color: "#a3a39d" },
+  ]
+  const categoryNote = `총환자 · 1~${month}월 합계${stats.coverageNote ? ` · ${stats.coverageNote}` : ""}`
+
   return (
     <ProfessionalDashboard
       data={dashboardData}
+      yoy={stats.kpiYoy}
       clinicName={clinic?.name ?? "치과"}
       period={{ year, month }}
       monthSelector={
@@ -431,169 +431,187 @@ export default async function DashboardHome({
         </div>
       )}
 
-      {/* 매출 트렌드 차트 */}
-      <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
-        <h2 className="text-[15px] font-bold text-[#191f28] mb-4">
-          매출 트렌드
-        </h2>
-        {sortedLast6.length > 0 ? (
-          <RevenueChart data={sortedLast6.map((s) => ({
-            label: `${s.year}.${String(s.month).padStart(2, "0")}`,
-            revenue: s.totalRevenue ?? 0,
-            net: s.netProfit ?? 0,
-          }))} />
-        ) : (
-          <div className="text-center py-12">
-            <div className="text-4xl mb-4">📊</div>
-            <p className="text-slate-600">데이터가 없습니다. 엑셀 업로드 후 차트가 표시됩니다.</p>
+      {/* 이번 달 점검 항목 + 전환 지표 */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
+        <HomeCard
+          className="xl:col-span-2"
+          title="이번 달 점검 항목"
+          note={home.extra ? `외 ${home.extra}건` : "전년·최근 추세와 비교"}
+        >
+          {home.checks.length ? (
+            <ul className="divide-y divide-[#ecece9]">
+              {home.checks.map((c) => (
+                <li key={c.text}>
+                  <Link prefetch={false} href={c.href} className="flex items-baseline justify-between gap-3 py-1.5 hover:text-[#0062ff]">
+                    <span className="text-[14px] font-semibold text-[#0a0a0a]">{c.text}</span>
+                    <span className="text-[13px] text-[#555555] tabular-nums truncate">
+                      {c.detail}
+                      {c.change && (
+                        <b className={`ml-1.5 font-semibold ${(c.upIsBad ? -c.change.value : c.change.value) > 0 ? "text-[#0f9f55]" : "text-[#e0383b]"}`}>
+                          {c.change.value > 0 ? "+" : ""}
+                          {c.change.value.toFixed(1)}
+                          {c.change.unit}
+                        </b>
+                      )}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="py-1.5 text-[14px] text-[#555555]">기준을 벗어난 항목이 없습니다.</p>
+          )}
+        </HomeCard>
+        <HomeCard title="전환 지표">
+          <div className="grid grid-cols-2 gap-3">
+            <Link prefetch={false} href={`${detail}/retention${query}`} className="block hover:text-[#0062ff]">
+              <div className="text-[13px] text-[#555555]">신환 90일 재내원</div>
+              <div className="mt-1 text-[22px] font-bold leading-none tabular-nums text-[#0a0a0a]">
+                {home.retention90?.value != null ? `${home.retention90.value.toFixed(1)}%` : "—"}
+              </div>
+              <div className="mt-1 text-[12px] text-[#6f6f6a]">
+                {home.retention90 ? `${home.retention90.label} 신환 ${home.retention90.n}명` : "관찰 완료 자료 없음"}
+              </div>
+            </Link>
+            <Link prefetch={false} href={`${detail}/consultations${query}`} className="block hover:text-[#0062ff]">
+              <div className="text-[13px] text-[#555555]">상담 확정률</div>
+              <div className="mt-1 text-[22px] font-bold leading-none tabular-nums text-[#0a0a0a]">
+                {home.consultRate != null ? `${home.consultRate.toFixed(1)}%` : "—"}
+              </div>
+              <div className="mt-1 text-[12px] text-[#6f6f6a]">
+                {home.consultRecent != null ? `최근 3개월 ${home.consultRecent.toFixed(1)}%` : "계획 건 기준"}
+              </div>
+            </Link>
           </div>
-        )}
+        </HomeCard>
       </div>
 
-      {/* 리뷰 대시보드 */}
-      <Suspense fallback={
-        <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
-          <div className="animate-pulse">
-            <div className="h-5 bg-[#f2f4f6] rounded w-1/3 mb-4"></div>
-            <div className="h-32 bg-[#f2f4f6] rounded"></div>
-          </div>
+      {/* 섹터마다 한 줄. 숫자표는 그래프 아래 */}
+      <HomeCard title="전년 대비 월 매출" note={`${year}년 vs ${year - 1}년`} href={`${detail}/revenue${query}`}>
+        <YearCompareChart data={stats.monthlyRevenue} series={compareSeries} unit="원" height={340} showValues legendTop />
+        {/* 전년 대비 증감: 그래프의 월 눈금 바로 아래에 맞춘다 (왼쪽 축 56 + 축 안쪽 22, 오른쪽 여백 16 + 22) */}
+        <div className="relative mt-1 flex justify-between border-t border-[#e0e0db] pt-1.5 pb-1 pl-[78px] pr-[38px]">
+          <span className="absolute left-0 top-1.5 text-[12px] text-[#6f6f6a]">전년 대비</span>
+          {stats.monthlyRevenue.map((m) => (
+            <span key={m.label} data-yoy-cell className="w-0 flex justify-center">
+              <span className={`whitespace-nowrap text-[13px] font-semibold tabular-nums ${deltaTone(m.yoy)}`}>{deltaText(m.yoy)}</span>
+            </span>
+          ))}
         </div>
-      }>
-        <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
-          <h2 className="text-[15px] font-bold text-[#191f28] mb-4">
-            리뷰 분석
-          </h2>
-          <ReviewDashboard
-            clinicId={clinicId}
-            year={year}
-            month={month}
-          />
-        </div>
-      </Suspense>
+      </HomeCard>
 
-      {/* 실행계획 대시보드 */}
-      <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[15px] font-bold text-[#191f28]">
-            실행계획 현황
-          </h2>
-          <a
-            href={`/dashboard/${clinicId}/action-plans`}
-            className="text-[13px] text-[#3182f6] hover:underline font-medium"
-          >
-            전체 보기 →
-          </a>
-        </div>
+      <HomeCard title="전년 대비 분기 매출" note="진행 중인 분기는 같은 달끼리 비교" href={`${detail}/revenue${query}`}>
+        <ChartRow
+          chart={<YearCompareChart data={stats.quarterlyRevenue} series={compareSeries} unit="원" height={270} showValues />}
+          table={
+            <YearTable
+              head={["분기", `${year}년`, `${year - 1}년`, "증감"]}
+              rows={stats.quarterlyRevenue.map((q) => [
+                <>
+                  {q.label}
+                  {q.partial && <span className="ml-1 text-[12px] text-[#6f6f6a]">{q.months}</span>}
+                </>,
+                q.cur != null ? won(q.cur) : "—",
+                q.prev != null ? won(q.prev) : "—",
+                <span key="d" className={`font-semibold ${deltaTone(q.yoy)}`}>{deltaText(q.yoy, 1)}</span>,
+              ])}
+            />
+          }
+        />
+      </HomeCard>
 
-        {actionPlans.length > 0 ? (
-          <div className="space-y-4">
-            {/* 진행 중인 계획들 먼저 표시 */}
-            {actionPlans
-              .filter(plan => plan.status === "진행중")
-              .slice(0, 2)
-              .map((plan) => (
-                <div key={plan.id} className="bg-white rounded-xl border border-slate-200 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className={`flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs ${
-                      plan.priority === "상" ? "bg-red-500 text-white" :
-                      plan.priority === "중" ? "bg-yellow-500 text-white" :
-                      "bg-green-500 text-white"
-                    }`}>
-                      {plan.priority === "상" ? "🔥" : plan.priority === "중" ? "⚡" : "📋"}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h4 className="font-semibold text-slate-900">{plan.goal}</h4>
-                        <div className="flex items-center gap-1 px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-700 border border-blue-200">
-                          <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                          진행중
-                        </div>
-                      </div>
-                      <p className="text-sm text-slate-600 mb-3">{plan.description}</p>
+      <HomeCard title="연도별 매출" note={`1~${month}월 · 연간 합계`} href={`${detail}/revenue${query}`}>
+        <ChartRow
+          chart={
+            <YearCompareChart
+              data={stats.yearlyRevenue}
+              series={[
+                { key: "ytd", name: `1~${month}월`, color: "#0062ff" },
+                { key: "total", name: "연간 합계", color: "#a3a39d" },
+              ]}
+              unit="원"
+              height={270}
+              showValues
+            />
+          }
+          table={
+            <YearTable
+              head={["연도", `1~${month}월`, "연간 합계", "전년 동기 대비"]}
+              rows={stats.yearlyRevenue.map((r, i, all) => {
+                const before = all[i - 1]
+                const d = before && before.months === r.months && before.ytd ? (((r.ytd ?? 0) - before.ytd) / before.ytd) * 100 : null
+                return [
+                  r.label,
+                  r.ytd != null ? won(r.ytd) : "—",
+                  r.total != null ? won(r.total) : "진행 중",
+                  <span key="d" className={`font-semibold ${deltaTone(d)}`}>{deltaText(d, 1)}</span>,
+                ]
+              })}
+            />
+          }
+        />
+      </HomeCard>
 
-                      <div className="flex items-center justify-between text-sm text-slate-500 mb-3">
-                        <span>목표일: {plan.targetDate.toLocaleDateString('ko-KR')}</span>
-                        <span>진행률: {plan.progress}%</span>
-                      </div>
+      <HomeCard title="전년 대비 월별 환자" note={`총환자 ${year}년 vs ${year - 1}년`} href={`${detail}/patients${query}`}>
+        <YearCompareChart
+          data={stats.monthlyPatients.map((m) => ({ ...m, label: m.label.replace("월", "") }))}
+          series={compareSeries}
+          unit="명"
+          height={310}
+          showValues
+        />
+      </HomeCard>
 
-                      <div className="w-full bg-slate-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-500 h-2 rounded-full transition-all"
-                          style={{ width: `${plan.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+      <HomeCard title="연도별 환자" note={`1~${month}월 합계`} href={`${detail}/patients${query}`}>
+        <ChartRow
+          chart={
+            <YearCompareChart
+              data={stats.yearlyPatients}
+              series={[
+                { key: "total", name: "총환자", color: "#0062ff" },
+                { key: "new", name: "신환", color: "#a3a39d" },
+              ]}
+              unit="명"
+              height={270}
+              showValues
+            />
+          }
+          table={
+            <YearTable
+              head={["연도", "총환자", "신환", "구환", "전년 대비"]}
+              rows={stats.yearlyPatients.map((r, i, all) => {
+                const before = all[i - 1]
+                const d = before && before.months === r.months && before.total ? ((r.total - before.total) / before.total) * 100 : null
+                return [
+                  r.label,
+                  r.total.toLocaleString("ko-KR"),
+                  r.new.toLocaleString("ko-KR"),
+                  r.returning.toLocaleString("ko-KR"),
+                  <span key="d" className={`font-semibold ${deltaTone(d)}`}>{deltaText(d, 1)}</span>,
+                ]
+              })}
+            />
+          }
+        />
+      </HomeCard>
 
-            {/* 최근 완료된 계획 1개 */}
-            {actionPlans
-              .filter(plan => plan.status === "완료")
-              .slice(0, 1)
-              .map((plan) => (
-                <div key={plan.id} className="bg-white rounded-xl border border-slate-200 p-4 opacity-75">
-                  <div className="flex items-start gap-3">
-                    <div className={`flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center font-bold text-xs ${
-                      plan.priority === "상" ? "bg-red-500 text-white" :
-                      plan.priority === "중" ? "bg-yellow-500 text-white" :
-                      "bg-green-500 text-white"
-                    }`}>
-                      {plan.priority === "상" ? "🔥" : plan.priority === "중" ? "⚡" : "📋"}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h4 className="font-semibold text-slate-900">{plan.goal}</h4>
-                        <div className="flex items-center gap-1 px-3 py-1 rounded-full text-xs bg-green-100 text-green-700 border border-green-200">
-                          <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-                          완료
-                        </div>
-                      </div>
-                      <p className="text-sm text-slate-600 mb-2">{plan.description}</p>
-                      <div className="text-xs text-slate-500">
-                        완료일: {plan.targetDate.toLocaleDateString('ko-KR')}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+      <HomeCard title="연령별" note={categoryNote} href={`${detail}/age${query}`}>
+        {stats.age.data.length ? (
+          <YearCompareChart data={stats.age.data} series={stats.age.series} labelSeries={`y${year}`} unit="명" height={310} showValues />
+        ) : <EmptyChart />}
+      </HomeCard>
 
-            {/* 통계 요약 */}
-            <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-slate-200">
-              <div className="text-center">
-                <div className="text-lg font-bold text-slate-900">
-                  {actionPlans.filter(p => p.status === "완료").length}
-                </div>
-                <div className="text-xs text-slate-600">완료</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-blue-600">
-                  {actionPlans.filter(p => p.status === "진행중").length}
-                </div>
-                <div className="text-xs text-slate-600">진행중</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-slate-500">
-                  {actionPlans.filter(p => p.status === "시작전").length}
-                </div>
-                <div className="text-xs text-slate-600">시작전</div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <div className="text-4xl mb-4">🎯</div>
-            <p className="text-slate-600 mb-2">설정된 실행계획이 없습니다.</p>
-            <p className="text-slate-500 text-sm mb-4">목표를 설정하고 실행 현황을 관리해보세요.</p>
-            <a
-              href={`/dashboard/${clinicId}/action-plans`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
-            >
-              실행계획 만들기
-            </a>
-          </div>
-        )}
-      </div>
+      <HomeCard title="지역별 상위 6곳" note={categoryNote} href={`${detail}/regions${query}`}>
+        {stats.region.data.length ? (
+          <YearCompareChart data={stats.region.data} series={stats.region.series} labelSeries={`y${year}`} unit="명" height={330} horizontal showValues />
+        ) : <EmptyChart />}
+      </HomeCard>
+
+      <HomeCard title="내원경로 상위 6개" note={categoryNote} href={`${detail}/routes${query}`}>
+        {stats.route.data.length ? (
+          <YearCompareChart data={stats.route.data} series={stats.route.series} labelSeries={`y${year}`} unit="명" height={330} horizontal showValues />
+        ) : <EmptyChart />}
+      </HomeCard>
     </ProfessionalDashboard>
   )
 }

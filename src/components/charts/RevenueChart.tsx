@@ -4,7 +4,7 @@ import {
   ComposedChart, Bar, Line, LabelList,
   XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
-} from "recharts"
+} from "@/components/charts/recharts"
 
 type DataPoint = { label: string; revenue: number; net: number }
 
@@ -18,20 +18,20 @@ const labelFmt = (v: unknown) => (typeof v === "number" && v > 0 ? fmt(v) : "")
 
 export default function RevenueChart({ data }: { data: DataPoint[] }) {
   return (
-    <ResponsiveContainer width="100%" height={280}>
-      <ComposedChart data={data} margin={{ top: 24, right: 16, left: 0, bottom: 0 }}>
+    <ResponsiveContainer width="100%" height={190}>
+      <ComposedChart data={data} margin={{ top: 20, right: 12, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f2f4f6" vertical={false} />
         <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#8b95a1" }} axisLine={false} tickLine={false} tickMargin={10} padding={{ left: 14, right: 14 }} />
         <YAxis tickFormatter={fmt} tick={{ fontSize: 11, fill: "#8b95a1" }} axisLine={false} tickLine={false} width={56} tickMargin={8} />
         <Tooltip
           formatter={(v) => [`${Number(v).toLocaleString("ko-KR")}원`, "매출"]}
-          contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 12px 0 rgb(0 0 0 / 0.10)", fontSize: 13 }}
+          contentStyle={{ borderRadius: 4, border: '1px solid #d1d1cc', boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 13 }}
         />
         {/* 막대: 월별 매출 (연한 파랑, 맥락) */}
-        <Bar dataKey="revenue" name="매출" fill="#d4e4fd" radius={[4, 4, 0, 0]} maxBarSize={44} />
+        <Bar isAnimationActive={false} dataKey="revenue" name="매출" fill="#d4e4fd" radius={[4, 4, 0, 0]} maxBarSize={44} />
         {/* 꺾은선: 매출 추이 (강조) + 값 라벨 */}
-        <Line type="monotone" dataKey="revenue" name="매출 추이" stroke="#3182f6" strokeWidth={2.5} dot={{ r: 3, fill: "#3182f6" }} activeDot={{ r: 5 }} tooltipType="none">
-          <LabelList dataKey="revenue" position="top" formatter={labelFmt} offset={10} style={{ fontSize: 11, fontWeight: 700, fill: "#3182f6" }} />
+        <Line isAnimationActive={false} type="monotone" dataKey="revenue" name="매출 추이" stroke="#0062ff" strokeWidth={2} dot={{ r: 3, fill: "#0062ff" }} activeDot={{ r: 5 }} tooltipType="none">
+          <LabelList dataKey="revenue" position="top" formatter={labelFmt} offset={10} style={{ fontSize: 11, fontWeight: 700, fill: "#0062ff" }} />
         </Line>
       </ComposedChart>
     </ResponsiveContainer>

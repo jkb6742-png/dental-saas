@@ -71,10 +71,10 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] flex items-center justify-center p-4">
+    <div className=" flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-black rounded-2xl mb-4">
+        <div className="text-center mb-3">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-black rounded-2xl mb-2.5">
             <span className="text-[24px] font-bold text-white">T</span>
           </div>
           <h1 className="text-[20px] font-bold text-[#191f28] mb-1">THINKLAB dental insight</h1>
@@ -82,13 +82,13 @@ export default function SignupPage() {
           <p className="text-[14px] text-[#8b95a1]">새 치과 계정을 만들어보세요</p>
         </div>
 
-        <div className="bg-white rounded-2xl p-7 shadow-[0_1px_3px_0_rgb(0_0_0/0.06)]">
+        <div className="bg-white rounded-2xl p-4">
           <form
             onSubmit={(e) => {
               console.log("📝 Form submit 이벤트 발생!", e)
               handleSubmit(e)
             }}
-            className="space-y-4"
+            className="space-y-2.5"
           >
             {[
               { label: "치과명", key: "agencyName", placeholder: "00치과", type: "text", required: true },
@@ -107,7 +107,7 @@ export default function SignupPage() {
                   onChange={(e) => set(key, e.target.value)}
                   placeholder={placeholder}
                   required={required}
-                  className="w-full px-4 py-3 rounded-xl border border-[#e5e8eb] text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#ebf3fe] transition-all"
+                  className="w-full px-4 py-3 rounded-xl border border-[#d1d1cc] text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#e8f0ff] transition-all"
                 />
               </div>
             ))}
@@ -123,7 +123,7 @@ export default function SignupPage() {
                 onChange={(e) => set("inviteCode", e.target.value.toUpperCase())}
                 placeholder="8자리 초대 코드"
                 maxLength={8}
-                className="w-full px-4 py-3 rounded-xl border border-[#e5e8eb] text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#ebf3fe] transition-all uppercase tracking-wider"
+                className="w-full px-4 py-3 rounded-xl border border-[#d1d1cc] text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#e8f0ff] transition-all uppercase tracking-wider"
               />
               <p className="text-[12px] text-[#8b95a1] mt-1">
                 초대 코드가 있으면 즉시 승인됩니다. 없으면 관리자 승인이 필요합니다.
@@ -151,7 +151,7 @@ export default function SignupPage() {
 
           <p className="text-center text-[13px] text-[#8b95a1] mt-5">
             이미 계정이 있으신가요?{" "}
-            <Link href="/login" className="text-[#3182f6] font-semibold hover:underline">
+            <Link href="/login" className="text-[#0062ff] font-semibold hover:underline">
               로그인
             </Link>
           </p>

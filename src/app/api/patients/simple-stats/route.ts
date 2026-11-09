@@ -206,6 +206,13 @@ export async function GET(request: NextRequest) {
       ? Math.max(...allValidWaitingTimes.map(r => r.waitingTime || 0))
       : 0;
 
+    // 환자 수 기준: 원본 엑셀(연령별 분포) 합계. 그 달 파일이 없을 때만 접수 기록으로 계산한다
+    const source = await prisma.ageDist.aggregate({
+      where: { clinicId, year, month, NOT: { ageGroup: { contains: "평균" } } },
+      _sum: { totalPatients: true, newPatients: true, returningPatients: true },
+    })
+    const hasSource = source._sum.totalPatients != null
+
     // 데이터가 없어도 항상 0으로 기본값 제공
     const result = {
       year,
@@ -214,9 +221,9 @@ export async function GET(request: NextRequest) {
       hasData: receptionRecords.length > 0,
 
       // 기본 통계 (사용자 요구사항) - 데이터 없으면 0
-      newPatientCount: uniqueNewPatientCount || 0,          // 당월 신환 총인원
-      returningPatientCount: uniqueReturningPatientCount || 0, // 당월 구환 총인원
-      totalPatientCount: allUniquePatients.length || 0,        // 신환+구환 합친 총인원
+      newPatientCount: hasSource ? Math.round(source._sum.newPatients ?? 0) : uniqueNewPatientCount || 0,          // 당월 신환 총인원
+      returningPatientCount: hasSource ? Math.round(source._sum.returningPatients ?? 0) : uniqueReturningPatientCount || 0, // 당월 구환 총인원
+      totalPatientCount: hasSource ? Math.round(source._sum.totalPatients ?? 0) : allUniquePatients.length || 0,        // 신환+구환 합친 총인원
 
       // 추가 정보 - 데이터 없으면 0
       newPatientVisits: newPatients.length || 0,               // 신환 방문수

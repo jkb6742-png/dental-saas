@@ -49,15 +49,6 @@ export default async function RevenuePage({
 
   const userRole = (session.user as any).role as string
 
-  console.log(`🔍 [REVENUE PAGE] clinicId: ${clinicId}`)
-  console.log(`🔍 [REVENUE PAGE] monthlySummaries 개수: ${monthlySummaries.length}`)
-  console.log(`🔍 [REVENUE PAGE] year: ${year}, month: ${month}`)
-
-  if (monthlySummaries.length > 0) {
-    console.log(`🔍 [REVENUE PAGE] 첫 번째 데이터: ${monthlySummaries[0].year}년 ${monthlySummaries[0].month}월`)
-    console.log(`🔍 [REVENUE PAGE] 총매출: ${monthlySummaries[0].totalRevenue}원`)
-  }
-
   // 매출 데이터가 없어도 페이지는 렌더한다(현금매출 입력·안내는 클라이언트에서 처리).
 
   return (
@@ -82,8 +73,6 @@ async function getMonthlySummaries(prisma: any, clinicId: string) {
       orderBy: [{ year: 'desc' }, { month: 'desc' }],
       take: 24 // 최근 24개월만
     })
-
-    console.log(`📊 [매출분석] ${clinicId}의 MonthlySummary 데이터: ${monthlySummaries.length}개월`)
 
     // 데이터 포맷 조정
     return monthlySummaries.map((summary: any) => ({

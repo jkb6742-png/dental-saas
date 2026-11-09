@@ -1,15 +1,14 @@
 "use client"
 
-import { BUILTIN, answerText, isBuiltin, splitDoctorName } from "@/lib/pei-survey/questions"
+import { answerText, isBuiltin, itemLabel, splitDoctorName, recommendWord } from "@/lib/pei-survey/questions"
 import type { SurveyDTO, SurveyStats } from "@/lib/pei-survey/service"
 
 // 응답 표 — 구글시트처럼 한 줄 = 응답 1건, 열 = 설문 문항 순서. 주관식은 환자가 쓴 그대로
 type Row = SurveyStats["responses"][number]
 type Col = { id: string; head: string; title: string; value: (r: Row) => string; wide?: boolean; center?: boolean; tone?: (v: string) => string }
 
-const th = "px-3 py-2.5 text-left text-[12px] font-semibold text-[#4e5968] whitespace-nowrap border-b border-[#e5e8eb]"
-const td = "px-3 py-2.5 border-b border-[#f2f4f6] text-[#333d4b]"
-const BUILTIN_LABEL = (id: string) => BUILTIN[id]?.label ?? id
+const th = "px-3 py-2.5 text-left text-[12px] font-semibold text-[#4e5968] whitespace-nowrap border-b border-[#d1d1cc]"
+const td = "px-3 py-2.5 border-b border-[#e0e0db] text-[#333d4b]"
 const fmtKst = (iso: string) => {
   const d = new Date(new Date(iso).getTime() + 9 * 3600 * 1000)
   const p2 = (n: number) => String(n).padStart(2, "0")
@@ -21,7 +20,7 @@ export const SCORE_LEGEND = "점수 5 매우 그렇다 · 4 그렇다 · 3 보�
 
 export default function ResponseTable({ questions, responses, maxHeight = "70vh" }: { questions: SurveyDTO["questions"]; responses: Row[]; maxHeight?: string }) {
   const cols: Col[] = questions.map((q): Col => {
-    const head = isBuiltin(q.id) ? BUILTIN_LABEL(q.id) : q.text.length > 14 ? `${q.text.slice(0, 14)}…` : q.text
+    const head = isBuiltin(q.id) ? itemLabel(q.id, q.text) : q.text.length > 14 ? `${q.text.slice(0, 14)}…` : q.text
     const base = { id: q.id, head, title: q.text }
     switch (q.id) {
       case "visit": return { ...base, value: (r) => r.visitType ?? "" }
@@ -29,7 +28,8 @@ export default function ResponseTable({ questions, responses, maxHeight = "70vh"
       case "age": return { ...base, value: (r) => r.ageGroup ?? "" }
       case "treatment": return { ...base, value: (r) => r.treatments.join(", ") }
       case "doctor": return { ...base, value: (r) => (r.doctor ? splitDoctorName(r.doctor).title : "") }
-      case "recommend": return { ...base, center: true, value: (r) => (r.recommend == null ? "" : String(r.recommend)), tone: (v) => (v !== "" && Number(v) <= 6 ? "text-[#f04452] font-semibold" : "font-semibold text-[#191f28]") }
+      case "recommend": if (q.words) return { ...base, center: true, value: (r) => recommendWord(r.recommend), tone: (v) => (["보통", "불만족", "매우 불만족"].includes(v) ? "text-[#e0383b] font-semibold" : "") }
+        return { ...base, center: true, value: (r) => (r.recommend == null ? "" : String(r.recommend)), tone: (v) => (v !== "" && Number(v) <= 6 ? "text-[#f04452] font-semibold" : "font-semibold text-[#191f28]") }
       case "positive": return { ...base, wide: true, value: (r) => r.positive ?? "" }
       case "improvement": return { ...base, wide: true, value: (r) => r.improvement ?? "", tone: () => "text-[#333d4b]" }
     }
@@ -38,11 +38,11 @@ export default function ResponseTable({ questions, responses, maxHeight = "70vh"
   })
 
   return (
-    <div className="overflow-auto rounded-xl border border-[#e5e8eb]" style={{ maxHeight }}>
+    <div className="overflow-auto rounded-xl border border-[#d1d1cc]" style={{ maxHeight }}>
       <table className="min-w-max w-full border-collapse text-[13px]">
-        <thead className="sticky top-0 z-[1] bg-[#f9fafb]">
+        <thead className="sticky top-0 z-[1] bg-[#f2f2ef]">
           <tr>
-            <th className={`${th} sticky left-0 z-[2] bg-[#f9fafb] w-10`}>#</th>
+            <th className={`${th} sticky left-0 z-[2] bg-[#f2f2ef] w-10`}>#</th>
             <th className={th}>제출</th>
             {cols.map((c) => (
               <th key={c.id} className={`${th} ${c.wide ? "min-w-[260px]" : ""}`} title={c.title}>{c.head}</th>
@@ -51,7 +51,7 @@ export default function ResponseTable({ questions, responses, maxHeight = "70vh"
         </thead>
         <tbody>
           {responses.map((r, i) => (
-            <tr key={r.id} className="align-top hover:bg-[#f9fafb]">
+            <tr key={r.id} className="align-top hover:bg-[#f2f2ef]">
               <td className={`${td} sticky left-0 bg-white text-[#b0b8c1] text-center`}>{responses.length - i}</td>
               <td className={`${td} whitespace-nowrap text-[#8b95a1]`}>{fmtKst(r.submittedAt)}</td>
               {cols.map((c) => {

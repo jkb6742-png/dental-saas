@@ -1,3 +1,4 @@
+import { denyClinic } from "@/lib/requests/access"
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
@@ -23,6 +24,9 @@ export async function GET(req: NextRequest) {
     if (!report) {
       return NextResponse.json({ error: "보고서를 찾을 수 없습니다" }, { status: 404 })
     }
+
+    const denied = await denyClinic(report.clinicId)
+    if (denied) return denied
 
     if (!report.content) {
       return NextResponse.json({ error: "보고서 내용이 없습니다" }, { status: 404 })

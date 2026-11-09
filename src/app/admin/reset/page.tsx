@@ -64,21 +64,21 @@ export default function ResetDataPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-4">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow p-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-white rounded-lg shadow p-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">
             🗑️ 데이터 초기화 관리
           </h1>
 
-          <div className="space-y-6">
+          <div className="space-y-3">
             {/* 현재 상태 확인 */}
-            <div className="border rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-4">현재 데이터 상태</h2>
+            <div className="border rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-2.5">현재 데이터 상태</h2>
               <button
                 onClick={checkDataStatus}
                 disabled={loading}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                className="bg-[#0062ff] text-white px-4 py-2 rounded hover:bg-[#0052d6] disabled:opacity-50"
               >
                 {loading ? '확인중...' : '데이터 상태 확인'}
               </button>
@@ -91,12 +91,12 @@ export default function ResetDataPage() {
             </div>
 
             {/* 데이터 초기화 */}
-            <div className="border rounded-lg p-6 border-red-200">
-              <h2 className="text-lg font-semibold mb-4 text-red-700">⚠️ 데이터 초기화</h2>
-              <p className="text-sm text-gray-600 mb-4">
+            <div className="border rounded-lg p-4 border-red-200">
+              <h2 className="text-lg font-semibold mb-2.5 text-red-700">⚠️ 데이터 초기화</h2>
+              <p className="text-sm text-gray-600 mb-2.5">
                 다음 모든 엑셀 업로드 관련 데이터가 삭제됩니다:
               </p>
-              <ul className="text-sm text-gray-600 mb-4 list-disc list-inside">
+              <ul className="text-sm text-gray-600 mb-2.5 list-disc list-inside">
                 <li>PEI 보고서 (peiReport)</li>
                 <li>월별 집계 데이터 (monthlySummary)</li>
                 <li>접수 기록 (receptionRecord)</li>
@@ -112,14 +112,14 @@ export default function ResetDataPage() {
                 <li>파일 업로드 정보 (fileUpload)</li>
                 <li>업로드 로그 (uploadLog)</li>
               </ul>
-              <p className="text-sm text-green-600 mb-4">
+              <p className="text-sm text-green-600 mb-2.5">
                 <strong>보존되는 데이터:</strong> 목표 설정, 사용자 정보, 클리닉 정보, 리뷰 설정
               </p>
 
               <button
                 onClick={resetData}
                 disabled={loading}
-                className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 disabled:opacity-50"
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
               >
                 {loading ? '삭제중...' : '모든 데이터 삭제'}
               </button>
@@ -127,7 +127,7 @@ export default function ResetDataPage() {
 
             {/* 결과 표시 */}
             {result && (
-              <div className={`border rounded-lg p-6 ${result.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+              <div className={`border rounded-lg p-4 ${result.success ? 'border-[#d1d1cc] bg-green-50' : 'border-red-200 bg-red-50'}`}>
                 <h3 className="font-semibold mb-2">
                   {result.success ? '✅ 성공' : '❌ 실패'}
                 </h3>

@@ -9,7 +9,7 @@ export default function DoctorChart({ data }: { data: DataPoint[] }) {
     <TrendChart
       data={data.map((d) => ({ ...d, label: d.name }))}
       series={[
-        { key: "매출", name: "매출", type: "bar", color: "#3182f6", unit: "원" },
+        { key: "매출", name: "매출", type: "bar", color: "#0062ff", unit: "원" },
         { key: "환자수", name: "환자 수", type: "line", color: "#8b95a1", unit: "명", yAxisId: "right" },
         { key: "신환", name: "신환", type: "line", color: "#05c072", unit: "명", yAxisId: "right" },
       ]}

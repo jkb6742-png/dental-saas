@@ -26,7 +26,7 @@ const CATEGORY_ICON: Record<RequestCategory, React.ReactNode> = {
 
 const CATEGORY_TONE: Record<RequestCategory, string> = {
   IMAGE: "bg-[#fff4e6] text-[#f59e0b]",
-  CONTENT: "bg-[#ebf3fe] text-[#3182f6]",
+  CONTENT: "bg-[#e8f0ff] text-[#0062ff]",
   WEBSITE: "bg-[#e8f7f1] text-[#05c072]",
   REPORT: "bg-[#f3eefe] text-[#7c5cff]",
   ADS: "bg-[#fff0f1] text-[#f04452]",
@@ -60,7 +60,7 @@ function daysLeft(iso: string | null) {
   return Math.round((due.getTime() - today.getTime()) / 86400000)
 }
 
-const inputCls = "w-full px-3.5 py-2.5 rounded-[10px] border border-[#e5e8eb] bg-white text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#3182f6]/15 transition"
+const inputCls = "w-full px-3.5 py-2.5 rounded-[10px] border border-[#d1d1cc] bg-white text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#0062ff]/15 transition"
 const labelCls = "block text-[13px] font-semibold text-[#4e5968] mb-1.5"
 
 type Props = {
@@ -135,13 +135,13 @@ export default function RequestsClient({ clinicId, initialRequests, isMaster, us
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 헤더 */}
-      <div className="flex items-start justify-between gap-4 border-b border-[#e5e8eb] pb-6">
+      <div className="flex items-start justify-between gap-3 border-b border-[#d1d1cc] pb-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <Inbox className="w-8 h-8 text-[#3182f6]" />
-            <h1 className="text-[28px] font-bold text-[#191f28]">요청사항</h1>
+            <Inbox className="w-8 h-8 text-[#0062ff]" />
+            <h1 className="text-[18px] font-bold text-[#191f28]">요청사항</h1>
           </div>
           <p className="text-[14px] text-[#6b7684]">
             이미지 제작, 원고, 홈페이지 수정 등 필요한 작업을 남겨 주세요. 접수 후 담당자가 진행 상황을 이곳에 업데이트합니다.
@@ -154,7 +154,7 @@ export default function RequestsClient({ clinicId, initialRequests, isMaster, us
 
       {/* 요약 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Stat label="진행 필요" value={counts.open} tone="text-[#3182f6]" />
+        <Stat label="진행 필요" value={counts.open} tone="text-[#0062ff]" />
         <Stat label="진행중" value={counts.inProgress} tone="text-[#f59e0b]" />
         <Stat label="이달 완료" value={counts.doneThisMonth} tone="text-[#05c072]" />
         <Stat label="전체 요청" value={counts.total} tone="text-[#191f28]" />
@@ -176,8 +176,8 @@ export default function RequestsClient({ clinicId, initialRequests, isMaster, us
             return (
               <div
                 key={c.key}
-                className={`group relative bg-white rounded-2xl p-4 shadow-[0_1px_3px_0_rgb(0_0_0/0.06)] border transition-all ${
-                  active ? "border-[#3182f6] ring-2 ring-[#3182f6]/15" : "border-transparent hover:border-[#e5e8eb]"
+                className={`group relative bg-white rounded-2xl p-4 border transition-all ${
+                  active ? "border-[#0062ff] ring-2 ring-[#0062ff]/15" : "border-transparent hover:border-[#d1d1cc]"
                 }`}
               >
                 <button onClick={() => setCategoryFilter(active ? "ALL" : c.key)} className="w-full text-left">
@@ -191,7 +191,7 @@ export default function RequestsClient({ clinicId, initialRequests, isMaster, us
                   </span>
                   <button
                     onClick={() => openCreate(c.key)}
-                    className="text-[12px] font-semibold text-[#3182f6] hover:underline flex items-center gap-0.5"
+                    className="text-[12px] font-semibold text-[#0062ff] hover:underline flex items-center gap-0.5"
                   >
                     요청하기 <ChevronRight className="w-3 h-3" />
                   </button>
@@ -203,8 +203,8 @@ export default function RequestsClient({ clinicId, initialRequests, isMaster, us
       </div>
 
       {/* 목록 */}
-      <div className="bg-white rounded-2xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06)] overflow-hidden">
-        <div className="px-5 py-3 border-b border-[#f2f4f6] flex items-center gap-1 overflow-x-auto">
+      <div className="bg-white rounded-2xl overflow-hidden border border-[#d1d1cc]">
+        <div className="px-5 py-3 border-b border-[#e0e0db] flex items-center gap-1 overflow-x-auto">
           {statusTabs.map((t) => {
             const active = statusFilter === t.key
             const n = t.key === "ALL" ? requests.length : t.key === "OPEN" ? counts.open : requests.filter((r) => r.status === t.key).length
@@ -272,7 +272,7 @@ export default function RequestsClient({ clinicId, initialRequests, isMaster, us
 
 function Stat({ label, value, tone }: { label: string; value: number; tone: string }) {
   return (
-    <div className="bg-white rounded-2xl px-5 py-4 shadow-[0_1px_3px_0_rgb(0_0_0/0.06)]">
+    <div className="bg-white rounded-2xl px-5 py-4 border border-[#d1d1cc]">
       <div className="text-[13px] text-[#8b95a1]">{label}</div>
       <div className={`text-[26px] font-bold mt-1 ${tone}`}>
         {value}
@@ -290,7 +290,7 @@ function RequestRow({ r, onClick }: { r: Req; onClick: () => void }) {
   const overdue = left !== null && left < 0 && OPEN_STATUSES.includes(r.status)
   return (
     <li>
-      <button onClick={onClick} className="w-full text-left px-5 py-4 hover:bg-[#f9fafb] transition flex items-start gap-4">
+      <button onClick={onClick} className="w-full text-left px-5 py-4 hover:bg-[#f2f2ef] transition flex items-start gap-3">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${CATEGORY_TONE[r.category]}`}>{CATEGORY_ICON[r.category]}</div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -316,7 +316,7 @@ function RequestRow({ r, onClick }: { r: Req; onClick: () => void }) {
             {r.comments.length > 0 && (
               <span className="flex items-center gap-1"><Send className="w-3 h-3" /> {r.comments.length}</span>
             )}
-            {r.assignee && <span className="text-[#3182f6]">담당 {r.assignee}</span>}
+            {r.assignee && <span className="text-[#0062ff]">담당 {r.assignee}</span>}
           </div>
         </div>
         <ChevronRight className="w-4 h-4 text-[#d1d6db] shrink-0 mt-3" />
@@ -393,8 +393,8 @@ function CreateModal({ clinicId, preset, onClose, onCreated }: { clinicId: strin
 
   return (
     <Overlay onClose={onClose}>
-      <div className="w-full max-w-[720px] bg-white rounded-2xl shadow-xl max-h-[90vh] flex flex-col">
-        <div className="px-6 py-4 border-b border-[#f2f4f6] flex items-center justify-between">
+      <div className="w-full max-w-[720px] bg-white rounded-2xl shadow-xl max-h-[90vh] flex flex-col border border-[#d1d1cc]">
+        <div className="px-4 py-4 border-b border-[#e0e0db] flex items-center justify-between">
           <div>
             <h2 className="text-[18px] font-bold text-[#191f28]">새 요청</h2>
             <p className="text-[13px] text-[#8b95a1] mt-0.5">{def ? def.label : "먼저 요청 종류를 골라 주세요"}</p>
@@ -402,7 +402,7 @@ function CreateModal({ clinicId, preset, onClose, onCreated }: { clinicId: strin
           <button onClick={onClose} className="w-9 h-9 rounded-xl hover:bg-[#f2f4f6] flex items-center justify-center text-[#8b95a1]"><X className="w-4 h-4" /></button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-5">
           {/* 1. 카테고리 */}
           <div>
             <label className={labelCls}>요청 종류</label>
@@ -413,7 +413,7 @@ function CreateModal({ clinicId, preset, onClose, onCreated }: { clinicId: strin
                   <button
                     key={c.key}
                     onClick={() => pick(c.key)}
-                    className={`text-left p-3 rounded-xl border transition ${active ? "border-[#3182f6] bg-[#ebf3fe]" : "border-[#e5e8eb] hover:bg-[#f9fafb]"}`}
+                    className={`text-left p-3 rounded-xl border transition ${active ? "border-[#0062ff] bg-[#e8f0ff]" : "border-[#d1d1cc] hover:bg-[#f2f2ef]"}`}
                   >
                     <div className="flex items-center gap-2">
                       <span className={`w-7 h-7 rounded-lg flex items-center justify-center ${CATEGORY_TONE[c.key]}`}>{CATEGORY_ICON[c.key]}</span>
@@ -434,7 +434,7 @@ function CreateModal({ clinicId, preset, onClose, onCreated }: { clinicId: strin
               </div>
 
               {def.fields.length > 0 && (
-                <div className="rounded-xl bg-[#f9fafb] p-4 space-y-4">
+                <div className="rounded-xl bg-[#f2f2ef] p-4 space-y-2.5">
                   <div className="text-[12px] font-semibold text-[#8b95a1] uppercase tracking-wide">{def.short} 세부 정보</div>
                   {def.fields.map((f) => (
                     <DetailInput key={f.key} field={f} value={details[f.key] ?? ""} onChange={(v) => setDetails((d) => ({ ...d, [f.key]: v }))} />
@@ -453,7 +453,7 @@ function CreateModal({ clinicId, preset, onClose, onCreated }: { clinicId: strin
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelCls}>희망 완료일</label>
                   <input type="date" className={inputCls} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
@@ -468,8 +468,8 @@ function CreateModal({ clinicId, preset, onClose, onCreated }: { clinicId: strin
                         onClick={() => setPriority(p)}
                         className={`flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold border transition ${
                           priority === p
-                            ? p === "HIGH" ? "bg-[#fff0f1] border-[#f04452] text-[#f04452]" : "bg-[#ebf3fe] border-[#3182f6] text-[#3182f6]"
-                            : "border-[#e5e8eb] text-[#6b7684] hover:bg-[#f9fafb]"
+                            ? p === "HIGH" ? "bg-[#fff0f1] border-[#f04452] text-[#f04452]" : "bg-[#e8f0ff] border-[#0062ff] text-[#0062ff]"
+                            : "border-[#d1d1cc] text-[#6b7684] hover:bg-[#f2f2ef]"
                         }`}
                       >
                         {PRIORITY_META[p].label}
@@ -485,7 +485,7 @@ function CreateModal({ clinicId, preset, onClose, onCreated }: { clinicId: strin
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => { e.preventDefault(); addFiles(e.dataTransfer.files) }}
                   onClick={() => fileRef.current?.click()}
-                  className="border-2 border-dashed border-[#e5e8eb] rounded-xl p-5 text-center cursor-pointer hover:border-[#3182f6] hover:bg-[#f9fafb] transition"
+                  className="border-2 border-dashed border-[#d1d1cc] rounded-xl p-3.5 text-center cursor-pointer hover:border-[#0062ff] hover:bg-[#f2f2ef] transition"
                 >
                   <Paperclip className="w-5 h-5 text-[#b0b8c1] mx-auto mb-1" />
                   <p className="text-[13px] text-[#6b7684]">클릭하거나 파일을 끌어다 놓으세요</p>
@@ -494,7 +494,7 @@ function CreateModal({ clinicId, preset, onClose, onCreated }: { clinicId: strin
                 {files.length > 0 && (
                   <ul className="mt-2 space-y-1">
                     {files.map((f, i) => (
-                      <li key={i} className="flex items-center justify-between text-[13px] bg-[#f9fafb] rounded-lg px-3 py-2">
+                      <li key={i} className="flex items-center justify-between text-[13px] bg-[#f2f2ef] rounded-lg px-3 py-2">
                         <span className="truncate text-[#4e5968]">{f.name} <span className="text-[#b0b8c1]">{fmtSize(f.size)}</span></span>
                         <button onClick={() => setFiles(files.filter((_, j) => j !== i))} className="text-[#8b95a1] hover:text-[#f04452]"><X className="w-3.5 h-3.5" /></button>
                       </li>
@@ -512,7 +512,7 @@ function CreateModal({ clinicId, preset, onClose, onCreated }: { clinicId: strin
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-[#f2f4f6] flex justify-end gap-2">
+        <div className="px-4 py-4 border-t border-[#e0e0db] flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>취소</Button>
           <Button onClick={submit} loading={submitting} disabled={!category}>요청 등록</Button>
         </div>
@@ -603,7 +603,7 @@ function DetailDrawer({ r, isMaster, userId, onClose, onUpdated, onDeleted }: {
   return (
     <Overlay onClose={onClose} align="right">
       <div className="w-full max-w-[640px] h-full bg-white shadow-2xl flex flex-col">
-        <div className="px-6 py-4 border-b border-[#f2f4f6] flex items-start justify-between gap-3">
+        <div className="px-4 py-4 border-b border-[#e0e0db] flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[12px] font-semibold ${CATEGORY_TONE[r.category]}`}>{CATEGORY_ICON[r.category]}<span>{cat.label}</span></span>
@@ -618,9 +618,9 @@ function DetailDrawer({ r, isMaster, userId, onClose, onUpdated, onDeleted }: {
 
         <div className="flex-1 overflow-y-auto">
           {/* 진행 단계 */}
-          <div className="px-6 py-4 border-b border-[#f2f4f6]">
+          <div className="px-4 py-4 border-b border-[#e0e0db]">
             <StatusSteps status={r.status} />
-            <div className="flex items-center gap-4 mt-3 text-[12px] text-[#6b7684] flex-wrap">
+            <div className="flex items-center gap-3 mt-3 text-[12px] text-[#6b7684] flex-wrap">
               <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> 희망 {fmtDate(r.dueDate)}{left !== null && OPEN_STATUSES.includes(r.status) && (left < 0 ? <span className="text-[#f04452] font-semibold"> ({-left}일 지남)</span> : <span> (D-{left})</span>)}</span>
               {r.assignee && <span>담당 <b className="text-[#191f28]">{r.assignee}</b></span>}
               {r.completedAt && <span className="flex items-center gap-1 text-[#05c072]"><CheckCircle2 className="w-3.5 h-3.5" /> {fmtDate(r.completedAt, true)} 완료</span>}
@@ -629,7 +629,7 @@ function DetailDrawer({ r, isMaster, userId, onClose, onUpdated, onDeleted }: {
 
           {/* 마스터 처리 패널 */}
           {isMaster && (
-            <div className="px-6 py-4 border-b border-[#f2f4f6] bg-[#f9fafb] space-y-3">
+            <div className="px-4 py-4 border-b border-[#e0e0db] bg-[#f2f2ef] space-y-3">
               <div className="text-[12px] font-semibold text-[#8b95a1] uppercase tracking-wide">처리 (마스터)</div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -662,14 +662,14 @@ function DetailDrawer({ r, isMaster, userId, onClose, onUpdated, onDeleted }: {
 
           {/* 결과 안내 (원장 뷰) */}
           {!isMaster && (r.resultNote || resultFiles.length > 0) && (
-            <div className="px-6 py-4 border-b border-[#f2f4f6] bg-[#e8f7f1]/60">
+            <div className="px-4 py-4 border-b border-[#e0e0db] bg-[#e8f7f1]/60">
               <div className="text-[12px] font-semibold text-[#05c072] uppercase tracking-wide mb-1.5">결과 안내</div>
               {r.resultNote && <p className="text-[14px] text-[#191f28] whitespace-pre-wrap">{r.resultNote}</p>}
             </div>
           )}
 
           {resultFiles.length > 0 && (
-            <div className="px-6 py-4 border-b border-[#f2f4f6]">
+            <div className="px-4 py-4 border-b border-[#e0e0db]">
               <div className="text-[12px] font-semibold text-[#8b95a1] uppercase tracking-wide mb-2">결과물</div>
               <FileList files={resultFiles} />
             </div>
@@ -677,14 +677,14 @@ function DetailDrawer({ r, isMaster, userId, onClose, onUpdated, onDeleted }: {
 
           {/* 세부 정보 */}
           {Object.keys(r.details).length > 0 && (
-            <div className="px-6 py-4 border-b border-[#f2f4f6]">
+            <div className="px-4 py-4 border-b border-[#e0e0db]">
               <div className="text-[12px] font-semibold text-[#8b95a1] uppercase tracking-wide mb-2">{cat.short} 세부 정보</div>
               <dl className="grid grid-cols-[120px_1fr] gap-y-2 text-[13px]">
                 {cat.fields.filter((f) => r.details[f.key]).map((f) => (
                   <div key={f.key} className="contents">
                     <dt className="text-[#8b95a1]">{f.label}</dt>
                     <dd className="text-[#191f28] whitespace-pre-wrap break-words">
-                      {f.type === "url" ? r.details[f.key].split("\n").map((u, i) => <a key={i} href={u} target="_blank" rel="noreferrer" className="text-[#3182f6] hover:underline block break-all">{u}</a>) : r.details[f.key]}
+                      {f.type === "url" ? r.details[f.key].split("\n").map((u, i) => <a key={i} href={u} target="_blank" rel="noreferrer" className="text-[#0062ff] hover:underline block break-all">{u}</a>) : r.details[f.key]}
                     </dd>
                   </div>
                 ))}
@@ -692,7 +692,7 @@ function DetailDrawer({ r, isMaster, userId, onClose, onUpdated, onDeleted }: {
             </div>
           )}
 
-          <div className="px-6 py-4 border-b border-[#f2f4f6]">
+          <div className="px-4 py-4 border-b border-[#e0e0db]">
             <div className="text-[12px] font-semibold text-[#8b95a1] uppercase tracking-wide mb-2">요청 내용</div>
             <p className="text-[14px] text-[#191f28] whitespace-pre-wrap leading-relaxed">{r.description}</p>
             {refFiles.length > 0 && (
@@ -704,7 +704,7 @@ function DetailDrawer({ r, isMaster, userId, onClose, onUpdated, onDeleted }: {
           </div>
 
           {/* 댓글 */}
-          <div className="px-6 py-4">
+          <div className="px-4 py-4">
             <div className="text-[12px] font-semibold text-[#8b95a1] uppercase tracking-wide mb-3">대화 {r.comments.length > 0 && `(${r.comments.length})`}</div>
             {r.comments.length === 0 ? (
               <p className="text-[13px] text-[#b0b8c1]">아직 댓글이 없습니다. 추가 설명이나 질문을 남겨 주세요.</p>
@@ -715,7 +715,7 @@ function DetailDrawer({ r, isMaster, userId, onClose, onUpdated, onDeleted }: {
                   const mine = staff === isMaster
                   return (
                     <li key={c.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${staff ? "bg-[#ebf3fe]" : "bg-[#f2f4f6]"}`}>
+                      <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${staff ? "bg-[#e8f0ff]" : "bg-[#f2f4f6]"}`}>
                         <div className="text-[11px] text-[#8b95a1] mb-0.5">{staff ? "THINKLAB" : c.author} · {fmtDate(c.createdAt, true)}</div>
                         <div className="text-[14px] text-[#191f28] whitespace-pre-wrap">{c.content}</div>
                       </div>
@@ -732,7 +732,7 @@ function DetailDrawer({ r, isMaster, userId, onClose, onUpdated, onDeleted }: {
         )}
 
         {/* 입력 */}
-        <div className="px-6 py-3 border-t border-[#f2f4f6] space-y-2">
+        <div className="px-4 py-3 border-t border-[#e0e0db] space-y-2">
           {commentFiles.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {commentFiles.map((f, i) => (
@@ -786,12 +786,12 @@ function StatusSteps({ status }: { status: RequestStatus }) {
         return (
           <div key={s} className="flex items-center flex-1 last:flex-none">
             <div className="flex flex-col items-center">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${done ? "bg-[#05c072] text-white" : cur ? "bg-[#3182f6] text-white ring-4 ring-[#3182f6]/15" : "bg-[#f2f4f6] text-[#b0b8c1]"}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${done ? "bg-[#05c072] text-white" : cur ? "bg-[#0062ff] text-white ring-4 ring-[#0062ff]/15" : "bg-[#f2f4f6] text-[#b0b8c1]"}`}>
                 {done ? <CheckCircle2 className="w-3.5 h-3.5" /> : i + 1}
               </div>
               <div className={`text-[11px] mt-1 whitespace-nowrap ${cur ? "text-[#191f28] font-semibold" : "text-[#8b95a1]"}`}>{STATUS_META[s].label}</div>
             </div>
-            {i < steps.length - 1 && <div className={`flex-1 h-[2px] mx-2 mb-4 ${i < idx ? "bg-[#05c072]" : "bg-[#f2f4f6]"}`} />}
+            {i < steps.length - 1 && <div className={`flex-1 h-[2px] mx-2 mb-2.5 ${i < idx ? "bg-[#05c072]" : "bg-[#f2f4f6]"}`} />}
           </div>
         )
       })}
@@ -816,7 +816,7 @@ function FileList({ files }: { files: Req["attachments"] }) {
         </div>
       )}
       {others.map((f) => (
-        <a key={f.id} href={f.url} className="flex items-center justify-between text-[13px] bg-[#f9fafb] hover:bg-[#f2f4f6] rounded-lg px-3 py-2 transition">
+        <a key={f.id} href={f.url} className="flex items-center justify-between text-[13px] bg-[#f2f2ef] hover:bg-[#f2f4f6] rounded-lg px-3 py-2 transition">
           <span className="truncate text-[#4e5968] flex items-center gap-2"><Paperclip className="w-3.5 h-3.5 text-[#b0b8c1]" />{f.name} <span className="text-[#b0b8c1]">{fmtSize(f.size)}</span></span>
           <Download className="w-3.5 h-3.5 text-[#8b95a1]" />
         </a>
@@ -828,7 +828,7 @@ function FileList({ files }: { files: Req["attachments"] }) {
 function Overlay({ children, onClose, align = "center" }: { children: React.ReactNode; onClose: () => void; align?: "center" | "right" }) {
   return (
     <div
-      className={`fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex ${align === "right" ? "justify-end" : "items-center justify-center p-4"}`}
+      className={`fixed inset-0 z-50 bg-black/40-[2px] flex ${align === "right" ? "justify-end" : "items-center justify-center p-4"}`}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       {children}

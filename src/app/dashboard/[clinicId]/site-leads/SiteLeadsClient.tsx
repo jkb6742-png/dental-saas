@@ -6,7 +6,7 @@ import { Inbox, RefreshCw, Settings, AlertCircle, CheckCircle2, Link2, Unlink, E
 import Button from "@/components/ui/Button"
 import Badge from "@/components/ui/Badge"
 
-export type SourceInfo = { connected: boolean; siteUrl: string; lastSyncAt: string | null; lastSyncStatus: string | null; lastSyncError: string | null }
+export type SourceInfo = { connected: boolean; siteUrl: string; lastSyncAt: string | null; lastSyncStatus: string | null; lastSyncError: string | null; alertEmails: string }
 export type LeadItem = {
   id: string; siteLeadId: number; receivedAt: string; status: string; statusLabel: string | null
   name: string | null; phone: string | null; category: string | null; subject: string | null; channel: string | null
@@ -26,9 +26,9 @@ const STATUSES: { key: string; label: string; variant: "blue" | "green" | "red" 
 ]
 const CHANNEL: Record<string, string> = { quick_form: "빠른상담", counsel_form: "상담 신청서", contact_form: "상담 게시판" }
 
-const inputCls = "w-full px-3.5 py-2.5 rounded-[10px] border border-[#e5e8eb] bg-white text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#3182f6]/15 transition"
+const inputCls = "w-full px-3.5 py-2.5 rounded-[10px] border border-[#d1d1cc] bg-white text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#0062ff]/15 transition"
 const labelCls = "block text-[13px] font-semibold text-[#4e5968] mb-1.5"
-const card = "bg-white rounded-2xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06)]"
+const card = "bg-white rounded-2xl border border-[#d1d1cc]"
 // 서버·클라이언트 동일 출력: KST 고정 포맷
 const fmtKst = (iso: string) => {
   const d = new Date(new Date(iso).getTime() + 9 * 3600 * 1000)
@@ -88,10 +88,10 @@ export default function SiteLeadsClient({ clinicId, isMaster, source, leads, ret
   const statusMeta = (k: string) => STATUSES.find((s) => s.key === k)
 
   return (
-    <div className="max-w-6xl mx-auto space-y-5">
+    <div className="space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-[22px] font-bold text-[#191f28] flex items-center gap-2"><Inbox className="w-5 h-5 text-[#3182f6]" /> 홈페이지 문의</h1>
+          <h1 className="text-[22px] font-bold text-[#191f28] flex items-center gap-2"><Inbox className="w-5 h-5 text-[#0062ff]" /> 홈페이지 문의</h1>
           <p className="text-[13px] text-[#8b95a1] mt-1">
             홈페이지 상담 게시판·빠른상담으로 들어온 문의입니다. 15분마다 자동으로 가져옵니다.
             {source.lastSyncAt && <> 마지막 수집 {fmtKst(source.lastSyncAt)}</>}
@@ -139,7 +139,7 @@ export default function SiteLeadsClient({ clinicId, isMaster, source, leads, ret
             <div className="flex flex-wrap items-center gap-2">
               {STATUSES.map((s) => (
                 <button key={s.key} onClick={() => toggle(s.key)}
-                  className={`px-3 py-1.5 rounded-full text-[13px] font-semibold border transition ${statusSel.includes(s.key) ? "bg-[#3182f6] border-[#3182f6] text-white" : "bg-white border-[#e5e8eb] text-[#4e5968] hover:bg-[#f9fafb]"}`}>
+                  className={`px-3 py-1.5 rounded-full text-[13px] font-semibold border transition ${statusSel.includes(s.key) ? "bg-[#0062ff] border-[#0062ff] text-white" : "bg-white border-[#d1d1cc] text-[#4e5968] hover:bg-[#f2f2ef]"}`}>
                   {s.label}
                 </button>
               ))}
@@ -160,7 +160,7 @@ export default function SiteLeadsClient({ clinicId, isMaster, source, leads, ret
               <div className="overflow-x-auto -mx-4">
                 <table className="w-full text-[13px] min-w-[760px]">
                   <thead>
-                    <tr className="text-left text-[12px] text-[#8b95a1] border-b border-[#f2f4f6]">
+                    <tr className="text-left text-[12px] text-[#8b95a1] border-b border-[#e0e0db]">
                       <th className="px-4 py-2 font-medium">접수</th>
                       <th className="px-2 py-2 font-medium">이름</th>
                       <th className="px-2 py-2 font-medium">연락처</th>
@@ -175,11 +175,11 @@ export default function SiteLeadsClient({ clinicId, isMaster, source, leads, ret
                       const st = statusMeta(l.status)
                       const tel = (l.phone ?? "").replace(/[^\d+]/g, "")
                       return (
-                        <tr key={l.id} className="border-b border-[#f2f4f6] last:border-0 align-top">
+                        <tr key={l.id} className="border-b border-[#e0e0db] last:border-0 align-top">
                           <td className="px-4 py-3 whitespace-nowrap text-[#4e5968]">{fmtKst(l.receivedAt)}</td>
                           <td className="px-2 py-3 font-semibold text-[#191f28] whitespace-nowrap">{l.name || "이름 없음"}</td>
                           <td className="px-2 py-3 whitespace-nowrap">
-                            {tel ? <a href={`tel:${tel}`} className="text-[#3182f6] inline-flex items-center gap-1"><Phone className="w-3 h-3" />{l.phone}</a> : <span className="text-[#b0b8c1]">—</span>}
+                            {tel ? <a href={`tel:${tel}`} className="text-[#0062ff] inline-flex items-center gap-1"><Phone className="w-3 h-3" />{l.phone}</a> : <span className="text-[#b0b8c1]">—</span>}
                           </td>
                           <td className="px-2 py-3 text-[#191f28]">
                             <div className="text-[12px] text-[#8b95a1]">{[l.category, l.channel ? CHANNEL[l.channel] ?? l.channel : null].filter(Boolean).join(" · ") || "—"}</div>
@@ -191,7 +191,7 @@ export default function SiteLeadsClient({ clinicId, isMaster, source, leads, ret
                           </td>
                           <td className="px-2 py-3 whitespace-nowrap"><Badge variant={st?.variant ?? "gray"}>{l.statusLabel || st?.label || l.status}</Badge></td>
                           <td className="px-4 py-3 text-right whitespace-nowrap">
-                            <a href={`${source.siteUrl}/dashboard/lead.php?id=${l.siteLeadId}`} target="_blank" rel="noopener noreferrer" className="text-[12px] text-[#4e5968] hover:text-[#3182f6] inline-flex items-center gap-1">
+                            <a href={`${source.siteUrl}/dashboard/lead.php?id=${l.siteLeadId}`} target="_blank" rel="noopener noreferrer" className="text-[12px] text-[#4e5968] hover:text-[#0062ff] inline-flex items-center gap-1">
                               상세·상태 변경 <ExternalLink className="w-3 h-3" />
                             </a>
                           </td>
@@ -214,7 +214,7 @@ export default function SiteLeadsClient({ clinicId, isMaster, source, leads, ret
 }
 
 function Kpi({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "blue" | "red" }) {
-  const color = tone === "blue" ? "text-[#3182f6]" : tone === "red" ? "text-[#f04452]" : "text-[#191f28]"
+  const color = tone === "blue" ? "text-[#0062ff]" : tone === "red" ? "text-[#f04452]" : "text-[#191f28]"
   return (
     <div className={`${card} px-5 py-4`}>
       <div className="text-[12px] text-[#8b95a1]">{label}</div>
@@ -229,6 +229,19 @@ function SetupPanel({ clinicId, source, onDone }: { clinicId: string; source: So
   const [token, setToken] = useState("")
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [emails, setEmails] = useState(source.alertEmails)
+  const [mailMsg, setMailMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null)
+
+  const [testing, setTesting] = useState(false)
+  const saveEmails = async (test = false) => {
+    setMailMsg(null); if (test) setTesting(true)
+    const res = await fetch("/api/site-leads/source", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clinicId, alertEmails: emails, test }) }).finally(() => setTesting(false))
+    const json = await res.json()
+    if (!res.ok) return setMailMsg({ kind: "err", text: json.error })
+    setEmails(json.alertEmails)
+    if (json.tested) return setMailMsg({ kind: "ok", text: "테스트 메일을 보냈습니다. 받은편지함(안 보이면 스팸함)을 확인해 주세요" })
+    setMailMsg(json.mailReady ? { kind: "ok", text: json.alertEmails ? "저장했습니다. 새 문의가 들어오면 메일을 보냅니다" : "메일 알림을 껐습니다" } : { kind: "err", text: "저장했지만 서버 메일(SMTP) 설정이 없어 발송되지 않습니다" })
+  }
 
   const save = async () => {
     setSaving(true); setErr(null)
@@ -251,10 +264,10 @@ function SetupPanel({ clinicId, source, onDone }: { clinicId: string; source: So
   }
 
   return (
-    <div className={`${card} p-6 space-y-4`}>
+    <div className={`${card} p-4 space-y-2.5`}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-[16px] font-semibold text-[#191f28] flex items-center gap-2"><Link2 className="w-4 h-4 text-[#3182f6]" /> 홈페이지 연결 (마스터)</h3>
+          <h3 className="text-[16px] font-semibold text-[#191f28] flex items-center gap-2"><Link2 className="w-4 h-4 text-[#0062ff]" /> 홈페이지 연결 (마스터)</h3>
           <p className="text-[13px] text-[#8b95a1] mt-1">
             홈페이지에 최고관리자로 로그인 → <b>/dashboard/insight.php</b> 에서 토큰을 발급해 붙여 넣으세요. 저장하면 연결을 확인하고 최근 1년치 문의를 가져옵니다.
           </p>
@@ -277,6 +290,18 @@ function SetupPanel({ clinicId, source, onDone }: { clinicId: string; source: So
       <div className="flex justify-end">
         <Button onClick={save} loading={saving} disabled={!siteUrl || (!source.connected && !token)}>{source.connected ? "저장" : "연결"}</Button>
       </div>
+      {source.connected && (
+        <div className="pt-4 border-t border-[#e0e0db]">
+          <label className={labelCls}>새 문의 메일 알림</label>
+          <div className="flex gap-2">
+            <input className={inputCls} value={emails} onChange={(e) => setEmails(e.target.value)} placeholder="받을 메일 (여러 개는 쉼표로) · 비우면 끔" />
+            <Button variant="secondary" onClick={() => saveEmails()}>저장</Button>
+            <Button variant="secondary" onClick={() => saveEmails(true)} loading={testing} disabled={!emails.trim()}>테스트 메일</Button>
+          </div>
+          <p className="mt-1.5 text-[12px] text-[#8b95a1]">새 문의가 들어오면 1분 안에 메일로 보냅니다. 이름·연락처는 일부를 가려서 보냅니다.</p>
+          {mailMsg && <p className={`mt-1.5 text-[13px] ${mailMsg.kind === "ok" ? "text-[#05c072]" : "text-[#f04452]"}`}>{mailMsg.text}</p>}
+        </div>
+      )}
     </div>
   )
 }

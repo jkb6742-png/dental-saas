@@ -37,6 +37,17 @@ export const SCALE = [
 ] as const
 export const NA_LABEL = "경험 없음 X"
 
+// 지인 권유 문항을 글자로 받는 치과용. 저장값은 0~10 척도 그대로라 ÷2 하면 5~1점이 되어 PEI 계산·CSV 가 바뀌지 않는다.
+export const RECOMMEND_WORDS = [
+  { value: 10, label: "매우 만족" },
+  { value: 8, label: "만족" },
+  { value: 6, label: "보통" },
+  { value: 4, label: "불만족" },
+  { value: 2, label: "매우 불만족" },
+] as const
+export const recommendWord = (v: number | null | undefined) =>
+  v == null ? "" : RECOMMEND_WORDS.find((w) => w.value === v)?.label ?? String(v)
+
 export type ScoreKey =
   | "qPhone" | "qDesk" | "qConsult" | "qDoctorTalk" | "qHygienist"
   | "qDoctorCare" | "qFacility" | "qHomepage" | "qWaiting"
@@ -52,7 +63,7 @@ export function scoreQuestions(facilityQuestion: string): ScoreQuestion[] {
     { key: "qDoctorTalk", no: 7, text: "의사의 진료에 대한 상담은 만족하였습니까?", label: "의료진 진료 상담", allowNA: false },
     { key: "qHygienist", no: 8, text: "진료 시 치위생사의 고객응대는 만족하였습니까?", label: "진료실 직원 만족도", allowNA: false },
     { key: "qDoctorCare", no: 9, text: "진료 시 의사의 응대는 만족하였습니까?", label: "의료진 진료 응대", allowNA: false },
-    { key: "qFacility", no: 10, text: facilityQuestion, label: "주차·내부 시설", allowNA: true },
+    { key: "qFacility", no: 10, text: facilityQuestion, label: facilityQuestion.includes("주차") ? "주차·내부 시설" : "내부 시설", allowNA: true },
     { key: "qHomepage", no: 11, text: "홈페이지는 이용하기 편리하였습니까?", label: "홈페이지", allowNA: true },
     { key: "qWaiting", no: 12, text: "진료를 위한 대기시간은 적당하였습니까?", label: "진료 대기시간", allowNA: false },
   ]
@@ -85,7 +96,7 @@ export const Q_IMPROVE = "15. 치과에 다니시면서 느끼셨던 개선이 �
 // 기본 문항(id = 성별·연령·점수 키 등)은 응답이 정해진 열에 저장돼 PEI·CSV 에 쓰이고, 유형은 바꿀 수 없다.
 // 직접 더한 문항(id = c_xxxx)은 응답의 answers JSON 에 { id: 값 } 으로 저장된다.
 export type QType = "single" | "multi" | "doctor" | "scale5" | "scale10" | "short" | "long"
-export type QuestionDef = { id: string; type: QType; text: string; required: boolean; options?: string[]; allowNA?: boolean }
+export type QuestionDef = { id: string; type: QType; text: string; required: boolean; options?: string[]; allowNA?: boolean; words?: boolean }
 
 export const QTYPE_LABEL: Record<QType, string> = {
   single: "객관식 (하나 선택)", multi: "체크박스 (여러 개 선택)", doctor: "의료진 선택", scale5: "5점 척도",
@@ -107,7 +118,9 @@ export const BUILTIN: Record<string, BuiltinMeta> = {
   improvement: { type: "long", label: "개선 필요" },
 }
 export const isBuiltin = (id: string) => id in BUILTIN
-export const questionLabel = (q: QuestionDef) => BUILTIN[q.id]?.label ?? q.text
+/** 기본 문항 이름. 시설 문항은 주차를 묻지 않는 치과(지음 등)면 "내부 시설" */
+export const itemLabel = (id: string, text: string) => (id === "qFacility" && !text.includes("주차") ? "내부 시설" : BUILTIN[id]?.label ?? id)
+export const questionLabel = (q: QuestionDef) => (BUILTIN[q.id] ? itemLabel(q.id, q.text) : q.text)
 
 /** 구글폼과 같은 15문항 + 받은 진료 — 문항 구성을 아직 저장하지 않은 설문은 이것으로 보인다 */
 export function defaultQuestions(facilityQuestion: string, treatments: string[]): QuestionDef[] {
@@ -163,6 +176,7 @@ const photoSet = (code: string, n: number) => Array.from({ length: n }, (_, i) =
 export const DEFAULT_SURVEYS: Record<string, {
   doctors: string[]; facilityQuestion: string; treatments?: string[]; slogan?: string; logo?: string
   photos?: (string | null)[] // doctors 와 같은 순서
+  recommendWords?: boolean // 지인 권유 문항을 숫자 대신 글자로 받는다
 }> = {
   중산사과나무: {
     doctors: ["김보라 대표원장 (구강악안면외과, 통합치의학 전문의)", "서치원 원장 (치과보철과 전문의)", "윤보영 원장 (통합치의학 전문의)"],
@@ -180,6 +194,7 @@ export const DEFAULT_SURVEYS: Record<string, {
     doctors: ["윤희균 원장 (통합치의학 전문의)", "이관주 원장 (치주과 전문의)"],
     facilityQuestion: FACILITY_ONLY,
     slogan: "더 나은 삶을 위해 최상의 진료를 약속하는 지음치과입니다",
+    recommendWords: true,
     photos: photoSet("지음", 2),
   },
   하얀드림: {

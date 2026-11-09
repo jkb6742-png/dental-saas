@@ -2,8 +2,8 @@
 
 export function ChartSkeleton() {
   return (
-    <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 animate-pulse">
-      <div className="flex items-start justify-between mb-6">
+    <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4 animate-pulse">
+      <div className="flex items-start justify-between mb-3">
         <div>
           <div className="h-6 bg-slate-200 rounded w-48 mb-2"></div>
           <div className="h-4 bg-slate-200 rounded w-32"></div>
@@ -16,8 +16,8 @@ export function ChartSkeleton() {
 
 export function StatCardSkeleton() {
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 animate-pulse">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4 animate-pulse">
+      <div className="flex items-center justify-between mb-2.5">
         <div className="w-12 h-12 bg-slate-200 rounded-xl"></div>
       </div>
       <div className="space-y-1">
@@ -31,16 +31,16 @@ export function StatCardSkeleton() {
 
 export function TableSkeleton() {
   return (
-    <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 animate-pulse">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4 animate-pulse">
+      <div className="flex items-center gap-3 mb-3">
         <div className="w-6 h-6 bg-slate-200 rounded"></div>
         <div className="h-6 bg-slate-200 rounded w-64"></div>
         <div className="h-6 bg-slate-200 rounded w-20"></div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2.5">
         {/* Table header */}
-        <div className="flex gap-4 pb-4 border-b border-slate-200">
+        <div className="flex gap-3 pb-4 border-b border-[#d1d1cc]">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-4 bg-slate-200 rounded flex-1"></div>
           ))}
@@ -48,7 +48,7 @@ export function TableSkeleton() {
 
         {/* Table rows */}
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex gap-4 py-2">
+          <div key={i} className="flex gap-3 py-2">
             {Array.from({ length: 6 }).map((_, j) => (
               <div key={j} className="h-4 bg-slate-200 rounded flex-1"></div>
             ))}
@@ -61,7 +61,7 @@ export function TableSkeleton() {
 
 export function RegionFilterSkeleton() {
   return (
-    <div className="space-y-4 animate-pulse">
+    <div className="space-y-2.5 animate-pulse">
       {/* Search box */}
       <div className="h-10 bg-slate-200 rounded-xl"></div>
 

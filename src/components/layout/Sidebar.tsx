@@ -1,190 +1,161 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import {
-  LayoutDashboard,
-  TrendingUp,
-  Users,
-  Stethoscope,
-  MapPin,
-  FileText,
-  Upload,
-  Settings,
-  ChevronDown,
-  Building2,
-  MessageSquare,
-  MessageCircle,
-  BarChart2,
-  Globe,
-  Crown,
-  Shield,
-  Code,
-  Database,
-  Target,
-  Inbox,
-  Megaphone,
-  ClipboardList,
-} from "lucide-react"
-
-type NavItem = {
-  href: string
-  label: string
-  icon: React.ReactNode
-  group?: string
-}
-
-// 기본 메뉴 구성
-const baseNavItems: NavItem[] = [
-  { href: "/dashboard", label: "홈", icon: <LayoutDashboard className="w-4 h-4" /> },
-
-  { href: "/dashboard/revenue", label: "매출 분석", icon: <TrendingUp className="w-4 h-4" />, group: "매출" },
-
-  { href: "/dashboard/patients", label: "환자 통계", icon: <Users className="w-4 h-4" />, group: "환자" },
-  { href: "/dashboard/age", label: "연령별 분석", icon: <BarChart2 className="w-4 h-4" />, group: "환자" },
-  { href: "/dashboard/regions", label: "지역별 분석", icon: <Globe className="w-4 h-4" />, group: "환자" },
-
-  { href: "/dashboard/treatments", label: "진료항목", icon: <Stethoscope className="w-4 h-4" />, group: "진료" },
-  { href: "/dashboard/implants", label: "임플란트 통계", icon: <Stethoscope className="w-4 h-4" />, group: "진료" },
-
-  { href: "/dashboard/routes", label: "내원경로 ROI", icon: <MapPin className="w-4 h-4" />, group: "마케팅" },
-  { href: "/dashboard/site-leads", label: "홈페이지 문의", icon: <Inbox className="w-4 h-4" />, group: "마케팅" },
-  { href: "/dashboard/consultations", label: "상담 성과", icon: <MessageSquare className="w-4 h-4" />, group: "마케팅" },
-  { href: "/dashboard/reviews", label: "온라인 리뷰", icon: <MessageCircle className="w-4 h-4" />, group: "마케팅" },
-  { href: "/dashboard/naver-ads", label: "네이버 검색광고", icon: <Megaphone className="w-4 h-4" />, group: "마케팅" },
-
-  { href: "/dashboard/reports", label: "보고서", icon: <FileText className="w-4 h-4" />, group: "리포트" },
-  { href: "/dashboard/pei-survey", label: "PEI 설문", icon: <ClipboardList className="w-4 h-4" />, group: "리포트" },
-
-  { href: "/dashboard/action-plans", label: "실행계획", icon: <Target className="w-4 h-4" />, group: "관리" },
-
-  { href: "/dashboard/requests", label: "요청사항", icon: <Inbox className="w-4 h-4" />, group: "요청" },
-]
-
-// 마스터 전용: 데이터 업로드 / DB 관리
-const masterDataItems: NavItem[] = [
-  { href: "/dashboard/excel-upload", label: "📊 엑셀 업로드", icon: <Upload className="w-4 h-4" />, group: "데이터" },
-  { href: "/dashboard/database", label: "데이터베이스 관리", icon: <Database className="w-4 h-4" />, group: "데이터" },
-]
+import { usePathname, useSearchParams } from "next/navigation"
+import { Fragment, useEffect, useRef, useState } from "react"
+import { ChevronRight } from "lucide-react"
+import { NAV_GROUPS, findEntry, type NavChild, type NavEntry } from "./nav"
 
 type Props = {
-  clinicName: string
-  agencyName: string
   clinicId: string
   userRole?: string
 }
 
-export default function Sidebar({ clinicName, agencyName, clinicId, userRole }: Props) {
+const CHILD_HEIGHT = 34
+const FLYOUT_CHROME = 46 // 제목 줄 + 위아래 여백
+
+export default function Sidebar({ clinicId, userRole }: Props) {
   const pathname = usePathname()
+  const params = useSearchParams()
+  const isMaster = userRole === "MASTER"
+  const home = `/dashboard/${clinicId}`
+  const current = pathname.startsWith(`${home}/`) ? pathname.slice(home.length).split("/")[1] : ""
+  const activeEntry = findEntry(current)
 
-  // 마스터 계정 전용 메뉴 (컴포넌트 내부에서 정의)
-  const adminNavItems: NavItem[] = userRole === 'MASTER' ? [
-    { href: "/admin/users", label: "사용자 관리", icon: <Shield className="w-4 h-4" />, group: "관리자" },
-    { href: "/admin/invite-codes", label: "초대 코드", icon: <Code className="w-4 h-4" />, group: "관리자" },
-    { href: "/admin/reset", label: "데이터 초기화", icon: <Database className="w-4 h-4" />, group: "관리자" },
-  ] : []
+  const [open, setOpen] = useState<{ entry: NavEntry; top: number } | null>(null)
+  const root = useRef<HTMLDivElement>(null)
 
-  const navItems = userRole === 'MASTER'
-    ? [...baseNavItems, ...masterDataItems, ...adminNavItems]
-    : [...baseNavItems]
+  // 화면을 옮기면 닫는다
+  useEffect(() => setOpen(null), [pathname])
 
-  const resolvedNav = navItems.map((item) => ({
-    ...item,
-    href: item.href.replace("/dashboard", `/dashboard/${clinicId}`),
-  }))
-
-  // 그룹별로 구분선 삽입
-  const rendered: React.ReactNode[] = []
-  let lastGroup: string | undefined = undefined
-  resolvedNav.forEach((item, i) => {
-    if (i > 0 && item.group !== lastGroup && (item.group || lastGroup)) {
-      rendered.push(<div key={`div-${i}`} className="my-1 border-t border-[#f2f4f6]" />)
+  // 바깥을 누르거나 Esc 를 누르면 닫는다
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (!root.current?.contains(e.target as Node)) setOpen(null)
     }
-    lastGroup = item.group
-    const isActive =
-      item.href === `/dashboard/${clinicId}`
-        ? pathname === item.href
-        : pathname.startsWith(item.href)
-    rendered.push(
-      <Link
-        key={item.href}
-        href={item.href}
-        className={`flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-150 ${
-          isActive ? "bg-[#ebf3fe] text-[#3182f6]" : "text-[#4e5968] hover:bg-[#f9fafb] hover:text-[#191f28]"
-        }`}
-      >
-        <span className={isActive ? "text-[#3182f6]" : "text-[#b0b8c1]"}>{item.icon}</span>
-        {item.label}
-      </Link>
-    )
-  })
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(null)
+    }
+    document.addEventListener("mousedown", onDown)
+    document.addEventListener("keydown", onKey)
+    return () => {
+      document.removeEventListener("mousedown", onDown)
+      document.removeEventListener("keydown", onKey)
+    }
+  }, [open])
+
+  // 보고 있던 연·월은 메뉴를 옮겨도 유지한다
+  const year = params.get("year")
+  const month = params.get("month")
+  const query = year && month ? `?year=${year}&month=${month}` : ""
+
+  const childHref = (c: NavChild) => c.href ?? `${home}/${c.segment}${query}`
+  const groups = NAV_GROUPS.map((g) => g.filter((e) => !e.masterOnly || isMaster)).filter((g) => g.length)
+
+  const toggle = (entry: NavEntry, button: HTMLElement) => {
+    if (open?.entry === entry) {
+      setOpen(null)
+      return
+    }
+    const rect = button.getBoundingClientRect()
+    const height = (entry.children?.length ?? 0) * CHILD_HEIGHT + FLYOUT_CHROME
+    // 메뉴 높이만큼 아래가 모자라면 위로 올린다
+    setOpen({ entry, top: Math.max(8, Math.min(rect.top, window.innerHeight - height - 8)) })
+  }
+
+  const itemClass = (highlight: boolean) =>
+    `relative w-full flex flex-col items-center justify-center gap-1 h-[50px] px-0.5 ${
+      highlight
+        ? "bg-white text-[#0a0a0a] font-semibold shadow-[inset_2px_0_0_#0062ff]"
+        : "text-[#3d3d3a] hover:bg-[#e0e0db] hover:text-[#0a0a0a]"
+    }`
 
   return (
-    <aside className="w-[220px] min-h-screen bg-white border-r border-[#f2f4f6] flex flex-col">
-      {/* Logo */}
-      <div className="px-5 py-4 border-b border-[#f2f4f6]">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-            <span className="text-[16px] font-bold text-white">T</span>
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-[14px] font-bold text-[#191f28]">THINKLAB</span>
-            <span className="text-[12px] text-[#6b7280]">dental insight</span>
-          </div>
+    <div ref={root} className="shrink-0 h-screen">
+      <nav aria-label="주 메뉴" className="w-[76px] h-full bg-[#e9e9e5] border-r border-[#d1d1cc] flex flex-col">
+        <div className="h-[52px] shrink-0 flex items-center justify-center border-b border-[#d1d1cc]">
+          <i className="block w-[11px] h-[11px] rounded-[1px] bg-[#0062ff]" aria-hidden="true" />
         </div>
-      </div>
-
-      {/* Clinic selector */}
-      <div className="px-4 py-3 border-b border-[#f2f4f6]">
-        {userRole === 'MASTER' ? (
-          <Link
-            href="/dashboard"
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#f9fafb] hover:bg-[#f2f4f6] transition-colors group"
-          >
-            <div className="text-left">
-              <div className="text-[11px] text-[#8b95a1] flex items-center gap-1">
-                <Crown className="w-3 h-3" />
-                {agencyName}
-              </div>
-              <div className="text-[13px] font-semibold text-[#191f28] truncate max-w-[130px]">{clinicName}</div>
-            </div>
-            <ChevronDown className="w-4 h-4 text-[#b0b8c1] group-hover:text-[#6b7684] transition-colors" />
-          </Link>
-        ) : (
-          <div className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#f9fafb]">
-            <div className="text-left">
-              <div className="text-[11px] text-[#8b95a1]">{agencyName}</div>
-              <div className="text-[13px] font-semibold text-[#191f28] truncate max-w-[130px]">{clinicName}</div>
-            </div>
-          </div>
-        )}
-
-        {userRole === 'MASTER' && (
-          <div className="mt-2">
-            <div className="text-[10px] text-[#6b7684] px-3 py-1 bg-[#ebf3fe] rounded-md text-center">
-              💡 클릭하여 다른 치과로 변경
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-2 overflow-y-auto space-y-0.5">
-        {rendered}
+        <div className="flex-1 overflow-y-auto py-1" onScroll={() => setOpen(null)}>
+          {groups.map((group, g) => (
+            <Fragment key={g}>
+              {g > 0 && <div className="mx-3 my-1 border-t border-[#d1d1cc]" />}
+              {group.map((entry) => {
+                const Icon = entry.icon
+                const isOpen = open?.entry === entry
+                const highlight = isOpen || (!open && entry === activeEntry)
+                const inner = (
+                  <>
+                    <Icon className={`w-4 h-4 shrink-0 ${highlight ? "text-[#0062ff]" : "text-[#6f6f6a]"}`} aria-hidden="true" />
+                    <span className="text-[11px] leading-none whitespace-nowrap">{entry.short}</span>
+                  </>
+                )
+                if (entry.children) {
+                  return (
+                    <button
+                      key={entry.label}
+                      type="button"
+                      title={entry.label}
+                      aria-expanded={isOpen}
+                      aria-haspopup="true"
+                      aria-current={entry === activeEntry ? "page" : undefined}
+                      onClick={(e) => toggle(entry, e.currentTarget)}
+                      className={itemClass(highlight)}
+                    >
+                      {inner}
+                      <ChevronRight className="absolute right-0.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-[#9b9b95]" aria-hidden="true" />
+                    </button>
+                  )
+                }
+                return (
+                  <Link
+                    key={entry.label}
+                    href={entry.segment ? `${home}/${entry.segment}${query}` : `${home}${query}`}
+                    prefetch={false}
+                    title={entry.label}
+                    aria-current={entry === activeEntry ? "page" : undefined}
+                    onClick={() => setOpen(null)}
+                    className={itemClass(highlight)}
+                  >
+                    {inner}
+                  </Link>
+                )
+              })}
+            </Fragment>
+          ))}
+        </div>
       </nav>
 
-      {/* Bottom — 설정(치과 관리)은 마스터 전용 */}
-      {userRole === 'MASTER' && (
-        <div className="px-3 py-3 border-t border-[#f2f4f6]">
-          <Link
-            href="/admin/clinics"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium text-[#4e5968] hover:bg-[#f9fafb] hover:text-[#191f28] transition-all duration-150"
-          >
-            <Settings className="w-4 h-4 text-[#8b95a1]" />
-            설정
-          </Link>
-        </div>
+      {/* 누른 메인 탭 바로 옆에 붙어서 열리는 세부 메뉴 */}
+      {open?.entry.children && (
+        <nav
+          aria-label={`${open.entry.label} 세부 메뉴`}
+          style={{ top: open.top }}
+          className="fixed left-[76px] z-50 w-[172px] bg-white border border-[#d1d1cc] rounded-r shadow-[0_6px_18px_rgb(0_0_0/0.12)] py-1"
+        >
+          <div className="px-3.5 py-1.5 text-[11px] font-semibold text-[#6f6f6a] truncate">{open.entry.label}</div>
+          {open.entry.children.map((child) => {
+            const active = !!child.segment && child.segment === current
+            return (
+              <Link
+                key={child.label}
+                href={childHref(child)}
+                prefetch={false}
+                aria-current={active ? "page" : undefined}
+                onClick={() => setOpen(null)}
+                className={`flex items-center px-3.5 h-[34px] text-[13px] ${
+                  active
+                    ? "font-semibold text-[#0062ff] bg-[#e8f0ff]"
+                    : "text-[#222220] hover:bg-[#f2f2ef] hover:text-[#0a0a0a]"
+                }`}
+              >
+                <span className="truncate">{child.label}</span>
+              </Link>
+            )
+          })}
+        </nav>
       )}
-    </aside>
+    </div>
   )
 }

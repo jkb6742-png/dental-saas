@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "@/components/charts/recharts"
 
 type DataPoint = { name: string; 확정률: number; 확정금액: number; 계획수: number }
 
@@ -20,7 +20,7 @@ export default function ConsultationChart({ data }: { data: DataPoint[] }) {
         />
         <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 13, paddingTop: 12 }} />
         <Bar yAxisId="left" dataKey="확정률" fill="#05c072" radius={[4, 4, 0, 0]} maxBarSize={36} unit="%" />
-        <Bar yAxisId="right" dataKey="확정금액" fill="#3182f6" radius={[4, 4, 0, 0]} maxBarSize={36} />
+        <Bar yAxisId="right" dataKey="확정금액" fill="#0062ff" radius={[4, 4, 0, 0]} maxBarSize={36} />
       </BarChart>
     </ResponsiveContainer>
   )

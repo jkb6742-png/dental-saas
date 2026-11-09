@@ -1,3 +1,4 @@
+import { denyClinic } from "@/lib/requests/access"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
@@ -14,6 +15,11 @@ export async function PUT(
     }
 
     const { id } = await params
+    const owner = await prisma.actionPlan.findUnique({ where: { id: id }, select: { clinicId: true } })
+    if (!owner) return NextResponse.json({ error: "실행계획을 찾을 수 없습니다" }, { status: 404 })
+    const denied = await denyClinic(owner.clinicId)
+    if (denied) return denied
+
     const { goal, description, targetDate, status, priority } = await request.json()
 
     if (!goal || !description || !targetDate) {

@@ -12,7 +12,7 @@ import {
   Area,
   AreaChart,
   LabelList
-} from 'recharts'
+} from "@/components/charts/recharts"
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
 interface MonthlyRevenueData {
@@ -101,10 +101,10 @@ export default function RevenuePerPatientChart({
 
   if (loading) {
     return (
-      <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8">
-        <div className="animate-pulse space-y-4">
+      <div className="bg-white rounded border border-[#b9b9b3] overflow-hidden p-3 min-w-0">
+        <div className="animate-pulse space-y-2.5">
           <div className="h-6 bg-slate-200 rounded w-1/3"></div>
-          <div className="h-64 bg-slate-200 rounded"></div>
+          <div className="h-[220px] bg-slate-200 rounded"></div>
         </div>
       </div>
     )
@@ -112,11 +112,11 @@ export default function RevenuePerPatientChart({
 
   if (error) {
     return (
-      <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-red-200/60 p-8">
+      <div className="bg-white rounded-2xl border border-red-200/60 p-4">
         <div className="text-center">
-          <div className="text-4xl mb-4">⚠️</div>
+          <div className="text-4xl mb-2.5">⚠️</div>
           <h3 className="font-semibold text-red-800 mb-2">오류 발생</h3>
-          <p className="text-sm text-red-600 mb-4">{error}</p>
+          <p className="text-sm text-red-600 mb-2.5">{error}</p>
           <button
             onClick={fetchRevenueData}
             className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
@@ -129,9 +129,9 @@ export default function RevenuePerPatientChart({
   }
 
   const getTrendIcon = () => {
-    if (growthRate > 0) return <TrendingUp className="w-4 h-4 text-emerald-600" />
-    if (growthRate < 0) return <TrendingDown className="w-4 h-4 text-red-600" />
-    return <Minus className="w-4 h-4 text-slate-500" />
+    if (growthRate > 0) return <TrendingUp className="w-3 h-3 text-emerald-600" />
+    if (growthRate < 0) return <TrendingDown className="w-3 h-3 text-red-600" />
+    return <Minus className="w-3 h-3 text-slate-500" />
   }
 
   const getTrendColor = () => {
@@ -141,14 +141,14 @@ export default function RevenuePerPatientChart({
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
+    <div className="bg-white rounded border border-[#b9b9b3] overflow-hidden p-3 min-w-0">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="-mx-3 -mt-3 mb-2.5 px-3 py-2 bg-[#ecece9] border-b border-[#d1d1cc] flex items-start justify-between gap-2">
         <div>
-          <h3 className="text-xl font-bold text-slate-900 mb-2">
+          <h3 className="text-[16px] font-bold text-[#0a0a0a] mb-0.5">
             {year}년 {title} 1인 객단가 월별 추이 (1~{selectedMonth}월)
           </h3>
-          <p className="text-sm text-slate-600">
+          <p className="text-[11px] text-slate-500">
             연간 평균 {summary?.overallRevenuePerPatient?.toLocaleString() || 0}원
             {summary?.averageRevenuePerPatient && ` · 월평균 ${summary.averageRevenuePerPatient.toLocaleString()}원`}
           </p>
@@ -156,9 +156,9 @@ export default function RevenuePerPatientChart({
 
         {/* 성장률 배지 */}
         {hasData && (
-          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${getTrendColor()}`}>
+          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded shrink-0 ${getTrendColor()}`}>
             {getTrendIcon()}
-            <span className="text-sm font-medium">
+            <span className="text-[11px] font-medium tabular-nums">
               {growthRate > 0 ? '+' : ''}{growthRate.toFixed(1)}%
             </span>
           </div>
@@ -166,10 +166,10 @@ export default function RevenuePerPatientChart({
       </div>
 
       {/* 차트 */}
-      <div className="h-64 mb-4 w-full min-h-[256px] min-w-0">
-        <ResponsiveContainer width="100%" height={256} minHeight={256}>
+      <div className="h-[220px] w-full min-h-[220px] min-w-0">
+        <ResponsiveContainer width="100%" height={220} minHeight={220}>
           {variant === 'area' ? (
-            <AreaChart data={chartData} margin={{ top: 22, right: 20, left: 0, bottom: 5 }}>
+            <AreaChart data={chartData} margin={{ top: 18, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id={`gradient-revenue-${chartType}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={color} stopOpacity={0.3}/>
@@ -179,40 +179,37 @@ export default function RevenuePerPatientChart({
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis
                 dataKey="month"
-                tick={{ fontSize: 12, fill: "#64748b" }}
+                tick={{ fontSize: 10, fill: "#64748b" }}
                 axisLine={false}
                 tickLine={false}
-                tickMargin={10}
-                padding={{ left: 14, right: 14 }}
+                tickMargin={4}
+                padding={{ left: 8, right: 8 }}
               />
               <YAxis
                 domain={[0, maxValue]}
-                tick={{ fontSize: 12, fill: "#64748b" }}
+                tick={{ fontSize: 10, fill: "#64748b" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
                 width={50}
-                tickMargin={8}
+                tickMargin={4}
               />
               <Tooltip
                 formatter={formatTooltip}
                 contentStyle={{
-                  borderRadius: 12,
-                  border: 'none',
-                  boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
-                  fontSize: 13,
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  backdropFilter: 'blur(8px)'
+                  borderRadius: 4, border: '1px solid #d1d1cc',
+                  boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 13,
+                  background: 'rgba(255, 255, 255, 0.95)'
                 }}
               />
-              <Area
+              <Area isAnimationActive={false}
                 type="monotone"
                 dataKey="revenuePerPatient"
                 stroke={color}
-                strokeWidth={3}
+                strokeWidth={2}
                 fill={`url(#gradient-revenue-${chartType})`}
-                dot={{ fill: color, strokeWidth: 2, stroke: '#ffffff', r: 4 }}
-                activeDot={{ r: 6, fill: color, stroke: '#ffffff', strokeWidth: 3 }}
+                dot={{ fill: color, strokeWidth: 1, stroke: '#ffffff', r: 3 }}
+                activeDot={{ r: 5, fill: color, stroke: '#ffffff', strokeWidth: 2 }}
               >
                 <LabelList
                   dataKey="revenuePerPatient"
@@ -224,43 +221,40 @@ export default function RevenuePerPatientChart({
               </Area>
             </AreaChart>
           ) : (
-            <LineChart data={chartData} margin={{ top: 22, right: 20, left: 0, bottom: 5 }}>
+            <LineChart data={chartData} margin={{ top: 18, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis
                 dataKey="month"
-                tick={{ fontSize: 12, fill: "#64748b" }}
+                tick={{ fontSize: 10, fill: "#64748b" }}
                 axisLine={false}
                 tickLine={false}
-                tickMargin={10}
-                padding={{ left: 14, right: 14 }}
+                tickMargin={4}
+                padding={{ left: 8, right: 8 }}
               />
               <YAxis
                 domain={[0, maxValue]}
-                tick={{ fontSize: 12, fill: "#64748b" }}
+                tick={{ fontSize: 10, fill: "#64748b" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
                 width={50}
-                tickMargin={8}
+                tickMargin={4}
               />
               <Tooltip
                 formatter={formatTooltip}
                 contentStyle={{
-                  borderRadius: 12,
-                  border: 'none',
-                  boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
-                  fontSize: 13,
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  backdropFilter: 'blur(8px)'
+                  borderRadius: 4, border: '1px solid #d1d1cc',
+                  boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 13,
+                  background: 'rgba(255, 255, 255, 0.95)'
                 }}
               />
-              <Line
+              <Line isAnimationActive={false}
                 type="monotone"
                 dataKey="revenuePerPatient"
                 stroke={color}
-                strokeWidth={3}
-                dot={{ fill: color, strokeWidth: 2, stroke: '#ffffff', r: 4 }}
-                activeDot={{ r: 6, fill: color, stroke: '#ffffff', strokeWidth: 3 }}
+                strokeWidth={2}
+                dot={{ fill: color, strokeWidth: 1, stroke: '#ffffff', r: 3 }}
+                activeDot={{ r: 5, fill: color, stroke: '#ffffff', strokeWidth: 2 }}
               >
                 <LabelList
                   dataKey="revenuePerPatient"
@@ -277,7 +271,7 @@ export default function RevenuePerPatientChart({
 
       {/* 통계 요약 */}
       {hasData && summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-100">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-slate-100">
           <div className="text-center">
             <div className="text-xs text-slate-500 mb-1">연간 평균</div>
             <div className="text-lg font-bold text-slate-900">
@@ -307,11 +301,11 @@ export default function RevenuePerPatientChart({
 
       {/* 데이터 없음 상태 */}
       {!hasData && (
-        <div className="absolute inset-8 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 rounded-xl flex items-center justify-center backdrop-blur-sm">
-          <div className="text-center p-6">
+        <div className="absolute inset-8 bg-white rounded-xl flex items-center justify-center border border-[#d1d1cc]">
+          <div className="text-center p-4">
             <div className="text-4xl mb-3">💰</div>
             <h4 className="font-semibold text-slate-800 mb-2">데이터가 없습니다</h4>
-            <p className="text-sm text-slate-600">
+            <p className="text-[11px] text-slate-500">
               {year}년 {title} 객단가 데이터가 없습니다.<br />
               "전체접수수납목록.xlsx" 파일을 업로드해주세요.
             </p>

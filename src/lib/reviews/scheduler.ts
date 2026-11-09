@@ -46,7 +46,7 @@ export function startReviewScheduler() {
   if (process.env.REVIEW_AUTO_SYNC === "off") return
   if ((globalThis as any).__reviewSchedulerStarted) return
   ;(globalThis as any).__reviewSchedulerStarted = true
-  console.log("[reviews] 네이버 리뷰 자동 수집 시작 (30분 간격 점검)")
+  console.info("[reviews] 네이버 리뷰 자동 수집 시작 (30분 간격 점검)")
   setTimeout(() => runDueNaverSyncs().catch((e) => console.error("[reviews]", e)), 60 * 1000)
   setInterval(() => runDueNaverSyncs().catch((e) => console.error("[reviews]", e)), CHECK_EVERY)
 }

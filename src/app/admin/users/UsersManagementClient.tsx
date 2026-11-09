@@ -136,19 +136,19 @@ export default function UsersManagementClient({
   }
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className=" p-4">
+      <div className="max-w-7xl mx-auto space-y-3">
         {/* 헤더 */}
-        <div className="text-center border-b border-[#e5e8eb] pb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-black rounded-xl mb-4">
+        <div className="text-center border-b border-[#d1d1cc] pb-6">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-black rounded-xl mb-2.5">
             <span className="text-[18px] font-bold text-white">T</span>
           </div>
-          <h1 className="text-[32px] font-bold text-[#191f28] mb-2">사용자 관리</h1>
+          <h1 className="text-[18px] font-bold text-[#191f28] mb-2">사용자 관리</h1>
           <p className="text-[16px] text-[#6b7280]">THINKLAB dental insight 사용자 관리 시스템</p>
         </div>
 
         {/* 통계 */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <KpiCard
             label="전체 사용자"
             value={stats.total}
@@ -187,15 +187,15 @@ export default function UsersManagementClient({
         </div>
 
         {/* 필터 탭 */}
-        <div className="flex space-x-2 bg-white p-1 rounded-xl border border-[#e5e8eb]">
+        <div className="flex space-x-2 bg-white p-1 rounded-xl border border-[#d1d1cc]">
           {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
               className={`px-4 py-2 rounded-lg text-[13px] font-medium transition-all ${
                 filter === status
-                  ? 'bg-[#3182f6] text-white'
-                  : 'text-[#6b7280] hover:text-[#191f28] hover:bg-[#f9fafb]'
+                  ? 'bg-[#0062ff] text-white'
+                  : 'text-[#6b7280] hover:text-[#191f28] hover:bg-[#f2f2ef]'
               }`}
             >
               {status === 'ALL' ? '전체' :
@@ -210,7 +210,7 @@ export default function UsersManagementClient({
           <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="border-b border-[#f2f4f6]">
+                <tr className="border-b border-[#e0e0db]">
                   <th className="text-left py-3 px-3 text-[#8b95a1] font-medium">사용자</th>
                   <th className="text-left py-3 px-3 text-[#8b95a1] font-medium">에이전시</th>
                   <th className="text-left py-3 px-3 text-[#8b95a1] font-medium">상태</th>
@@ -226,7 +226,7 @@ export default function UsersManagementClient({
                   const roleConfig = getRoleConfig(user.role)
 
                   return (
-                    <tr key={user.id} className="border-b border-[#f9fafb] hover:bg-[#f9fafb]">
+                    <tr key={user.id} className="border-b border-[#f2f2ef] hover:bg-[#f2f2ef]">
                       {/* 사용자 정보 */}
                       <td className="py-4 px-3">
                         <div>
@@ -259,8 +259,8 @@ export default function UsersManagementClient({
                       {/* 역할 */}
                       <td className="py-4 px-3">
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[12px] font-medium ${
-                          roleConfig.color === 'purple' ? 'bg-purple-100 text-purple-700' :
-                          roleConfig.color === 'blue' ? 'bg-blue-100 text-blue-700' :
+                          roleConfig.color === 'purple' ? 'bg-purple-100 text-[#191f28]' :
+                          roleConfig.color === 'blue' ? 'bg-blue-100 text-[#0062ff]' :
                           roleConfig.color === 'green' ? 'bg-green-100 text-green-700' :
                           roleConfig.color === 'gray' ? 'bg-gray-100 text-gray-700' : ''
                         }`}>
@@ -272,7 +272,7 @@ export default function UsersManagementClient({
                       {/* 초대 코드 */}
                       <td className="py-4 px-3">
                         {user.inviteCode ? (
-                          <span className="inline-flex items-center gap-1 text-[12px] text-[#6b7684] bg-[#f9fafb] px-2 py-1 rounded">
+                          <span className="inline-flex items-center gap-1 text-[12px] text-[#6b7684] bg-[#f2f2ef] px-2 py-1 rounded">
                             <Code className="w-3 h-3" />
                             {user.inviteCode.code}
                           </span>
@@ -333,7 +333,7 @@ export default function UsersManagementClient({
                             <select
                               value={user.role}
                               onChange={(e) => updateUserRole(user.id, e.target.value as UserRole)}
-                              className="text-[12px] border border-[#e5e8eb] rounded px-2 py-1"
+                              className="text-[12px] border border-[#d1d1cc] rounded px-2 py-1"
                               disabled={loading === user.id}
                             >
                               <option value="ADMIN">관리자</option>

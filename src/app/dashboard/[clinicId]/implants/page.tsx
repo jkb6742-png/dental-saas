@@ -45,13 +45,13 @@ export default async function ImplantsPage({
   const totalUsage = current.reduce((s, r) => s + (r.usageCount ?? 0), 0)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-[14px] text-[#8b95a1]">월별 임플란트 수술 추이 · {year}년 {month}월 상세</p>
         <Suspense><MonthSelector availableMonths={availableMonths} currentYear={year} currentMonth={month} /></Suspense>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         <KpiCard label="이달 수술 횟수" value={totalSurgeries} unit="건" color="blue" />
         <KpiCard label="임플란트 사용 개수" value={totalUsage} unit="개" color="green" />
         <KpiCard label="가장 많이 사용" value={current[0]?.fixtureName?.split(" - ")[0] ?? "—"} changeLabel={current[0] ? `${current[0].surgeryCount}건` : undefined} color="yellow" />
@@ -65,7 +65,7 @@ export default async function ImplantsPage({
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b border-[#f2f4f6]">
+              <tr className="border-b border-[#e0e0db]">
                 {["순위", "픽스처명", "수술횟수", "사용개수"].map((h) => (
                   <th key={h} className="text-left py-3 px-3 text-[#8b95a1] font-medium first:pl-0">{h}</th>
                 ))}
@@ -73,10 +73,10 @@ export default async function ImplantsPage({
             </thead>
             <tbody>
               {current.map((r, i) => (
-                <tr key={r.id} className="border-b border-[#f9fafb] hover:bg-[#f9fafb]">
+                <tr key={r.id} className="border-b border-[#f2f2ef] hover:bg-[#f2f2ef]">
                   <td className="py-3 px-3 pl-0 text-[#b0b8c1] font-bold">{i + 1}</td>
                   <td className="py-3 px-3 font-medium text-[#191f28]">{r.fixtureName}</td>
-                  <td className="py-3 px-3 tabular-nums text-[#3182f6] font-semibold">{r.surgeryCount ?? "—"}건</td>
+                  <td className="py-3 px-3 tabular-nums text-[#0062ff] font-semibold">{r.surgeryCount ?? "—"}건</td>
                   <td className="py-3 px-3 tabular-nums text-[#6b7684]">{r.usageCount ?? "—"}개</td>
                 </tr>
               ))}

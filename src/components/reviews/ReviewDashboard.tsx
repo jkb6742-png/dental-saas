@@ -6,7 +6,7 @@ import {
   ComposedChart, Bar, Line, LabelList,
   XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
-} from "recharts"
+} from "@/components/charts/recharts"
 import KpiCard from "@/components/ui/KpiCard"
 import SectionCard from "@/components/ui/SectionCard"
 import ReviewManualInput from "./ReviewManualInput"
@@ -161,7 +161,7 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
   }, [clinicId, year, month])
 
   if (loading) {
-    return <div className="text-center py-8">리뷰 데이터를 불러오는 중...</div>
+    return <div className="text-center py-4">리뷰 데이터를 불러오는 중...</div>
   }
 
   const naverSummary = summaries.find(s => s.source === "NAVER")
@@ -177,13 +177,13 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
     : null
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 리뷰 현황 요약 */}
       <SectionCard
         title="리뷰 현황"
         description={`${year}년 ${month}월 온라인 리뷰 현황`}
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <KpiCard
             label="전체 리뷰"
             value={totalReviews}
@@ -211,14 +211,14 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
       {/* 월별 신규 리뷰 추이 (네이버/구글 토글) */}
       <SectionCard title="월별 신규 리뷰 추이" description={`${year}년 ${chartSource === "NAVER" ? "네이버" : "구글"} 신규 리뷰`}>
         {/* 플랫폼 토글 */}
-        <div className="flex items-center gap-1 mb-4 w-fit p-1 bg-[#f2f4f6] rounded-[10px]">
+        <div className="flex items-center gap-1 mb-2.5 w-fit p-1 bg-[#f2f4f6] rounded-[10px]">
           {(["NAVER", "GOOGLE"] as const).map((src) => (
             <button
               key={src}
               onClick={() => setChartSource(src)}
               className={`px-3.5 py-1.5 rounded-[8px] text-[13px] font-semibold transition-colors ${
                 chartSource === src
-                  ? "bg-white text-[#191f28] shadow-sm"
+                  ? "bg-white text-[#191f28]"
                   : "text-[#8b95a1] hover:text-[#4e5968]"
               }`}
             >
@@ -228,29 +228,27 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
         </div>
 
         {monthlyChart.some((d) => (chartSource === "NAVER" ? d.네이버 : d.구글) > 0) ? (
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={170}>
             <ComposedChart data={monthlyChart} margin={{ top: 22, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f2f4f6" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#8b95a1" }} axisLine={false} tickLine={false} tickMargin={10} padding={{ left: 12, right: 12 }} />
               <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#8b95a1" }} axisLine={false} tickLine={false} width={32} tickMargin={8} />
               <Tooltip
                 formatter={(v: any) => [`${v}개`, "신규 리뷰"]}
-                contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 12px 0 rgb(0 0 0 / 0.10)", fontSize: 13 }}
+                contentStyle={{ borderRadius: 4, border: '1px solid #d1d1cc', boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 13 }}
               />
-              <Bar
+              <Line isAnimationActive={false} type="monotone" strokeWidth={2} dot={{ r: 3 }}
                 dataKey={chartSource === "NAVER" ? "네이버" : "구글"}
                 name="신규 리뷰"
-                fill={chartSource === "NAVER" ? "#d4f2e4" : "#d4e4fd"}
-                radius={[4, 4, 0, 0]}
-                maxBarSize={40}
+                stroke={chartSource === "NAVER" ? "#d4f2e4" : "#d4e4fd"}
               />
-              <Line
+              <Line isAnimationActive={false}
                 type="monotone"
                 dataKey={chartSource === "NAVER" ? "네이버" : "구글"}
                 name="추이"
-                stroke={chartSource === "NAVER" ? "#05c072" : "#3182f6"}
-                strokeWidth={2.5}
-                dot={{ r: 3, fill: chartSource === "NAVER" ? "#05c072" : "#3182f6" }}
+                stroke={chartSource === "NAVER" ? "#05c072" : "#0062ff"}
+                strokeWidth={2}
+                dot={{ r: 3, fill: chartSource === "NAVER" ? "#05c072" : "#0062ff" }}
                 activeDot={{ r: 5 }}
                 tooltipType="none"
               >
@@ -259,7 +257,7 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
                   position="top"
                   formatter={(v: any) => (typeof v === "number" && v > 0 ? v : "")}
                   offset={10}
-                  style={{ fontSize: 11, fontWeight: 700, fill: chartSource === "NAVER" ? "#05c072" : "#3182f6" }}
+                  style={{ fontSize: 11, fontWeight: 700, fill: chartSource === "NAVER" ? "#05c072" : "#0062ff" }}
                 />
               </Line>
             </ComposedChart>
@@ -273,10 +271,10 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
 
       {/* 플랫폼별 상세 현황 */}
       <SectionCard title="플랫폼별 상세" description="네이버, 구글 리뷰 현황">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* 네이버 리뷰 */}
-          <div className="bg-green-50 rounded-xl p-6 border border-green-200">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-green-50 rounded-xl p-4 border border-[#d1d1cc]">
+            <div className="flex items-center justify-between mb-2.5">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
                   N
@@ -292,7 +290,7 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="text-2xl font-bold text-green-700">
                   {naverSummary?.totalReviews || 0}
@@ -330,10 +328,10 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
           </div>
 
           {/* 구글 리뷰 */}
-          <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-blue-50 rounded-xl p-4 border border-[#d1d1cc]">
+            <div className="flex items-center justify-between mb-2.5">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                <div className="w-8 h-8 bg-[#0062ff] rounded-lg flex items-center justify-center text-white font-bold text-sm">
                   G
                 </div>
                 <h3 className="text-lg font-semibold text-blue-800">구글 리뷰</h3>
@@ -341,7 +339,7 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
               <div className="flex space-x-2">
                 <button
                   onClick={() => setShowManualInput("GOOGLE")}
-                  className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium flex items-center space-x-1"
+                  className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-[#0062ff] rounded-lg text-sm font-medium flex items-center space-x-1"
                 >
                   <Edit className="w-4 h-4" />
                   <span>입력</span>
@@ -349,7 +347,7 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
                 <button
                   onClick={() => handleCrawl("GOOGLE")}
                   disabled={crawling === "GOOGLE"}
-                  className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium disabled:opacity-50 flex items-center space-x-1"
+                  className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-[#0062ff] rounded-lg text-sm font-medium disabled:opacity-50 flex items-center space-x-1"
                 >
                   <RefreshCw className={`w-4 h-4 ${crawling === "GOOGLE" ? "animate-spin" : ""}`} />
                   <span>{crawling === "GOOGLE" ? "수집중..." : "자동수집"}</span>
@@ -357,37 +355,37 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <div className="text-2xl font-bold text-blue-700">
+                <div className="text-2xl font-bold text-[#0062ff]">
                   {googleSummary?.totalReviews || 0}
                 </div>
-                <div className="text-sm text-blue-600">전체 리뷰</div>
+                <div className="text-sm text-[#0062ff]">전체 리뷰</div>
               </div>
               <div>
-                <div className="text-lg font-semibold text-blue-700">
+                <div className="text-lg font-semibold text-[#0062ff]">
                   {googleSummary?.newReviews || 0}
                 </div>
-                <div className="text-sm text-blue-600">이번달 신규</div>
+                <div className="text-sm text-[#0062ff]">이번달 신규</div>
               </div>
               <div>
-                <div className="text-lg font-semibold text-blue-700">
+                <div className="text-lg font-semibold text-[#0062ff]">
                   {googleTarget?.targetReviews || "—"}
                 </div>
-                <div className="text-sm text-blue-600">이번달 목표</div>
+                <div className="text-sm text-[#0062ff]">이번달 목표</div>
               </div>
               <div>
-                <div className="text-lg font-semibold text-blue-700">
+                <div className="text-lg font-semibold text-[#0062ff]">
                   {googleTarget?.achievementRate ? `${googleTarget.achievementRate.toFixed(0)}%` : "—"}
                 </div>
-                <div className="text-sm text-blue-600">달성률</div>
+                <div className="text-sm text-[#0062ff]">달성률</div>
               </div>
             </div>
 
             <div className="mt-4">
               <div className="w-full bg-blue-100 rounded-full h-2 overflow-hidden">
                 <div
-                  className="bg-blue-500 h-2 rounded-full transition-all"
+                  className="bg-[#0062ff] h-2 rounded-full transition-all"
                   style={{ width: `${Math.min(googleTarget?.achievementRate ?? 0, 100)}%` }}
                 />
               </div>
@@ -410,8 +408,8 @@ export default function ReviewDashboard({ clinicId, year, month }: ReviewDashboa
       {/* 수동 입력 모달 */}
       {showManualInput && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#d1d1cc]">
+            <div className="p-4 border-b border-[#d1d1cc] flex items-center justify-between">
               <h2 className="text-lg font-semibold">
                 {showManualInput === 'NAVER' ? '네이버' : '구글'} 리뷰 수동 입력
               </h2>

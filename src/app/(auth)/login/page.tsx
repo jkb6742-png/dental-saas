@@ -67,10 +67,10 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] flex items-center justify-center p-4">
+    <div className=" flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-black rounded-2xl mb-4">
+        <div className="text-center mb-3">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-black rounded-2xl mb-2.5">
             <span className="text-[24px] font-bold text-white">T</span>
           </div>
           <h1 className="text-[28px] font-bold text-[#191f28] mb-1">THINKLAB</h1>
@@ -78,8 +78,8 @@ function LoginForm() {
           <p className="text-[14px] text-[#8b95a1]">치과 경영지표 분석 플랫폼</p>
         </div>
 
-        <div className="bg-white rounded-2xl p-7 shadow-[0_1px_3px_0_rgb(0_0_0/0.06)]">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="bg-white rounded-2xl p-4">
+          <form onSubmit={handleSubmit} className="space-y-2.5">
             <div>
               <label className="block text-[13px] font-medium text-[#4e5968] mb-1.5">
                 아이디 또는 이메일
@@ -94,7 +94,7 @@ function LoginForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="아이디 또는 name@company.com"
                 required
-                className="w-full px-4 py-3 rounded-xl border border-[#e5e8eb] text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#ebf3fe] transition-all"
+                className="w-full px-4 py-3 rounded-xl border border-[#d1d1cc] text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#e8f0ff] transition-all"
               />
             </div>
             <div>
@@ -107,7 +107,7 @@ function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full px-4 py-3 rounded-xl border border-[#e5e8eb] text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#ebf3fe] transition-all"
+                className="w-full px-4 py-3 rounded-xl border border-[#d1d1cc] text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#e8f0ff] transition-all"
               />
             </div>
 
@@ -130,7 +130,7 @@ function LoginForm() {
 
           <p className="text-center text-[13px] text-[#8b95a1] mt-5">
             계정이 없으신가요?{" "}
-            <Link href="/signup" className="text-[#3182f6] font-semibold hover:underline">
+            <Link href="/signup" className="text-[#0062ff] font-semibold hover:underline">
               회원가입
             </Link>
           </p>
@@ -143,17 +143,17 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#f9fafb] flex items-center justify-center p-4">
+      <div className=" flex items-center justify-center p-4">
         <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-black rounded-2xl mb-4">
+          <div className="text-center mb-3">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-black rounded-2xl mb-2.5">
               <span className="text-[24px] font-bold text-white">T</span>
             </div>
             <h1 className="text-[28px] font-bold text-[#191f28] mb-1">THINKLAB</h1>
             <h2 className="text-[20px] font-medium text-[#4e5968] mb-2">dental insight</h2>
             <p className="text-[14px] text-[#8b95a1]">치과 경영지표 분석 플랫폼</p>
           </div>
-          <div className="bg-white rounded-2xl p-7 shadow-[0_1px_3px_0_rgb(0_0_0/0.06)]">
+          <div className="bg-white rounded-2xl p-4">
             <div className="text-center text-[#8b95a1]">로딩 중...</div>
           </div>
         </div>

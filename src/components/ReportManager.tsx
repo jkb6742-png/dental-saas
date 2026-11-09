@@ -109,9 +109,9 @@ export default function ReportManager({ clinicId, onReportDeleted }: ReportManag
   // 인증되지 않은 경우
   if (status === "unauthenticated") {
     return (
-      <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
+      <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-[#ff6b6b] mx-auto mb-4" />
+          <AlertCircle className="w-12 h-12 text-[#ff6b6b] mx-auto mb-2.5" />
           <p className="text-[#191f28] font-medium">로그인이 필요합니다</p>
         </div>
       </div>
@@ -119,11 +119,11 @@ export default function ReportManager({ clinicId, onReportDeleted }: ReportManag
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-[#ebf3fe] rounded-xl flex items-center justify-center">
-            <FileText className="w-4 h-4 text-[#3182f6]" />
+          <div className="w-9 h-9 bg-[#e8f0ff] rounded-xl flex items-center justify-center">
+            <FileText className="w-4 h-4 text-[#0062ff]" />
           </div>
           <div>
             <h3 className="text-[16px] font-semibold text-[#191f28]">보고서 관리</h3>
@@ -141,13 +141,13 @@ export default function ReportManager({ clinicId, onReportDeleted }: ReportManag
       </div>
 
       {loading && reports.length === 0 ? (
-        <div className="text-center py-8">
+        <div className="text-center py-4">
           <RefreshCcw className="w-6 h-6 animate-spin text-[#8b95a1] mx-auto mb-2" />
           <p className="text-[#8b95a1] text-[14px]">보고서 목록을 불러오는 중...</p>
         </div>
       ) : reports.length === 0 ? (
-        <div className="text-center py-8">
-          <FileText className="w-12 h-12 text-[#8b95a1] mx-auto mb-4" />
+        <div className="text-center py-4">
+          <FileText className="w-12 h-12 text-[#8b95a1] mx-auto mb-2.5" />
           <p className="text-[#191f28] font-medium mb-2">생성된 보고서가 없습니다</p>
           <p className="text-[#8b95a1] text-[13px]">새 리포트를 생성해보세요</p>
         </div>
@@ -156,12 +156,12 @@ export default function ReportManager({ clinicId, onReportDeleted }: ReportManag
           {reports.map((report) => (
             <div
               key={report.id}
-              className="border border-[#e5e8eb] rounded-xl p-4 hover:bg-[#f8f9fa] transition-colors"
+              className="border border-[#d1d1cc] rounded-xl p-4 hover:bg-[#f8f9fa] transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <FileText className="w-4 h-4 text-[#3182f6]" />
+                    <FileText className="w-4 h-4 text-[#0062ff]" />
                     <h4 className="text-[14px] font-medium text-[#191f28]">
                       {report.year}년 {report.month}월 보고서
                     </h4>
@@ -169,7 +169,7 @@ export default function ReportManager({ clinicId, onReportDeleted }: ReportManag
                       HTML
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-[12px] text-[#8b95a1] mb-2">
+                  <div className="grid grid-cols-2 gap-3 text-[12px] text-[#8b95a1] mb-2">
                     <div>
                       📅 생성일: {new Date(report.generatedAt).toLocaleDateString('ko-KR')}
                     </div>

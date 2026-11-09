@@ -19,32 +19,32 @@ type Props = {
 
 const variantStyles = {
   primary: {
-    card: "bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100",
-    icon: "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25",
+    card: "bg-white border-[#d1d1cc]",
+    icon: "bg-[#191f28] text-white shadow-blue-500/25",
     value: "text-blue-900",
-    progress: "bg-blue-500"
+    progress: "bg-[#0062ff]"
   },
   success: {
-    card: "bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-100",
-    icon: "bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/25",
+    card: "bg-white border-[#d1d1cc]",
+    icon: "bg-[#191f28] text-white shadow-emerald-500/25",
     value: "text-emerald-900",
     progress: "bg-emerald-500"
   },
   warning: {
-    card: "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100",
-    icon: "bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25",
+    card: "bg-white border-amber-100",
+    icon: "bg-[#191f28] text-white shadow-amber-500/25",
     value: "text-amber-900",
     progress: "bg-amber-500"
   },
   danger: {
-    card: "bg-gradient-to-br from-red-50 to-rose-50 border-red-100",
-    icon: "bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/25",
+    card: "bg-white border-red-100",
+    icon: "bg-[#191f28] text-white shadow-red-500/25",
     value: "text-red-900",
     progress: "bg-red-500"
   },
   info: {
-    card: "bg-gradient-to-br from-slate-50 to-gray-50 border-slate-100",
-    icon: "bg-gradient-to-br from-slate-500 to-gray-600 text-white shadow-lg shadow-slate-500/25",
+    card: "bg-white border-slate-100",
+    icon: "bg-[#191f28] text-white shadow-slate-500/25",
     value: "text-slate-900",
     progress: "bg-slate-500"
   }
@@ -70,18 +70,18 @@ export default function EnhancedKpiCard({
 
   return (
     <div className={cn(
-      "relative overflow-hidden rounded-2xl p-6 border backdrop-blur-sm",
-      "hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-out",
+      "relative overflow-hidden rounded-2xl p-4 border",
+      " hover:-translate-y-1 ease-out",
       "before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/20 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity",
       styles.card
     )}>
       {/* Background Pattern */}
       <div className="absolute top-0 right-0 w-32 h-32 opacity-5">
-        <div className="w-full h-full bg-gradient-to-br from-current to-transparent rounded-full blur-2xl" />
+        <div className="w-full h-full hidden" />
       </div>
 
       {/* Header */}
-      <div className="relative flex items-start justify-between mb-6">
+      <div className="relative flex items-start justify-between mb-3">
         <div>
           <span className="text-sm font-medium text-slate-600 mb-1 block">{label}</span>
           {subtitle && (
@@ -91,7 +91,7 @@ export default function EnhancedKpiCard({
         {icon && (
           <div className={cn(
             "w-12 h-12 rounded-xl flex items-center justify-center",
-            "transform hover:scale-110 transition-transform duration-200",
+            "transform transition-transform duration-200",
             styles.icon
           )}>
             {icon}
@@ -100,7 +100,7 @@ export default function EnhancedKpiCard({
       </div>
 
       {/* Value */}
-      <div className="relative flex items-end gap-2 mb-4">
+      <div className="relative flex items-end gap-2 mb-2.5">
         <span className={cn(
           "text-3xl font-bold leading-none tabular-nums tracking-tight",
           styles.value
@@ -114,7 +114,7 @@ export default function EnhancedKpiCard({
 
       {/* Progress Bar */}
       {showProgress && progressValue !== undefined && (
-        <div className="mb-4">
+        <div className="mb-2.5">
           <div className="flex justify-between text-xs text-slate-500 mb-2">
             <span>진행률</span>
             <span>{progressPercent.toFixed(1)}%</span>
@@ -155,7 +155,6 @@ export default function EnhancedKpiCard({
       )}
 
       {/* Shine Effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 -translate-x-full hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
     </div>
   )
 }

@@ -37,13 +37,13 @@ export default async function PeiResponsesPage({
   const btn = "inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold rounded-[8px] bg-[#f2f4f6] hover:bg-[#e5e8eb] text-[#191f28] transition"
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <Link href={`${base}?year=${year}&month=${month}`} className="w-9 h-9 rounded-lg hover:bg-[#f2f4f6] flex items-center justify-center" aria-label="응답 통계로">
             <ChevronLeft className="w-5 h-5 text-[#4e5968]" />
           </Link>
-          <div className="w-9 h-9 rounded-xl bg-[#e8f3ff] flex items-center justify-center"><Table2 className="w-5 h-5 text-[#3182f6]" /></div>
+          <div className="w-9 h-9 rounded-xl bg-[#e8f3ff] flex items-center justify-center"><Table2 className="w-5 h-5 text-[#0062ff]" /></div>
           <div>
             <h1 className="text-[20px] font-bold text-[#191f28]">PEI 응답 시트</h1>
             <p className="text-[13px] text-[#8b95a1]">{survey.title} · 한 줄이 응답 1건, 주관식은 환자가 쓴 그대로</p>
@@ -55,25 +55,25 @@ export default async function PeiResponsesPage({
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06)] overflow-hidden">
+      <div className="bg-white rounded-2xl overflow-hidden border border-[#d1d1cc]">
         {/* 월 탭 — 시트 탭처럼 */}
-        <div className="flex gap-1 px-3 pt-3 border-b border-[#e5e8eb] bg-[#f9fafb] overflow-x-auto">
+        <div className="flex gap-1 px-3 pt-3 border-b border-[#d1d1cc] bg-[#f2f2ef] overflow-x-auto">
           {tabs.map((t) => {
             const on = t.year === year && t.month === month
             return (
               <Link
                 key={`${t.year}-${t.month}`}
                 href={`${base}/responses?year=${t.year}&month=${t.month}`}
-                className={`shrink-0 px-3.5 py-2 rounded-t-lg text-[13px] font-semibold border border-b-0 -mb-px transition ${on ? "bg-white border-[#e5e8eb] text-[#191f28]" : "border-transparent text-[#6b7684] hover:text-[#191f28] hover:bg-white/60"}`}
+                className={`shrink-0 px-3.5 py-2 rounded-t-lg text-[13px] font-semibold border border-b-0 -mb-px transition ${on ? "bg-white border-[#d1d1cc] text-[#191f28]" : "border-transparent text-[#6b7684] hover:text-[#191f28] hover:bg-white/60"}`}
               >
                 {t.year !== now.getUTCFullYear() ? `${String(t.year).slice(2)}년 ` : ""}{t.month}월
-                <span className={`ml-1.5 text-[12px] ${on ? "text-[#3182f6]" : "text-[#b0b8c1]"}`}>{t.count}</span>
+                <span className={`ml-1.5 text-[12px] ${on ? "text-[#0062ff]" : "text-[#b0b8c1]"}`}>{t.count}</span>
               </Link>
             )
           })}
         </div>
 
-        <div className="p-5 space-y-3">
+        <div className="p-3.5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-[15px] font-bold text-[#191f28]">
               {year}년 {month}월 응답 {stats.count}건

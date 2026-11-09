@@ -3,7 +3,7 @@
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer
-} from "recharts"
+} from "@/components/charts/recharts"
 
 type PatientDataPoint = {
   label: string
@@ -14,7 +14,7 @@ type PatientDataPoint = {
 export function PatientTrendChart({ data, title }: { data: PatientDataPoint[], title: string }) {
   return (
     <div>
-      <h4 className="text-base font-semibold text-gray-900 mb-4">{title}</h4>
+      <h4 className="text-base font-semibold text-gray-900 mb-2.5">{title}</h4>
       <ResponsiveContainer width="100%" height={280} minHeight={280}>
         <LineChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f2f4f6" vertical={false} />
@@ -57,9 +57,9 @@ export function PatientTrendChart({ data, title }: { data: PatientDataPoint[], t
             type="monotone"
             dataKey="totalPatients"
             name="총 인원"
-            stroke="#3182f6"
+            stroke="#0062ff"
             strokeWidth={2.5}
-            dot={{ r: 3.5, fill: "#3182f6" }}
+            dot={{ r: 3.5, fill: "#0062ff" }}
             activeDot={{ r: 5 }}
           />
         </LineChart>
@@ -77,7 +77,7 @@ type ReturnPatientDataPoint = {
 export function ReturnPatientChart({ data }: { data: ReturnPatientDataPoint[] }) {
   return (
     <div>
-      <h4 className="text-base font-semibold text-gray-900 mb-4">구환 + 총인원 추이</h4>
+      <h4 className="text-base font-semibold text-gray-900 mb-2.5">구환 + 총인원 추이</h4>
       <ResponsiveContainer width="100%" height={280} minHeight={280}>
         <LineChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f2f4f6" vertical={false} />
@@ -120,9 +120,9 @@ export function ReturnPatientChart({ data }: { data: ReturnPatientDataPoint[] })
             type="monotone"
             dataKey="totalPatients"
             name="총 인원"
-            stroke="#3182f6"
+            stroke="#0062ff"
             strokeWidth={2.5}
-            dot={{ r: 3.5, fill: "#3182f6" }}
+            dot={{ r: 3.5, fill: "#0062ff" }}
             activeDot={{ r: 5 }}
           />
         </LineChart>
@@ -139,7 +139,7 @@ type NewPatientStatsDataPoint = {
 export function DailyNewPatientChart({ data }: { data: NewPatientStatsDataPoint[] }) {
   return (
     <div>
-      <h4 className="text-base font-semibold text-gray-900 mb-4">일평균 신환 추이</h4>
+      <h4 className="text-base font-semibold text-gray-900 mb-2.5">일평균 신환 추이</h4>
       <ResponsiveContainer width="100%" height={280} minHeight={280}>
         <LineChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f2f4f6" vertical={false} />
@@ -173,9 +173,9 @@ export function DailyNewPatientChart({ data }: { data: NewPatientStatsDataPoint[
             type="monotone"
             dataKey="avgDailyNewPatients"
             name="일평균 신환"
-            stroke="#8b5cf6"
+            stroke="#191f28"
             strokeWidth={2.5}
-            dot={{ r: 3.5, fill: "#8b5cf6" }}
+            dot={{ r: 3.5, fill: "#191f28" }}
             activeDot={{ r: 5 }}
           />
         </LineChart>
@@ -199,7 +199,7 @@ const formatRevenue = (v: number) =>
 export function NewPatientRevenueChart({ data }: { data: NewPatientRevenueDataPoint[] }) {
   return (
     <div>
-      <h4 className="text-base font-semibold text-gray-900 mb-4">신환 객단가 + 총진료비 추이</h4>
+      <h4 className="text-base font-semibold text-gray-900 mb-2.5">신환 객단가 + 총진료비 추이</h4>
       <ResponsiveContainer width="100%" height={280} minHeight={280}>
         <LineChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f2f4f6" vertical={false} />

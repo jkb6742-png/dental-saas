@@ -4,11 +4,11 @@ import {
   LineChart, Line,
   XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
-} from "recharts"
+} from "@/components/charts/recharts"
 
 const COLORS = [
-  "#3182f6", "#05c072", "#f59e0b", "#f04452",
-  "#8b5cf6", "#ec4899", "#14b8a6", "#f97316",
+  "#0062ff", "#05c072", "#f59e0b", "#f04452",
+  "#191f28", "#ec4899", "#14b8a6", "#f97316",
 ]
 
 type Props = {
@@ -19,7 +19,7 @@ type Props = {
 
 export default function RouteTrendChart({ data, channels }: Props) {
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={200}>
       <LineChart data={data} margin={{ top: 22, right: 16, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#f2f4f6" vertical={false} />
         <XAxis
@@ -40,10 +40,8 @@ export default function RouteTrendChart({ data, channels }: Props) {
         <Tooltip
           formatter={(v, name) => [`${Number(v)}명`, name]}
           contentStyle={{
-            borderRadius: 12,
-            border: "none",
-            boxShadow: "0 4px 12px 0 rgb(0 0 0 / 0.10)",
-            fontSize: 13,
+            borderRadius: 4, border: '1px solid #d1d1cc',
+            boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 13,
           }}
         />
         <Legend
@@ -52,14 +50,14 @@ export default function RouteTrendChart({ data, channels }: Props) {
           wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
         />
         {channels.map((ch, i) => (
-          <Line
+          <Line isAnimationActive={false}
             key={ch}
             type="monotone"
             dataKey={ch}
             name={ch}
             stroke={COLORS[i % COLORS.length]}
-            strokeWidth={2.5}
-            dot={{ r: 3.5, fill: COLORS[i % COLORS.length] }}
+            strokeWidth={2}
+            dot={{ r: 3, fill: COLORS[i % COLORS.length] }}
             activeDot={{ r: 5 }}
             connectNulls
           />

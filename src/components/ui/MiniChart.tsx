@@ -14,7 +14,7 @@ type MiniChartProps = {
 export default function MiniChart({
   data,
   type = "line",
-  color = "#3b82f6",
+  color = "#0062ff",
   height = 40,
   showDots = false,
   animate = true
@@ -121,7 +121,7 @@ export default function MiniChart({
             fill={color}
             stroke="white"
             strokeWidth="2"
-            className="hover:r-4 transition-all duration-200"
+            className="hover:r-4"
             style={{
               animation: animate ? `appear-dot 0.5s ease-out ${index * 0.1 + 1}s both` : undefined
             }}

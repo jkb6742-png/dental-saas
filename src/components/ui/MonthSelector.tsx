@@ -27,7 +27,7 @@ export default function MonthSelector({ availableMonths, currentYear, currentMon
     <select
       value={value}
       onChange={handleChange}
-      className="px-3 py-2 text-[13px] font-medium rounded-xl border border-[#e5e8eb] bg-white text-[#191f28] focus:outline-none focus:border-[#3182f6] cursor-pointer"
+      className="px-3 py-2 text-[13px] font-medium rounded-xl border border-[#d1d1cc] bg-white text-[#191f28] focus:outline-none focus:border-[#0062ff] cursor-pointer"
     >
       {availableMonths.map((m) => (
         <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>

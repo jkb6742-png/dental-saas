@@ -16,24 +16,24 @@ export default function SectionCard({
   className = "",
 }: Props) {
   return (
-    <div className={`bg-white rounded-2xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06)] overflow-hidden ${className}`}>
+    <div className={`bg-white rounded border border-[#b9b9b3] overflow-hidden ${className}`}>
       {(title || action) && (
-        <div className="px-6 py-5 flex items-center justify-between border-b border-[#f2f4f6]">
-          <div className="flex items-center gap-3">
-            {icon && <div className="text-slate-600">{icon}</div>}
-            <div>
+        <div className="px-3 py-2 flex items-center justify-between gap-3 bg-[#ecece9] border-b border-[#d1d1cc]">
+          <div className="flex items-center gap-2 min-w-0">
+            {icon && <div className="text-[#555555]">{icon}</div>}
+            <div className="flex items-baseline gap-2 min-w-0">
               {title && (
-                <h3 className="text-[16px] font-semibold text-[#191f28]">{title}</h3>
+                <h3 className="text-[15px] font-bold text-[#0a0a0a] truncate">{title}</h3>
               )}
               {description && (
-                <p className="text-[13px] text-[#8b95a1] mt-0.5">{description}</p>
+                <p className="text-[12px] text-[#6f6f6a] truncate">{description}</p>
               )}
             </div>
           </div>
-          {action && <div>{action}</div>}
+          {action && <div className="shrink-0">{action}</div>}
         </div>
       )}
-      <div className="p-6">{children}</div>
+      <div className="px-3 py-3">{children}</div>
     </div>
   )
 }

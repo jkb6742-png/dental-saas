@@ -1,8 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import LazyChart from "@/components/charts/LazyChart"
 import { useRouter, useSearchParams } from "next/navigation"
-import { XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line, Tooltip, LabelList, Cell } from "recharts"
+import MonthlyCompare, { type CompareRow } from "@/components/charts/MonthlyCompare"
+import { XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line, Tooltip, LabelList, Cell } from "@/components/charts/recharts"
 import { MapPin, TrendingUp, TrendingDown, Minus, Calendar } from "lucide-react"
 
 interface VisitRouteData {
@@ -25,6 +27,7 @@ interface RoutesPageClientProps {
   yearlyData: VisitRouteData[]
   monthlyData: VisitRouteData[]
   availableData: Array<{ year: number; month: number }>
+  compare: { rows: CompareRow[]; items: string[] }
 }
 
 export default function RoutesPageClient({
@@ -33,7 +36,8 @@ export default function RoutesPageClient({
   initialMonth,
   yearlyData,
   monthlyData,
-  availableData
+  availableData,
+  compare
 }: RoutesPageClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -99,22 +103,22 @@ export default function RoutesPageClient({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
-      <div className="space-y-8 p-6">
+    <div className="">
+      <div className="space-y-3">
         {/* 헤더 섹션 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div className="bg-white rounded border border-[#d1d1cc] p-3">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-2">내원경로별 분석</h1>
-              <p className="text-slate-600">내원경로별 신환, 구환 현황과 ROI를 분석하세요.</p>
+              <h1 className="text-2xl font-bold text-slate-900 mb-2">내원경로 분석</h1>
+              <p className="text-slate-600">내원경로별 신환과 구환 현황을 확인합니다.</p>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-slate-500" />
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="px-4 py-2 bg-white/90 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="px-4 py-2 bg-white border border-[#d1d1cc] rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
               >
                 <option value={2025}>2025년</option>
                 <option value={2026}>2026년</option>
@@ -122,7 +126,7 @@ export default function RoutesPageClient({
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                className="px-4 py-2 bg-white/90 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="px-4 py-2 bg-white border border-[#d1d1cc] rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
               >
                 {Array.from({length: 12}, (_, i) => (
                   <option key={i + 1} value={i + 1}>{i + 1}월</option>
@@ -135,20 +139,21 @@ export default function RoutesPageClient({
           </div>
         </div>
 
-        {/* 내원경로별 상세 분석 */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <MapPin className="w-6 h-6 text-blue-600" />
+        <MonthlyCompare rows={compare.rows} items={compare.items} itemLabel="내원경로" year={selectedYear} month={selectedMonth} />
+
+      {/* 내원경로별 상세 분석 */}
+        <div className="bg-white rounded border border-[#d1d1cc] p-3">
+          <div className="flex items-center gap-3 mb-3">
             <h3 className="text-xl font-bold text-slate-900">내원경로별 상세 분석</h3>
-            <span className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+            <span className="bg-[#191f28] text-white text-xs px-3 py-1 rounded-full font-medium">
               {selectedYear}년 1~{selectedMonth}월
             </span>
           </div>
 
           {availableCategories.length === 0 ? (
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 rounded-2xl p-6 backdrop-blur-sm">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
+            <div className="bg-white border border-amber-200/60 rounded-2xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-[#191f28] rounded-xl flex items-center justify-center">
                   <span className="text-white text-lg">📊</span>
                 </div>
                 <div>
@@ -160,7 +165,42 @@ export default function RoutesPageClient({
               </div>
             </div>
           ) : (
-            <div className="space-y-8">
+            <>
+            <div className="flex items-center mb-2">
+                      <div className="bg-white rounded border border-[#d1d1cc] p-0.5 ml-auto flex items-center gap-1">
+                        <button
+                          onClick={() => setSelectedDataType('newPatients')}
+                          className={`px-2.5 py-1 rounded-[3px] text-[12px] font-medium ${
+                            selectedDataType === 'newPatients'
+                              ? 'bg-[#0062ff] text-white'
+                              : 'bg-transparent text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          신환
+                        </button>
+                        <button
+                          onClick={() => setSelectedDataType('returningPatients')}
+                          className={`px-2.5 py-1 rounded-[3px] text-[12px] font-medium ${
+                            selectedDataType === 'returningPatients'
+                              ? 'bg-green-500 text-white'
+                              : 'bg-transparent text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          구환
+                        </button>
+                        <button
+                          onClick={() => setSelectedDataType('totalPatients')}
+                          className={`px-2.5 py-1 rounded-[3px] text-[12px] font-medium ${
+                            selectedDataType === 'totalPatients'
+                              ? 'bg-[#191f28] text-white'
+                              : 'bg-transparent text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          총환자
+                        </button>
+                      </div>
+            </div>
+            <div className="space-y-3">
               {availableCategories.slice(0, 10).map((routeName, index) => {
                 // 1월부터 현재월까지 데이터
                 const categoryData = Array.from({ length: selectedMonth }, (_, i) => {
@@ -193,85 +233,79 @@ export default function RoutesPageClient({
 
                 // 색상 배치
                 const colors = [
-                  { primary: "#3b82f6", light: "#dbeafe" },
+                  { primary: "#0062ff", light: "#dbeafe" },
                   { primary: "#10b981", light: "#d1fae5" },
                   { primary: "#f59e0b", light: "#fef3c7" },
                   { primary: "#ef4444", light: "#fee2e2" },
-                  { primary: "#8b5cf6", light: "#ede9fe" },
+                  { primary: "#191f28", light: "#ecece9" },
                 ]
                 const color = colors[index % colors.length]
-                const lineColor = selectedDataType === 'newPatients' ? '#3b82f6'
-                  : selectedDataType === 'returningPatients' ? '#10b981' : '#8b5cf6'
+                const lineColor = selectedDataType === 'newPatients' ? '#0062ff'
+                  : selectedDataType === 'returningPatients' ? '#10b981' : '#191f28'
 
                 return (
-                  <div key={routeName} className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-6">
+                  <div key={routeName} className="bg-white rounded border border-[#b9b9b3] px-3 py-2 min-w-0 flex flex-col lg:flex-row lg:items-center gap-3">
+                    {/* 왼쪽: 경로 이름과 수치 */}
+                    <div className="lg:w-[220px] shrink-0">
+                    <div className="flex items-center gap-2 mb-2">
                       <div
-                        className="w-8 h-8 rounded-full text-white text-[14px] flex items-center justify-center font-bold"
+                        className="w-5 h-5 shrink-0 rounded-[3px] text-white text-[11px] flex items-center justify-center font-bold tabular-nums"
                         style={{ backgroundColor: color.primary }}
                       >
                         {index + 1}
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-1">{routeName}</h3>
+                        <h3 className="text-[16px] font-bold text-[#0a0a0a]">{routeName}</h3>
                       </div>
                     </div>
 
-                    {/* 데이터 타입 선택 토글 */}
-                    <div className="flex justify-end mb-4">
-                      <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-slate-200 p-1 flex items-center gap-1">
-                        <button
-                          onClick={() => setSelectedDataType('newPatients')}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                            selectedDataType === 'newPatients'
-                              ? 'bg-blue-500 text-white shadow-md'
-                              : 'bg-transparent text-slate-600 hover:bg-slate-100'
-                          }`}
-                        >
-                          신환
-                        </button>
-                        <button
-                          onClick={() => setSelectedDataType('returningPatients')}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                            selectedDataType === 'returningPatients'
-                              ? 'bg-green-500 text-white shadow-md'
-                              : 'bg-transparent text-slate-600 hover:bg-slate-100'
-                          }`}
-                        >
-                          구환
-                        </button>
-                        <button
-                          onClick={() => setSelectedDataType('totalPatients')}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                            selectedDataType === 'totalPatients'
-                              ? 'bg-purple-500 text-white shadow-md'
-                              : 'bg-transparent text-slate-600 hover:bg-slate-100'
-                          }`}
-                        >
-                          총환자
-                        </button>
+                    <div className="grid grid-cols-2 gap-1">
+                      <div className="text-center px-1 py-1 rounded bg-[#f7f7f5]">
+                        <div className="text-[13px] font-bold tabular-nums text-slate-900">{totalCategoryPatients.toLocaleString()}명</div>
+                        <div className="text-[10.5px] text-slate-600">누적 총인원</div>
+                      </div>
+                      <div className="text-center px-1 py-1 rounded bg-[#f7f7f5]">
+                        <div className="text-[13px] font-bold tabular-nums text-slate-900">{totalCategoryNewPatients.toLocaleString()}명</div>
+                        <div className="text-[10.5px] text-slate-600">누적 신환</div>
+                      </div>
+                      <div className="text-center px-1 py-1 rounded bg-[#f7f7f5]">
+                        <div className="text-[13px] font-bold tabular-nums text-slate-900">{totalCategoryReturningPatients.toLocaleString()}명</div>
+                        <div className="text-[10.5px] text-slate-600">누적 구환</div>
+                      </div>
+                      <div className="text-center px-1 py-1 rounded bg-[#f7f7f5]">
+                        <div className={`text-[13px] font-bold tabular-nums flex items-center justify-center gap-1 ${
+                          growthRate > 0 ? 'text-green-600' : growthRate < 0 ? 'text-red-600' : 'text-slate-900'
+                        }`}>
+                          {growthRate > 0 ? <TrendingUp className="w-3 h-3" /> :
+                           growthRate < 0 ? <TrendingDown className="w-3 h-3" /> :
+                           <Minus className="w-3 h-3" />}
+                          {Math.abs(growthRate).toFixed(1)}%
+                        </div>
+                        <div className="text-[10.5px] text-slate-600">전월 대비</div>
                       </div>
                     </div>
+                    </div>
 
-                    {/* 차트 */}
-                    <div className="relative h-80 mb-8 w-full min-h-[320px] min-w-0">
-                      <ResponsiveContainer width="100%" height={320} minHeight={320}>
-                        <LineChart data={categoryData} margin={{ top: 24, right: 24, left: 8, bottom: 8 }}>
+                    {/* 오른쪽: 그래프 */}
+                    <div className="relative flex-1 min-w-0">
+                      <LazyChart height={190}>
+                      <ResponsiveContainer width="100%" height={190}>
+                        <LineChart data={categoryData} margin={{ top: 18, right: 20, left: 0, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                           <XAxis
                             dataKey="month"
-                            tick={{ fontSize: 12, fill: "#64748b" }}
+                            tick={{ fontSize: 11, fill: "#64748b" }}
                             axisLine={false}
                             tickLine={false}
                             tickMargin={10}
                             padding={{ left: 16, right: 16 }}
                           />
                           <YAxis
-                            tick={{ fontSize: 12, fill: "#64748b" }}
+                            tick={{ fontSize: 11, fill: "#64748b" }}
                             axisLine={false}
                             tickLine={false}
                             tickFormatter={(value) => `${value}명`}
-                            width={60}
+                            width={44}
                             tickMargin={8}
                           />
                           <Tooltip
@@ -281,19 +315,17 @@ export default function RoutesPageClient({
                               selectedDataType === 'returningPatients' ? '구환' : '총환자'
                             ]}
                             contentStyle={{
-                              borderRadius: 12,
-                              border: 'none',
-                              boxShadow: '0 4px 12px 0 rgba(0, 0, 0, 0.15)',
-                              fontSize: 13
+                              borderRadius: 4, border: '1px solid #d1d1cc',
+                              boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 13
                             }}
                           />
-                          <Line
+                          <Line isAnimationActive={false}
                             type="monotone"
                             dataKey={selectedDataType}
                             stroke={lineColor}
-                            strokeWidth={3}
-                            dot={{ r: 5, fill: lineColor, strokeWidth: 2, stroke: '#ffffff' }}
-                            activeDot={{ r: 8 }}
+                            strokeWidth={2}
+                            dot={{ r: 3, fill: lineColor, strokeWidth: 2, stroke: '#ffffff' }}
+                            activeDot={{ r: 5 }}
                           >
                             <LabelList
                               dataKey={selectedDataType}
@@ -305,57 +337,31 @@ export default function RoutesPageClient({
                           </Line>
                         </LineChart>
                       </ResponsiveContainer>
-                    </div>
-
-                    {/* 통계 정보 */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center p-3 rounded-lg" style={{ backgroundColor: color.light }}>
-                        <div className="text-[16px] font-bold text-slate-900">{totalCategoryPatients.toLocaleString()}명</div>
-                        <div className="text-[12px] text-slate-600">연간 총인원</div>
-                      </div>
-                      <div className="text-center p-3 rounded-lg" style={{ backgroundColor: color.light }}>
-                        <div className="text-[16px] font-bold text-slate-900">{totalCategoryNewPatients.toLocaleString()}명</div>
-                        <div className="text-[12px] text-slate-600">연간 신환</div>
-                      </div>
-                      <div className="text-center p-3 rounded-lg" style={{ backgroundColor: color.light }}>
-                        <div className="text-[16px] font-bold text-slate-900">{totalCategoryReturningPatients.toLocaleString()}명</div>
-                        <div className="text-[12px] text-slate-600">연간 구환</div>
-                      </div>
-                      <div className="text-center p-3 rounded-lg" style={{ backgroundColor: color.light }}>
-                        <div className={`text-[16px] font-bold flex items-center justify-center gap-1 ${
-                          growthRate > 0 ? 'text-green-600' : growthRate < 0 ? 'text-red-600' : 'text-slate-900'
-                        }`}>
-                          {growthRate > 0 ? <TrendingUp className="w-4 h-4" /> :
-                           growthRate < 0 ? <TrendingDown className="w-4 h-4" /> :
-                           <Minus className="w-4 h-4" />}
-                          {Math.abs(growthRate).toFixed(1)}%
-                        </div>
-                        <div className="text-[12px] text-slate-600">전월 대비</div>
-                      </div>
+                      </LazyChart>
                     </div>
                   </div>
                 )
               })}
             </div>
+            </>
           )}
         </div>
 
         {/* 월별 상세 데이터 테이블 */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <TrendingUp className="w-6 h-6 text-emerald-600" />
+        <div className="bg-white rounded border border-[#d1d1cc] p-3">
+          <div className="flex items-center gap-3 mb-3">
             <h3 className="text-xl font-bold text-slate-900">
               {selectedYear}년 {selectedMonth}월 내원경로별 상세 데이터
             </h3>
-            <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+            <span className="bg-[#191f28] text-white text-xs px-3 py-1 rounded-full font-medium">
               월간통계
             </span>
           </div>
 
           {filteredMonthlyData.length === 0 ? (
-            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 rounded-2xl p-6 backdrop-blur-sm">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
+            <div className="bg-white border border-amber-200/60 rounded-2xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-[#191f28] rounded-xl flex items-center justify-center">
                   <span className="text-white text-lg">📊</span>
                 </div>
                 <div>
@@ -370,7 +376,7 @@ export default function RoutesPageClient({
             <div className="overflow-x-auto">
               <table className="w-full text-[14px]">
                 <thead>
-                  <tr className="border-b border-[#e5e8eb] bg-[#f8f9fa]">
+                  <tr className="border-b border-[#d1d1cc] bg-[#f8f9fa]">
                     <th className="text-left p-4 font-semibold text-[#495057]">내원경로</th>
                     <th className="text-center p-4 font-semibold text-[#495057]">신환</th>
                     <th className="text-center p-4 font-semibold text-[#495057]">구환</th>
@@ -388,10 +394,10 @@ export default function RoutesPageClient({
                         ((route.newPatients || 0) / totalPatients * 100) : 0
 
                       return (
-                        <tr key={`${route.routeName}-${index}`} className="border-b border-[#e5e8eb] hover:bg-[#f8f9fa]">
+                        <tr key={`${route.routeName}-${index}`} className="border-b border-[#d1d1cc] hover:bg-[#f8f9fa]">
                           <td className="p-4 font-medium text-[#191f28]">
                             <div className="flex items-center gap-2">
-                              <span className="w-6 h-6 bg-[#3182f6] text-white rounded-full text-[12px] flex items-center justify-center font-bold">
+                              <span className="w-6 h-6 bg-[#0062ff] text-white rounded-full text-[12px] flex items-center justify-center font-bold">
                                 {index + 1}
                               </span>
                               <span className="flex items-center gap-1">
@@ -402,7 +408,7 @@ export default function RoutesPageClient({
                               </span>
                             </div>
                           </td>
-                          <td className="text-center p-4 tabular-nums text-[#3182f6] font-medium">
+                          <td className="text-center p-4 tabular-nums text-[#0062ff] font-medium">
                             {(route.newPatients || 0).toLocaleString()}
                           </td>
                           <td className="text-center p-4 tabular-nums text-[#10b981] font-medium">

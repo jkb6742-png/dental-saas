@@ -58,10 +58,10 @@ export default function YearMonthFilter({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6 mb-6">
-      <div className="flex items-center gap-4">
+    <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4 mb-3">
+      <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-[#3182f6]" />
+          <Calendar className="w-5 h-5 text-[#0062ff]" />
           <span className="text-[16px] font-semibold text-[#191f28]">기간 선택</span>
         </div>
 
@@ -71,7 +71,7 @@ export default function YearMonthFilter({
             <select
               value={selectedYear}
               onChange={(e) => handleYearChange(parseInt(e.target.value))}
-              className="appearance-none bg-white border border-[#e5e8eb] rounded-xl px-4 py-2.5 pr-10 text-[14px] font-medium text-[#191f28] focus:border-[#3182f6] focus:outline-none cursor-pointer"
+              className="appearance-none bg-white border border-[#d1d1cc] rounded-xl px-4 py-2.5 pr-10 text-[14px] font-medium text-[#191f28] focus:border-[#0062ff] focus:outline-none cursor-pointer"
             >
               {years.map((year) => (
                 <option key={year} value={year}>
@@ -88,7 +88,7 @@ export default function YearMonthFilter({
               <select
                 value={selectedMonth}
                 onChange={(e) => handleMonthChange(parseInt(e.target.value))}
-                className="appearance-none bg-white border border-[#e5e8eb] rounded-xl px-4 py-2.5 pr-10 text-[14px] font-medium text-[#191f28] focus:border-[#3182f6] focus:outline-none cursor-pointer"
+                className="appearance-none bg-white border border-[#d1d1cc] rounded-xl px-4 py-2.5 pr-10 text-[14px] font-medium text-[#191f28] focus:border-[#0062ff] focus:outline-none cursor-pointer"
               >
                 {months.map((month) => (
                   <option key={month.value} value={month.value}>

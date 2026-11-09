@@ -40,7 +40,7 @@ export default function ReportsClient({ clinicId, initialReports }: ReportsClien
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 리포트 생성 및 관리 섹션 */}
       <ReportDashboard clinicId={clinicId} />
 
@@ -48,7 +48,7 @@ export default function ReportsClient({ clinicId, initialReports }: ReportsClien
       <SectionCard title="월간 분석 리포트" description="AI가 자동 생성하는 경영 인사이트">
         {reports.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-14 h-14 bg-[#f2f4f6] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-14 h-14 bg-[#f2f4f6] rounded-2xl flex items-center justify-center mx-auto mb-2.5">
               <FileText className="w-6 h-6 text-[#b0b8c1]" />
             </div>
             <p className="text-[15px] font-semibold text-[#191f28]">아직 리포트가 없습니다</p>
@@ -57,10 +57,10 @@ export default function ReportsClient({ clinicId, initialReports }: ReportsClien
         ) : (
           <div className="space-y-3">
             {reports.map((r) => (
-              <div key={r.id} className="flex items-center justify-between p-4 rounded-xl bg-[#f9fafb] hover:bg-[#f2f4f6] transition-colors">
+              <div key={r.id} className="flex items-center justify-between p-4 rounded-xl bg-[#f2f2ef] hover:bg-[#f2f4f6] transition-colors">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-[#ebf3fe] rounded-xl flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-[#3182f6]" />
+                  <div className="w-9 h-9 bg-[#e8f0ff] rounded-xl flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-[#0062ff]" />
                   </div>
                   <div>
                     <div className="text-[14px] font-semibold text-[#191f28]">{r.year}년 {r.month}월 경영 리포트</div>
@@ -78,7 +78,7 @@ export default function ReportsClient({ clinicId, initialReports }: ReportsClien
                       href={r.pdfUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[13px] text-[#3182f6] font-medium hover:underline px-3 py-1 bg-[#ebf3fe] rounded-lg"
+                      className="text-[13px] text-[#0062ff] font-medium hover:underline px-3 py-1 bg-[#e8f0ff] rounded-lg"
                     >
                       PDF 다운로드
                     </a>
@@ -107,7 +107,7 @@ function ReportViewButton({ reportId, content, year, month }: ReportViewButtonPr
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className="text-[13px] text-[#3182f6] font-medium hover:underline px-3 py-1 bg-[#ebf3fe] rounded-lg"
+        className="text-[13px] text-[#0062ff] font-medium hover:underline px-3 py-1 bg-[#e8f0ff] rounded-lg"
       >
         리포트 보기
       </button>
@@ -115,8 +115,8 @@ function ReportViewButton({ reportId, content, year, month }: ReportViewButtonPr
       {/* 모달 */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-[#e5e8eb]">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden border border-[#d1d1cc]">
+            <div className="flex items-center justify-between p-4 border-b border-[#d1d1cc]">
               <h2 className="text-[18px] font-semibold text-[#191f28]">
                 {year}년 {month}월 경영 리포트
               </h2>
@@ -127,7 +127,7 @@ function ReportViewButton({ reportId, content, year, month }: ReportViewButtonPr
                 ✕
               </button>
             </div>
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
               <div className="prose max-w-none">
                 <pre className="whitespace-pre-wrap font-sans text-[14px] leading-relaxed text-[#191f28]">
                   {content}

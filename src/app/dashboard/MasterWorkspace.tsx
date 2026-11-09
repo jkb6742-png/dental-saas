@@ -59,19 +59,17 @@ function fullDate(v: Date | string | null): string {
   if (!v) return "-"
   const d = new Date(v)
   if (Number.isNaN(d.getTime())) return "-"
-  return d.toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
+  // 서버와 브라우저의 표기(PM/오후)가 달라지지 않도록 한국 시각으로 직접 조립한다
+  const k = new Date(d.getTime() + 9 * 3600 * 1000)
+  const p2 = (n: number) => String(n).padStart(2, "0")
+  const h = k.getUTCHours()
+  return `${k.getUTCFullYear()}. ${p2(k.getUTCMonth() + 1)}. ${p2(k.getUTCDate())}. ${h < 12 ? "오전" : "오후"} ${p2(h % 12 === 0 ? 12 : h % 12)}:${p2(k.getUTCMinutes())}`
 }
 
 function roleBadge(role: string) {
   const map: Record<string, { label: string; cls: string }> = {
     MASTER: { label: "마스터", cls: "bg-[#fff4e5] text-[#b25e00]" },
-    ADMIN: { label: "관리자", cls: "bg-[#ebf3fe] text-[#1b64da]" },
+    ADMIN: { label: "관리자", cls: "bg-[#e8f0ff] text-[#0052d6]" },
     ANALYST: { label: "분석가", cls: "bg-[#eef7f0] text-[#0f7b3f]" },
     VIEWER: { label: "뷰어", cls: "bg-[#f2f4f6] text-[#4e5968]" },
   }
@@ -178,9 +176,9 @@ export default function MasterWorkspace({
   return (
     <div className="flex h-screen overflow-hidden bg-white">
       {/* ── 좌측 사이드바 (클로드/GPT 스타일) ── */}
-      <aside className="w-[288px] shrink-0 flex flex-col bg-[#f7f7f8] border-r border-[#e5e8eb]">
+      <aside className="w-[288px] shrink-0 flex flex-col bg-[#f7f7f8] border-r border-[#d1d1cc]">
         <div className="px-4 pt-5 pb-3">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-2.5">
             <span className="text-[20px]">🦷</span>
             <div>
               <div className="text-[15px] font-bold text-[#191f28] leading-tight">
@@ -192,7 +190,7 @@ export default function MasterWorkspace({
 
           <Link
             href="/admin/clinics"
-            className="flex items-center justify-center gap-1.5 w-full py-2.5 mb-3 bg-[#3182f6] hover:bg-[#1b64da] text-white text-[13px] font-semibold rounded-[10px] transition-colors"
+            className="flex items-center justify-center gap-1.5 w-full py-2.5 mb-3 bg-[#0062ff] hover:bg-[#0052d6] text-white text-[13px] font-semibold rounded-[10px] transition-colors"
           >
             <span className="text-[15px] leading-none">＋</span> 새 치과 추가
           </Link>
@@ -201,7 +199,7 @@ export default function MasterWorkspace({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="치과 검색"
-            className="w-full px-3 py-2 text-[13px] bg-white border border-[#e5e8eb] rounded-[10px] outline-none focus:border-[#3182f6] transition-colors"
+            className="w-full px-3 py-2 text-[13px] bg-white border border-[#d1d1cc] rounded-[10px] outline-none focus:border-[#0062ff] transition-colors"
           />
         </div>
 
@@ -216,7 +214,7 @@ export default function MasterWorkspace({
                 onClick={() => setSelectedId(c.id)}
                 className={`w-full text-left px-3 py-2.5 mb-1 rounded-[10px] transition-colors ${
                   active
-                    ? "bg-white shadow-sm border border-[#e5e8eb]"
+                    ? "bg-white border border-[#d1d1cc]"
                     : "hover:bg-[#ececee] border border-transparent"
                 }`}
               >
@@ -238,13 +236,13 @@ export default function MasterWorkspace({
             )
           })}
           {filtered.length === 0 && (
-            <div className="px-3 py-6 text-center text-[12px] text-[#adb5bd]">
+            <div className="px-3 py-3 text-center text-[12px] text-[#adb5bd]">
               검색 결과 없음
             </div>
           )}
         </nav>
 
-        <div className="px-4 py-3 border-t border-[#e5e8eb] flex items-center gap-2">
+        <div className="px-4 py-3 border-t border-[#d1d1cc] flex items-center gap-2">
           <div className="w-7 h-7 rounded-full bg-[#191f28] text-white flex items-center justify-center text-[12px] shrink-0">
             👑
           </div>
@@ -268,11 +266,11 @@ export default function MasterWorkspace({
       {/* ── 우측 본문 ── */}
       <main className="flex-1 overflow-y-auto">
         {selected ? (
-          <div className="max-w-[900px] mx-auto px-8 py-8">
+          <div className="max-w-[900px] mx-auto px-4 py-4">
             {/* 헤더 */}
-            <div className="flex items-start justify-between mb-6">
+            <div className="flex items-start justify-between mb-3">
               <div>
-                <h1 className="text-[24px] font-bold text-[#191f28]">
+                <h1 className="text-[18px] font-bold text-[#191f28]">
                   {selected.name}
                 </h1>
                 <p className="text-[13px] text-[#8b95a1] mt-1">
@@ -289,7 +287,7 @@ export default function MasterWorkspace({
             </div>
 
             {/* 자료 업데이트 현황 */}
-            <section className="mb-6">
+            <section className="mb-3">
               <h2 className="text-[13px] font-bold text-[#4e5968] mb-3">
                 자료 업데이트 현황
               </h2>
@@ -318,7 +316,7 @@ export default function MasterWorkspace({
             </section>
 
             {/* 전용 계정 */}
-            <section className="mb-6">
+            <section className="mb-3">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-[13px] font-bold text-[#4e5968]">
                   이 치과 전용 로그인 계정{" "}
@@ -331,7 +329,7 @@ export default function MasterWorkspace({
                     setShowAdd((v) => !v)
                     setMsg(null)
                   }}
-                  className="text-[12px] font-semibold text-[#3182f6] hover:underline"
+                  className="text-[12px] font-semibold text-[#0062ff] hover:underline"
                 >
                   {showAdd ? "닫기" : "＋ 계정 생성"}
                 </button>
@@ -345,20 +343,20 @@ export default function MasterWorkspace({
               {showAdd && (
                 <form
                   onSubmit={createAccount}
-                  className="mb-3 p-4 bg-[#f9fafb] border border-[#e5e8eb] rounded-[12px]"
+                  className="mb-3 p-4 bg-[#f2f2ef] border border-[#d1d1cc] rounded-[12px]"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
                     <input
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                       placeholder="이름"
-                      className="px-3 py-2 text-[13px] bg-white border border-[#e5e8eb] rounded-[8px] outline-none focus:border-[#3182f6]"
+                      className="px-3 py-2 text-[13px] bg-white border border-[#d1d1cc] rounded-[8px] outline-none focus:border-[#0062ff]"
                     />
                     <input
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       placeholder="이메일 (로그인 ID)"
-                      className="px-3 py-2 text-[13px] bg-white border border-[#e5e8eb] rounded-[8px] outline-none focus:border-[#3182f6]"
+                      className="px-3 py-2 text-[13px] bg-white border border-[#d1d1cc] rounded-[8px] outline-none focus:border-[#0062ff]"
                     />
                     <input
                       value={form.password}
@@ -366,14 +364,14 @@ export default function MasterWorkspace({
                         setForm({ ...form, password: e.target.value })
                       }
                       placeholder="비밀번호 (6자 이상)"
-                      className="px-3 py-2 text-[13px] bg-white border border-[#e5e8eb] rounded-[8px] outline-none focus:border-[#3182f6]"
+                      className="px-3 py-2 text-[13px] bg-white border border-[#d1d1cc] rounded-[8px] outline-none focus:border-[#0062ff]"
                     />
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="submit"
                       disabled={busy}
-                      className="px-4 py-2 bg-[#3182f6] hover:bg-[#1b64da] disabled:opacity-50 text-white text-[13px] font-semibold rounded-[8px]"
+                      className="px-4 py-2 bg-[#0062ff] hover:bg-[#0052d6] disabled:opacity-50 text-white text-[13px] font-semibold rounded-[8px]"
                     >
                       {busy ? "생성 중..." : "계정 생성"}
                     </button>
@@ -388,9 +386,9 @@ export default function MasterWorkspace({
                 <div className="mb-2 text-[12px] text-[#e03131]">{msg}</div>
               )}
 
-              <div className="border border-[#e5e8eb] rounded-[12px] overflow-hidden">
+              <div className="border border-[#d1d1cc] rounded-[12px] overflow-hidden">
                 {selected.accounts.length === 0 && (
-                  <div className="px-4 py-8 text-center text-[13px] text-[#adb5bd]">
+                  <div className="px-4 py-4 text-center text-[13px] text-[#adb5bd]">
                     아직 이 치과에 연결된 계정이 없습니다. 위 “＋ 계정 생성”으로
                     추가하세요.
                   </div>
@@ -399,10 +397,10 @@ export default function MasterWorkspace({
                   <div
                     key={a.id}
                     className={`flex items-center gap-3 px-4 py-3 group ${
-                      i > 0 ? "border-t border-[#f2f4f6]" : ""
+                      i > 0 ? "border-t border-[#e0e0db]" : ""
                     }`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-[#ebf3fe] text-[#1b64da] flex items-center justify-center text-[13px] font-bold shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-[#e8f0ff] text-[#0052d6] flex items-center justify-center text-[13px] font-bold shrink-0">
                       {a.name.charAt(0)}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -443,9 +441,9 @@ export default function MasterWorkspace({
               <h2 className="text-[13px] font-bold text-[#4e5968] mb-3">
                 최근 로그인 이력
               </h2>
-              <div className="border border-[#e5e8eb] rounded-[12px] overflow-hidden">
+              <div className="border border-[#d1d1cc] rounded-[12px] overflow-hidden">
                 {selected.recentLogins.length === 0 && (
-                  <div className="px-4 py-8 text-center text-[13px] text-[#adb5bd]">
+                  <div className="px-4 py-4 text-center text-[13px] text-[#adb5bd]">
                     아직 로그인 기록이 없습니다. (이번 업데이트 이후부터 자동
                     수집됩니다)
                   </div>
@@ -454,7 +452,7 @@ export default function MasterWorkspace({
                   <div
                     key={i}
                     className={`flex items-center gap-3 px-4 py-2.5 ${
-                      i > 0 ? "border-t border-[#f2f4f6]" : ""
+                      i > 0 ? "border-t border-[#e0e0db]" : ""
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] shrink-0" />
@@ -476,12 +474,12 @@ export default function MasterWorkspace({
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
               <div className="text-[40px] mb-3">🦷</div>
-              <p className="text-[14px] text-[#8b95a1] mb-4">
+              <p className="text-[14px] text-[#8b95a1] mb-2.5">
                 등록된 치과가 없습니다.
               </p>
               <Link
                 href="/admin/clinics"
-                className="inline-flex px-5 py-3 bg-[#3182f6] hover:bg-[#1b64da] text-white text-[14px] font-semibold rounded-[10px]"
+                className="inline-flex px-5 py-3 bg-[#0062ff] hover:bg-[#0052d6] text-white text-[14px] font-semibold rounded-[10px]"
               >
                 치과 등록하기
               </Link>
@@ -503,7 +501,7 @@ function FreshTile({
   full: string
 }) {
   return (
-    <div className="bg-[#f9fafb] border border-[#f2f4f6] rounded-[12px] px-4 py-3">
+    <div className="bg-[#f2f2ef] border border-[#e0e0db] rounded-[12px] px-4 py-3">
       <div className="text-[11px] text-[#8b95a1] mb-1">{label}</div>
       <div
         className="text-[15px] font-bold text-[#191f28]"

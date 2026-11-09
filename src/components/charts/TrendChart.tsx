@@ -4,7 +4,7 @@ import {
   ComposedChart, Bar, Line, LabelList,
   XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
-} from "recharts"
+} from "@/components/charts/recharts"
 
 export type TrendSeries = {
   key: string
@@ -81,20 +81,18 @@ export default function TrendChart({ data, series, rightUnit, height = 280 }: Pr
             return [val, name]
           }}
           contentStyle={{
-            borderRadius: 12,
-            border: "none",
-            boxShadow: "0 4px 12px 0 rgb(0 0 0 / 0.10)",
-            fontSize: 13,
+            borderRadius: 4, border: '1px solid #d1d1cc',
+            boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 13,
           }}
         />
         <Legend
           iconType="circle"
           iconSize={8}
-          wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
+          wrapperStyle={{ fontSize: 11, paddingTop: 2 }}
         />
         {series.map((s) =>
           s.type === "bar" ? (
-            <Bar
+            <Bar isAnimationActive={false}
               key={s.key}
               yAxisId={s.yAxisId ?? "left"}
               dataKey={s.key}
@@ -106,15 +104,15 @@ export default function TrendChart({ data, series, rightUnit, height = 280 }: Pr
               <LabelList dataKey={s.key} position="top" formatter={mkLabelFmt(s.unit)} offset={8} style={{ fontSize: 11, fontWeight: 700, fill: s.color }} />
             </Bar>
           ) : (
-            <Line
+            <Line isAnimationActive={false}
               key={s.key}
               yAxisId={s.yAxisId ?? "left"}
               type="monotone"
               dataKey={s.key}
               name={s.name}
               stroke={s.color}
-              strokeWidth={2.5}
-              dot={{ r: 3.5, fill: s.color }}
+              strokeWidth={2}
+              dot={{ r: 3, fill: s.color }}
               activeDot={{ r: 5 }}
               connectNulls
             >

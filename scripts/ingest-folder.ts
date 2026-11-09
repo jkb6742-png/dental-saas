@@ -124,6 +124,12 @@ function mapRow(type: string, r: any, fileYear: number): { model: string; data: 
       return { model: "receptionRecord", data: {
         year: y, month: r.month,
         receptionTime: r.receptionTime ? new Date(r.receptionTime) : null,
+        treatmentStartTime: r.treatmentStartTime ? new Date(r.treatmentStartTime) : null,
+        treatmentEndTime: r.treatmentEndTime ? new Date(r.treatmentEndTime) : null,
+        reservationTime: r.reservationTime ? new Date(r.reservationTime) : null,
+        firstVisitDate: r.firstVisitDate ? new Date(r.firstVisitDate) : null,
+        chair: r.chair, treatmentDoctor: r.treatmentDoctor, summaryDoctor: r.summaryDoctor,
+        paymentStaff: r.paymentStaff, recallType: r.recallType, vat: r.vat, discountAmount: r.discountAmount,
         status: r.status, chartNumber: r.chartNumber, patientName: r.patientName,
         ageGender: r.ageGender, insuranceType: r.insuranceType, patientType: r.patientType,
         doctor: r.doctor, totalRevenue: r.totalRevenue, insuranceCoverage: r.insuranceCoverage,

@@ -27,6 +27,32 @@ function cleanDate(v: unknown): string | null {
   }
 }
 
+// 접수시각 "2026-10-31 09:36:23" → 한국 시각 ISO. 서버 시간대와 상관없이 같은 값이 저장된다.
+function kstDateTime(v: unknown): string | null {
+  if (v == null || v === "" || v === "-") return null
+  const p2 = (n: number) => String(n).padStart(2, "0")
+  if (v instanceof Date) {
+    if (isNaN(v.getTime())) return null
+    return `${v.getFullYear()}-${p2(v.getMonth() + 1)}-${p2(v.getDate())}T${p2(v.getHours())}:${p2(v.getMinutes())}:${p2(v.getSeconds())}+09:00`
+  }
+  const m = String(v).match(/(\d{4})-(\d{1,2})-(\d{1,2})[ T]+(\d{1,2})\s*:\s*(\d{2})(?:\s*:\s*(\d{2}))?/)
+  if (!m) return null
+  return `${m[1]}-${p2(+m[2])}-${p2(+m[3])}T${p2(+m[4])}:${m[5]}:${m[6] ?? "00"}+09:00`
+}
+
+// 진료시작 "09 : 33" 처럼 시각만 있는 칸을 접수일과 합친다
+function kstTimeOn(dateText: string | null, v: unknown): string | null {
+  if (!dateText || v == null) return null
+  const m = String(v).match(/(\d{1,2})\s*:\s*(\d{2})/)
+  if (!m || +m[1] > 23 || +m[2] > 59) return null
+  return `${dateText}T${m[1].padStart(2, "0")}:${m[2]}:00+09:00`
+}
+
+const cleanText = (v: unknown) => {
+  const s = String(v ?? "").trim()
+  return s && s !== "-" ? s : null
+}
+
 function extractMonth(v: unknown): number | null {
   const s = String(v ?? "")
   const m = s.match(/(\d{1,2})월/)
@@ -458,7 +484,18 @@ export function parseReceptionRecords(buffer: ArrayBuffer, filename: string): Pa
       return {
         _type: "reception_record",
         year, month,
-        receptionTime,
+        receptionTime: kstDateTime(r["접수시각"]) ?? receptionTime,
+        treatmentStartTime: kstTimeOn(receptionTime, r["진료시작"]),
+        treatmentEndTime: kstTimeOn(receptionTime, r["진료완료"]),
+        reservationTime: kstTimeOn(receptionTime, r["예약시각"]),
+        chair: cleanText(r["체어"]),
+        treatmentDoctor: cleanText(r["진료의사"]),
+        summaryDoctor: cleanText(r["집계의사"]),
+        paymentStaff: cleanText(r["수납자"]),
+        recallType: cleanText(r["리콜구분"]),
+        firstVisitDate: cleanDate(r["최초내원"]),
+        vat: cleanNum(r["부가세"]),
+        discountAmount: cleanNum(r["할인액"]),
         status: String(r["상태"] ?? "").trim() || null,
         chartNumber: String(r["차트번호"] ?? "").trim() || null,
         patientName: String(r["이름"] ?? "").trim() || null,

@@ -57,17 +57,17 @@ export default function ReviewManualInput({ clinicId, source, onSave }: ReviewMa
     NAVER: {
       name: "네이버",
       bgColor: "bg-green-500",
-      borderColor: "border-green-200",
+      borderColor: "border-[#d1d1cc]",
       focusColor: "focus:ring-green-500",
       hoverColor: "hover:bg-green-600",
       icon: "N"
     },
     GOOGLE: {
       name: "구글",
-      bgColor: "bg-blue-500",
-      borderColor: "border-blue-200",
+      bgColor: "bg-[#0062ff]",
+      borderColor: "border-[#d1d1cc]",
       focusColor: "focus:ring-blue-500",
-      hoverColor: "hover:bg-blue-600",
+      hoverColor: "hover:bg-[#0052d6]",
       icon: "G"
     }
   }
@@ -75,8 +75,8 @@ export default function ReviewManualInput({ clinicId, source, onSave }: ReviewMa
   const config = sourceConfig[source]
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
-      <div className="flex items-center space-x-3 mb-6">
+    <div className="bg-white rounded-xl border border-[#d1d1cc] p-4">
+      <div className="flex items-center space-x-3 mb-3">
         <div className={`w-8 h-8 ${config.bgColor} rounded-lg flex items-center justify-center text-white font-bold text-sm`}>
           {config.icon}
         </div>
@@ -84,7 +84,7 @@ export default function ReviewManualInput({ clinicId, source, onSave }: ReviewMa
       </div>
 
       {/* 기본 통계 입력 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <MessageCircle className="w-4 h-4 inline mr-1" />
@@ -141,7 +141,7 @@ export default function ReviewManualInput({ clinicId, source, onSave }: ReviewMa
       </div>
 
       {/* 피드백 댓글 입력 */}
-      <div className="mb-6">
+      <div className="mb-3">
         <label className="block text-sm font-medium text-gray-700 mb-2">
           <AlertTriangle className="w-4 h-4 inline mr-1 text-yellow-500" />
           주요 피드백 / 개선사항 댓글
@@ -169,7 +169,7 @@ export default function ReviewManualInput({ clinicId, source, onSave }: ReviewMa
 
       {/* 피드백 목록 */}
       {reviewStats.feedbackComments.length > 0 && (
-        <div className="mb-6">
+        <div className="mb-3">
           <h4 className="text-sm font-medium text-gray-700 mb-3">등록된 피드백</h4>
           <div className="space-y-2">
             {reviewStats.feedbackComments.map((comment, index) => (
@@ -197,9 +197,9 @@ export default function ReviewManualInput({ clinicId, source, onSave }: ReviewMa
       </button>
 
       {/* 사용 안내 */}
-      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-[#d1d1cc]">
         <h5 className="text-sm font-medium text-blue-800 mb-2">📋 입력 방법</h5>
-        <ul className="text-xs text-blue-700 space-y-1">
+        <ul className="text-xs text-[#0062ff] space-y-1">
           {source === "NAVER" ? (
             <>
               <li>• 네이버 지도에서 치과를 검색하고 리뷰 탭을 확인</li>

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import Sidebar from "@/components/layout/Sidebar"
 import Header from "@/components/layout/Header"
+import { Suspense } from "react"
 
 export default async function DashboardLayout({
   children,
@@ -30,8 +31,6 @@ export default async function DashboardLayout({
   // 비마스터는 소속 치과(clinicId)에만 접근. 그 외 clinicId는 차단.
   const userClinicId = currentUser?.clinicId ?? currentUser?.inviteCode?.clinicId ?? null
 
-  console.log('🔍 [LAYOUT] role:', userRole, 'DB agencyId:', currentUser?.agencyId, 'userClinicId:', userClinicId)
-
   if (!isMaster) {
     if (!userClinicId) {
       // 소속 치과가 없는 비마스터 계정은 데이터 접근 불가
@@ -39,7 +38,6 @@ export default async function DashboardLayout({
     }
     if (clinicId !== userClinicId) {
       // 남의 치과 URL 직접 접근 시 자신의 치과로 되돌림
-      console.log('🚫 [LAYOUT] 타 치과 접근 차단:', clinicId, '→', userClinicId)
       redirect(`/dashboard/${userClinicId}`)
     }
   }
@@ -49,7 +47,9 @@ export default async function DashboardLayout({
     where: isMaster
       ? { id: clinicId }
       : { id: clinicId, agencyId: currentUser?.agencyId },
-    include: {
+    select: {
+      id: true,
+      name: true,
       agency: {
         select: { name: true }
       }
@@ -59,19 +59,19 @@ export default async function DashboardLayout({
   if (!clinic) redirect("/dashboard")
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f9fafb]">
-      <Sidebar
-        clinicName={clinic.name}
-        agencyName={isMaster ? "마스터 관리자" : (clinic.agency?.name || (session.user as any).agencyName)}
-        clinicId={clinic.id}
-        userRole={userRole}
-      />
+    <div className="flex h-screen overflow-hidden bg-[#f2f2ef]">
+      <Suspense fallback={<div className="w-[76px] shrink-0 h-screen bg-[#e9e9e5] border-r border-[#d1d1cc]" />}>
+        <Sidebar clinicId={clinic.id} userRole={userRole} />
+      </Suspense>
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header
           userName={isMaster ? "마스터 관리자" : (session.user?.name ?? "")}
           pageTitle={clinic.name}
+          canSwitchClinic={isMaster}
         />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto px-4 py-3">
+          <div className="mx-auto w-full max-w-[1180px]">{children}</div>
+        </main>
       </div>
     </div>
   )

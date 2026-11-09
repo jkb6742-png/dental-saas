@@ -178,9 +178,9 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
   // 인증되지 않은 경우
   if (status === "unauthenticated") {
     return (
-      <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
+      <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-[#ff6b6b] mx-auto mb-4" />
+          <AlertCircle className="w-12 h-12 text-[#ff6b6b] mx-auto mb-2.5" />
           <p className="text-[#191f28] font-medium">로그인이 필요합니다</p>
         </div>
       </div>
@@ -188,8 +188,8 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+      <div className="flex items-center gap-3 mb-3">
         <div className="w-9 h-9 bg-[#fff3cd] rounded-xl flex items-center justify-center">
           <Upload className="w-4 h-4 text-[#f59e0b]" />
         </div>
@@ -199,16 +199,16 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
         </div>
       </div>
 
-      <form onSubmit={handleUpload} className="space-y-6">
+      <form onSubmit={handleUpload} className="space-y-3">
         {/* 드래그 앤 드롭 영역 - 터치 지원 개선 */}
         <div>
           <div
-            className={`relative border-2 border-dashed rounded-xl p-4 sm:p-6 text-center transition-all cursor-pointer touch-manipulation ${
+            className={`relative border-2 border-dashed rounded-xl p-4 sm:p-4 text-center transition-all cursor-pointer touch-manipulation ${
               isDragging
                 ? 'border-[#f59e0b] bg-[#fff3cd]'
                 : file
                 ? 'border-[#10b981] bg-[#ecfdf5]'
-                : 'border-[#e5e8eb] hover:border-[#8b95a1] active:border-[#3182f6]'
+                : 'border-[#d1d1cc] hover:border-[#8b95a1] active:border-[#0062ff]'
             }`}
             onDragEnter={handleDragIn}
             onDragLeave={handleDragOut}
@@ -231,14 +231,14 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
             />
 
             {isDragging ? (
-              <div className="py-6 sm:py-8">
-                <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">📄</div>
+              <div className="py-3 sm:py-4">
+                <div className="text-3xl sm:text-4xl mb-3 sm:mb-2.5">📄</div>
                 <p className="text-base sm:text-lg font-semibold text-[#f59e0b]">
                   PEI 리포트 파일을 여기에 드롭하세요!
                 </p>
               </div>
             ) : file ? (
-              <div className="py-4 sm:py-6">
+              <div className="py-4 sm:py-3">
                 <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 text-[#10b981] mx-auto mb-2 sm:mb-3" />
                 <p className="text-base sm:text-lg font-semibold text-[#10b981] mb-1 sm:mb-2 break-all">
                   {file.name}
@@ -251,8 +251,8 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
                 </p>
               </div>
             ) : (
-              <div className="py-6 sm:py-8">
-                <FileText className="w-10 h-10 sm:w-12 sm:h-12 text-[#8b95a1] mx-auto mb-3 sm:mb-4" />
+              <div className="py-3 sm:py-4">
+                <FileText className="w-10 h-10 sm:w-12 sm:h-12 text-[#8b95a1] mx-auto mb-3 sm:mb-2.5" />
                 <p className="text-base sm:text-lg font-semibold text-[#191f28] mb-2 px-2">
                   PEI 리포트 파일을 터치하여 선택하거나<br className="sm:hidden" />
                   <span className="hidden sm:inline"> 드래그 앤 드롭하세요</span>
@@ -266,7 +266,7 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
         </div>
 
         {/* 기본 정보 입력 - 모바일 개선 */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-3">
           <div>
             <label className="block text-[13px] sm:text-sm font-medium text-[#191f28] mb-2">
               연도 *
@@ -277,7 +277,7 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
               onChange={(e) => setYear(parseInt(e.target.value))}
               min="2020"
               max="2030"
-              className="block w-full px-3 py-2.5 sm:py-2 border border-[#e5e8eb] rounded-lg text-[14px] focus:outline-none focus:border-[#3182f6] touch-manipulation"
+              className="block w-full px-3 py-2.5 sm:py-2 border border-[#d1d1cc] rounded-lg text-[14px] focus:outline-none focus:border-[#0062ff] touch-manipulation"
               required
               disabled={uploading}
             />
@@ -290,7 +290,7 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
             <select
               value={month}
               onChange={(e) => setMonth(parseInt(e.target.value))}
-              className="block w-full px-3 py-2.5 sm:py-2 border border-[#e5e8eb] rounded-lg text-[14px] focus:outline-none focus:border-[#3182f6] touch-manipulation"
+              className="block w-full px-3 py-2.5 sm:py-2 border border-[#d1d1cc] rounded-lg text-[14px] focus:outline-none focus:border-[#0062ff] touch-manipulation"
               required
               disabled={uploading}
             >
@@ -310,7 +310,7 @@ export default function PeiHtmlUpload({ clinicId, onUploadSuccess }: PeiHtmlUplo
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="예: 2026년 6월 PEI 리포트"
-            className="block w-full px-3 py-2.5 sm:py-2 border border-[#e5e8eb] rounded-lg text-[14px] focus:outline-none focus:border-[#3182f6] touch-manipulation"
+            className="block w-full px-3 py-2.5 sm:py-2 border border-[#d1d1cc] rounded-lg text-[14px] focus:outline-none focus:border-[#0062ff] touch-manipulation"
             required
             disabled={uploading}
           />

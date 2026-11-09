@@ -1,7 +1,5 @@
 "use client"
 
-import { TrendingUp, TrendingDown, Minus } from "lucide-react"
-
 type Props = {
   label: string
   value: string | number
@@ -13,10 +11,10 @@ type Props = {
 }
 
 const colorMap = {
-  blue: "bg-[#ebf3fe] text-[#3182f6]",
-  green: "bg-[#e5f9f0] text-[#05c072]",
-  red: "bg-[#fff0f1] text-[#f04452]",
-  yellow: "bg-amber-50 text-amber-500",
+  blue: "text-[#0062ff]",
+  green: "text-[#0f9f55]",
+  red: "text-[#e0383b]",
+  yellow: "text-[#b97300]",
 }
 
 export default function KpiCard({
@@ -32,49 +30,32 @@ export default function KpiCard({
   const isNegative = change !== undefined && change < 0
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_0_rgb(0_0_0/0.06)] hover:shadow-[0_4px_12px_0_rgb(0_0_0/0.08)] transition-shadow duration-200">
-      <div className="flex items-start justify-between mb-4">
-        <span className="text-[13px] font-medium text-[#6b7684]">{label}</span>
+    <div className="min-w-0 bg-white rounded border border-[#d1d1cc] px-3.5 py-3">
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <span className="text-[12px] text-[#555555] truncate">{label}</span>
         {icon && (
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${colorMap[color]}`}>
-            {icon}
-          </div>
+          <span className={`shrink-0 [&_svg]:w-4 [&_svg]:h-4 ${colorMap[color]}`}>{icon}</span>
         )}
       </div>
 
-      <div className="flex items-end gap-1 mb-2">
-        <span className="text-[28px] font-bold leading-none text-[#191f28] tabular-nums">
+      <div className="flex items-baseline gap-1 whitespace-nowrap">
+        <span className="text-[22px] font-bold leading-none text-[#0a0a0a] tabular-nums">
           {typeof value === "number" ? value.toLocaleString("ko-KR") : value}
         </span>
-        {unit && (
-          <span className="text-[15px] font-medium text-[#8b95a1] mb-0.5">{unit}</span>
-        )}
+        {unit && <span className="text-[12px] text-[#6f6f6a]">{unit}</span>}
       </div>
 
       {change !== undefined && (
-        <div className="flex items-center gap-1">
-          {isPositive ? (
-            <TrendingUp className="w-3.5 h-3.5 text-[#05c072]" />
-          ) : isNegative ? (
-            <TrendingDown className="w-3.5 h-3.5 text-[#f04452]" />
-          ) : (
-            <Minus className="w-3.5 h-3.5 text-[#8b95a1]" />
-          )}
+        <div className="mt-1.5 text-[11px] text-[#6f6f6a] whitespace-nowrap">
           <span
-            className={`text-[13px] font-medium ${
-              isPositive
-                ? "text-[#05c072]"
-                : isNegative
-                ? "text-[#f04452]"
-                : "text-[#8b95a1]"
+            className={`font-semibold tabular-nums ${
+              isPositive ? "text-[#0f9f55]" : isNegative ? "text-[#e0383b]" : "text-[#555555]"
             }`}
           >
             {isPositive ? "+" : ""}
             {change.toFixed(1)}%
           </span>
-          {changeLabel && (
-            <span className="text-[13px] text-[#b0b8c1]">{changeLabel}</span>
-          )}
+          {changeLabel && <span> {changeLabel}</span>}
         </div>
       )}
     </div>

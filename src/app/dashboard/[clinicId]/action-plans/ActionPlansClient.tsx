@@ -114,16 +114,16 @@ export default function ActionPlansClient({
   const getStatusIcon = (status: ActionPlan["status"]) => {
     switch (status) {
       case "시작전": return <Clock className="w-4 h-4 text-gray-600" />
-      case "진행중": return <PlayCircle className="w-4 h-4 text-blue-600" />
+      case "진행중": return <PlayCircle className="w-4 h-4 text-[#0062ff]" />
       case "완료": return <CheckCircle className="w-4 h-4 text-green-600" />
     }
   }
 
   const getStatusColor = (status: ActionPlan["status"]) => {
     switch (status) {
-      case "시작전": return "bg-gray-100 text-gray-700 border-gray-200"
-      case "진행중": return "bg-blue-100 text-blue-700 border-blue-200"
-      case "완료": return "bg-green-100 text-green-700 border-green-200"
+      case "시작전": return "bg-gray-100 text-gray-700 border-[#d1d1cc]"
+      case "진행중": return "bg-blue-100 text-[#0062ff] border-[#d1d1cc]"
+      case "완료": return "bg-green-100 text-green-700 border-[#d1d1cc]"
     }
   }
 
@@ -328,13 +328,13 @@ export default function ActionPlansClient({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
-      <div className="space-y-6 p-6">
+    <div className="">
+      <div className="space-y-3 p-4">
         {/* 헤더 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center">
+        <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-[#191f28] rounded-xl flex items-center justify-center">
                 <Target className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -350,7 +350,7 @@ export default function ActionPlansClient({
             {isMaster && (
               <button
                 onClick={openAddModal}
-                className="px-4 py-2 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-[#191f28] text-white rounded-xl hover:bg-black transition-colors flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 새 계획 추가
@@ -359,7 +359,7 @@ export default function ActionPlansClient({
           </div>
 
           {/* 통계 카드 */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div className="bg-slate-50 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="w-5 h-5 text-slate-600" />
@@ -378,8 +378,8 @@ export default function ActionPlansClient({
 
             <div className="bg-blue-50 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-2">
-                <PlayCircle className="w-5 h-5 text-blue-600" />
-                <span className="text-sm font-medium text-blue-700">진행중</span>
+                <PlayCircle className="w-5 h-5 text-[#0062ff]" />
+                <span className="text-sm font-medium text-[#0062ff]">진행중</span>
               </div>
               <div className="text-2xl font-bold text-blue-900">{stats.inProgress}개</div>
             </div>
@@ -395,14 +395,14 @@ export default function ActionPlansClient({
         </div>
 
         {/* 필터 */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-4">
+        <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-2 mb-2.5">
               <Filter className="w-5 h-5 text-slate-600" />
               <span className="text-lg font-semibold text-slate-700">필터 옵션</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* 상태 필터 */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">실행 상태</label>
@@ -480,12 +480,12 @@ export default function ActionPlansClient({
         </div>
 
         {/* 액션플랜 목록 */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-          <h3 className="text-xl font-bold text-slate-900 mb-6">액션플랜 목록</h3>
+        <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+          <h3 className="text-xl font-bold text-slate-900 mb-3">액션플랜 목록</h3>
 
           {filteredPlans.length === 0 ? (
             <div className="text-center py-12">
-              <Target className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+              <Target className="w-16 h-16 text-slate-300 mx-auto mb-2.5" />
               <p className="text-slate-600">
                 {selectedStatus === "전체" ? "액션플랜이 없습니다." : `${selectedStatus} 상태의 액션플랜이 없습니다.`}
               </p>
@@ -496,10 +496,10 @@ export default function ActionPlansClient({
               )}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               {filteredPlans.map((plan) => (
-                <div key={plan.id} className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-shadow">
-                  <div className="flex items-start gap-4 mb-4">
+                <div key={plan.id} className="bg-white rounded-xl border border-[#d1d1cc] p-4 transition-shadow">
+                  <div className="flex items-start gap-3 mb-2.5">
                     {/* 우선순위 표시 */}
                     <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${getPriorityColor(plan.priority)}`}>
                       <span title={`${plan.priority} 우선순위`}>
@@ -522,7 +522,7 @@ export default function ActionPlansClient({
                       </div>
                       <p className="text-slate-600 mb-3">{plan.description}</p>
 
-                      <div className="flex items-center gap-6 text-sm text-slate-500 mb-3">
+                      <div className="flex items-center gap-3 text-sm text-slate-500 mb-3">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
                           <span>목표: {formatDate(plan.targetDate)}</span>
@@ -553,7 +553,7 @@ export default function ActionPlansClient({
                           </div>
                           <div className="w-full bg-slate-200 rounded-full h-2">
                             <div
-                              className="bg-blue-500 h-2 rounded-full transition-all"
+                              className="bg-[#0062ff] h-2 rounded-full transition-all"
                               style={{ width: `${plan.progress}%` }}
                             />
                           </div>
@@ -598,13 +598,13 @@ export default function ActionPlansClient({
         {/* 추가/수정 모달 */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-bold text-slate-900 mb-4">
+            <div className="bg-white rounded-2xl p-4 w-full max-w-lg max-h-[90vh] overflow-y-auto border border-[#d1d1cc]">
+              <h3 className="text-lg font-bold text-slate-900 mb-2.5">
                 {editingPlan ? "액션플랜 수정" : "새 액션플랜 추가"}
               </h3>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <form onSubmit={handleSubmit} className="space-y-2.5">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">목표</label>
                     <input
@@ -698,7 +698,7 @@ export default function ActionPlansClient({
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                    className="flex-1 px-4 py-2 bg-[#191f28] text-white rounded-lg hover:bg-black transition-colors"
                   >
                     {editingPlan ? "수정" : "추가"}
                   </button>
@@ -711,9 +711,9 @@ export default function ActionPlansClient({
         {/* 상세 보기 모달 */}
         {isDetailOpen && selectedPlan && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex items-center gap-4">
+            <div className="bg-white rounded-2xl p-4 w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-[#d1d1cc]">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${getPriorityColor(selectedPlan.priority)}`}>
                     {getPriorityIcon(selectedPlan.priority)}
                   </div>
@@ -733,15 +733,15 @@ export default function ActionPlansClient({
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {/* 왼쪽: 계획 정보 */}
-                <div className="space-y-6">
+                <div className="space-y-3">
                   <div>
                     <h3 className="font-semibold text-slate-900 mb-2">상세내용</h3>
                     <p className="text-slate-600">{selectedPlan.description}</p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <span className="text-slate-500">목표일자</span>
                       <div className="font-medium">{formatDate(selectedPlan.targetDate)}</div>
@@ -760,7 +760,7 @@ export default function ActionPlansClient({
                       </div>
                       <div className="w-full bg-slate-200 rounded-full h-3">
                         <div
-                          className="bg-blue-500 h-3 rounded-full transition-all"
+                          className="bg-[#0062ff] h-3 rounded-full transition-all"
                           style={{ width: `${selectedPlan.progress}%` }}
                         />
                       </div>
@@ -792,7 +792,7 @@ export default function ActionPlansClient({
                 </div>
 
                 {/* 오른쪽: 댓글 */}
-                <div className="space-y-4">
+                <div className="space-y-2.5">
                   <h3 className="font-semibold text-slate-900">댓글 ({selectedPlan.comments.length})</h3>
 
                   <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -803,8 +803,8 @@ export default function ActionPlansClient({
                           <span className="font-medium text-sm">{comment.author}</span>
                           <span className={`text-xs px-2 py-1 rounded ${
                             comment.authorRole === "MASTER"
-                              ? "bg-purple-100 text-purple-700"
-                              : "bg-blue-100 text-blue-700"
+                              ? "bg-purple-100 text-[#191f28]"
+                              : "bg-blue-100 text-[#0062ff]"
                           }`}>
                             {comment.authorRole === "MASTER" ? "마스터" : "치과"}
                           </span>
@@ -829,7 +829,7 @@ export default function ActionPlansClient({
                       <button
                         onClick={() => addComment(selectedPlan.id)}
                         disabled={!newComment.trim()}
-                        className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="px-3 py-2 bg-[#191f28] text-white rounded-lg hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <Send className="w-4 h-4" />
                       </button>

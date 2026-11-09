@@ -1,6 +1,6 @@
 "use client"
 
-import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "@/components/charts/recharts"
 
 type DataPoint = { name: string; 신환: number; 구환: number; 평균진료비: number }
 
@@ -20,7 +20,7 @@ export default function AgeChart({ data }: { data: DataPoint[] }) {
         />
         <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 13, paddingTop: 12 }} />
         <Bar yAxisId="left" dataKey="신환" fill="#05c072" radius={[4, 4, 0, 0]} maxBarSize={32} stackId="a" />
-        <Bar yAxisId="left" dataKey="구환" fill="#ebf3fe" radius={[4, 4, 0, 0]} maxBarSize={32} stackId="a" />
+        <Bar yAxisId="left" dataKey="구환" fill="#e8f0ff" radius={[4, 4, 0, 0]} maxBarSize={32} stackId="a" />
         <Line yAxisId="right" type="monotone" dataKey="평균진료비" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
       </ComposedChart>
     </ResponsiveContainer>

@@ -1,3 +1,4 @@
+import { denyClinic } from "@/lib/requests/access"
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
 import { PaginationService, SearchBuilder, SortBuilder } from '@/lib/pagination'
@@ -95,6 +96,9 @@ export async function POST(request: NextRequest) {
     if (!clinicId) {
       return Response.json({ error: 'clinicId is required' }, { status: 400 })
     }
+
+    const denied = await denyClinic(clinicId)
+    if (denied) return denied
 
     const where: any = { clinicId }
     if (year) where.year = parseInt(year)

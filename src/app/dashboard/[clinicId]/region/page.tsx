@@ -47,13 +47,13 @@ export default async function RegionPage({
   const totalNew = stats.reduce((s, r) => s + (r.newPatients ?? 0), 0)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-[14px] text-[#8b95a1]">주요 지역 신환 수 월별 추이 · {year}년 {month}월 상세</p>
         <Suspense><MonthSelector availableMonths={availableMonths} currentYear={year} currentMonth={month} /></Suspense>
       </div>
 
-      <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
         <KpiCard label="이달 신환 수" value={totalNew} unit="명" icon={<MapPin className="w-4 h-4" />} color="blue" />
         <KpiCard label="1위 지역" value={stats[0]?.region?.split(" ").slice(-1)[0] ?? "—"} changeLabel={stats[0] ? `${stats[0].totalPatients}명` : undefined} color="green" />
         <KpiCard label="등록 지역 수" value={stats.length} unit="개" color="yellow" />
@@ -67,7 +67,7 @@ export default async function RegionPage({
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b border-[#f2f4f6]">
+              <tr className="border-b border-[#e0e0db]">
                 {["순위", "지역", "내원환자", "신환", "구환", "총내원횟수", "평균진료비"].map((h) => (
                   <th key={h} className="text-left py-3 px-3 text-[#8b95a1] font-medium first:pl-0">{h}</th>
                 ))}
@@ -75,14 +75,14 @@ export default async function RegionPage({
             </thead>
             <tbody>
               {stats.slice(0, 30).map((r, i) => (
-                <tr key={r.id} className="border-b border-[#f9fafb] hover:bg-[#f9fafb]">
+                <tr key={r.id} className="border-b border-[#f2f2ef] hover:bg-[#f2f2ef]">
                   <td className="py-3 px-3 pl-0 text-[#b0b8c1] font-bold">{i + 1}</td>
                   <td className="py-3 px-3 font-medium text-[#191f28]">{r.region}</td>
                   <td className="py-3 px-3 tabular-nums font-semibold">{r.totalPatients ?? "—"}명</td>
                   <td className="py-3 px-3 tabular-nums text-[#05c072]">{r.newPatients ?? "—"}명</td>
                   <td className="py-3 px-3 tabular-nums text-[#6b7684]">{r.returningPatients ?? "—"}명</td>
                   <td className="py-3 px-3 tabular-nums text-[#6b7684]">{r.totalVisits ?? "—"}회</td>
-                  <td className="py-3 px-3 tabular-nums text-[#3182f6]">{(r.avgRevenue ?? 0).toLocaleString("ko-KR")}원</td>
+                  <td className="py-3 px-3 tabular-nums text-[#0062ff]">{(r.avgRevenue ?? 0).toLocaleString("ko-KR")}원</td>
                 </tr>
               ))}
             </tbody>

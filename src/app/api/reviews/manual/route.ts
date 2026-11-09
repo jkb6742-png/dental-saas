@@ -1,3 +1,4 @@
+import { denyClinic } from "@/lib/requests/access"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { NextResponse } from "next/server"
@@ -14,6 +15,9 @@ export async function POST(request: Request) {
     if (!clinicId || !source) {
       return NextResponse.json({ error: "clinicId와 source는 필수입니다" }, { status: 400 })
     }
+
+    const denied = await denyClinic(clinicId)
+    if (denied) return denied
 
     // year, month가 제공되지 않으면 현재 날짜 사용
     const now = new Date()

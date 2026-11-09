@@ -6,14 +6,13 @@ import { ArrowDown, ArrowUp, Camera, Copy, ExternalLink, GripVertical, Plus, Ref
 import Button from "@/components/ui/Button"
 import {
   AGE_RANGES, BUILTIN, CUSTOM_TYPES, DEFAULT_TREATMENTS, NA_LABEL, QTYPE_LABEL, SCALE, defaultQuestions, isBuiltin,
-  newQuestionId, type Doctor, type QType, type QuestionDef,
-} from "@/lib/pei-survey/questions"
+  newQuestionId, type Doctor, type QType, type QuestionDef, RECOMMEND_WORDS } from "@/lib/pei-survey/questions"
 import type { SurveyDTO } from "@/lib/pei-survey/service"
 
-const card = "bg-white rounded-2xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06)]"
-const inputCls = "w-full px-3.5 py-2.5 rounded-[10px] border border-[#e5e8eb] bg-white text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#3182f6]/15 transition"
+const card = "bg-white rounded-2xl border border-[#d1d1cc]"
+const inputCls = "w-full px-3.5 py-2.5 rounded-[10px] border border-[#d1d1cc] bg-white text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#0062ff]/15 transition"
 const labelCls = "block text-[13px] font-semibold text-[#4e5968] mb-1.5"
-const lineInput = "w-full bg-transparent border-b border-[#e5e8eb] focus:border-[#3182f6] focus:outline-none py-1.5 text-[14px] text-[#191f28] placeholder:text-[#b0b8c1]"
+const lineInput = "w-full bg-transparent border-b border-[#d1d1cc] focus:border-[#0062ff] focus:outline-none py-1.5 text-[14px] text-[#191f28] placeholder:text-[#b0b8c1]"
 
 const toLoginIf401 = (res: Response) => {
   if (res.status === 401 && typeof window !== "undefined") {
@@ -171,7 +170,7 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
     <div className="mt-3 space-y-2">
       <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onPhoto} />
       {doctors.map((d, i) => (
-        <div key={i} className="flex items-center gap-2.5 rounded-xl border border-[#e5e8eb] p-2">
+        <div key={i} className="flex items-center gap-2.5 rounded-xl border border-[#d1d1cc] p-2">
           <button
             type="button"
             onClick={() => { uploadIdx.current = i; fileRef.current?.click() }}
@@ -180,7 +179,7 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {d.photo ? <img src={d.photo} alt="" className="w-full h-full object-cover object-top" /> : <Camera className="w-4 h-4 text-[#8b95a1]" />}
-            {uploading === i && <span className="absolute inset-0 bg-white/70 flex items-center justify-center text-[11px] text-[#4e5968]">올리는 중</span>}
+            {uploading === i && <span className="absolute inset-0 bg-white flex items-center justify-center text-[11px] text-[#4e5968]">올리는 중</span>}
           </button>
           <input value={d.name} onChange={(e) => setDoctor(i, { name: e.target.value })} className={`${inputCls} py-2`} placeholder="홍길동 원장 (치주과 전문의)" />
           <div className="flex flex-col shrink-0">
@@ -198,7 +197,7 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
       <button
         type="button"
         onClick={touch(() => setDoctors((ds) => [...ds, { name: "", photo: null }]))}
-        className="w-full flex items-center justify-center gap-1 py-2.5 rounded-xl border border-dashed border-[#d1d6db] text-[13px] text-[#4e5968] hover:bg-[#f9fafb]"
+        className="w-full flex items-center justify-center gap-1 py-2.5 rounded-xl border border-dashed border-[#d1d6db] text-[13px] text-[#4e5968] hover:bg-[#f2f2ef]"
       >
         <Plus className="w-4 h-4" />의료진 추가
       </button>
@@ -239,7 +238,7 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
           </div>
         ))}
         <div className="flex items-center gap-3 pt-1">
-          <button type="button" onClick={() => { focusNext.current = `${q.id}:${opts.length}`; setOpts([...opts, ""]) }} className="flex items-center gap-1 text-[13px] text-[#3182f6] font-semibold">
+          <button type="button" onClick={() => { focusNext.current = `${q.id}:${opts.length}`; setOpts([...opts, ""]) }} className="flex items-center gap-1 text-[13px] text-[#0062ff] font-semibold">
             <Plus className="w-3.5 h-3.5" />선택지 추가
           </button>
           {q.id === "treatment" && (
@@ -262,6 +261,7 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
       case "scale5":
         return <div className="mt-2 flex flex-wrap gap-1.5">{SCALE.map((s) => <span key={s.value} className={chip}>{s.label}</span>)}{q.allowNA && <span className={chip}>{NA_LABEL.replace(/\s*X$/, "")}</span>}</div>
       case "scale10":
+        if (q.words) return <div className="mt-2 flex flex-wrap gap-1.5">{RECOMMEND_WORDS.map((w) => <span key={w.value} className={chip}>{w.label}</span>)}</div>
         return <p className="mt-2 text-[12px] text-[#8b95a1]">1 ~ 10 좌우로 밀어서 선택</p>
       default:
         return <p className="mt-2 text-[12px] text-[#8b95a1]">{q.type === "short" ? "짧은 글 입력" : "긴 글 입력"}</p>
@@ -273,7 +273,7 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
       <button
         type="button"
         onClick={() => addCustom(at)}
-        className="flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-[#e5e8eb] text-[12px] text-[#6b7684] shadow-sm opacity-60 hover:opacity-100 hover:text-[#3182f6] hover:border-[#3182f6] transition"
+        className="flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-[#d1d1cc] text-[12px] text-[#6b7684] opacity-60 hover:opacity-100 hover:text-[#0062ff] hover:border-[#0062ff] transition"
       >
         <Plus className="w-3.5 h-3.5" />여기에 질문 추가
       </button>
@@ -284,8 +284,8 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
       <div className="space-y-3 max-w-3xl">
         {/* 머리 카드 */}
-        <div className={`${card} p-5 border-t-[6px] border-[#3182f6]`}>
-          <input value={title} onChange={(e) => { setTitle(e.target.value); setDirty(true) }} className="w-full text-[22px] font-bold text-[#191f28] focus:outline-none border-b border-transparent focus:border-[#3182f6] pb-1" placeholder="설문 제목" />
+        <div className={`${card} p-3.5 border-t-[6px] border-[#0062ff]`}>
+          <input value={title} onChange={(e) => { setTitle(e.target.value); setDirty(true) }} className="w-full text-[22px] font-bold text-[#191f28] focus:outline-none border-b border-transparent focus:border-[#0062ff] pb-1" placeholder="설문 제목" />
           <input value={slogan} onChange={(e) => { setSlogan(e.target.value); setDirty(true) }} className={`${lineInput} mt-2`} placeholder="슬로건 (로고 아래 한 줄)" />
           <textarea value={intro} onChange={(e) => { setIntro(e.target.value); setDirty(true) }} rows={3} className={`${lineInput} mt-2 resize-none leading-relaxed`} placeholder="안내 문구" />
           <div className="mt-4 flex items-center gap-3">
@@ -293,7 +293,7 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
             <button
               type="button"
               onClick={() => logoRef.current?.click()}
-              className="h-14 w-[200px] rounded-xl border border-dashed border-[#d1d6db] bg-[#f9fafb] flex items-center justify-center overflow-hidden px-3"
+              className="h-14 w-[200px] rounded-xl border border-dashed border-[#d1d6db] bg-[#f2f2ef] flex items-center justify-center overflow-hidden px-3"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {logo ? <img src={logo} alt="" className="max-h-10 max-w-full object-contain" />
@@ -311,7 +311,7 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
             <div key={q.id}>
               {addBar(i)}
               <div
-                className={`${card} p-5 transition ${open ? "ring-2 ring-[#3182f6]/40 border-l-[5px] border-[#3182f6]" : "cursor-pointer hover:shadow-md"}`}
+                className={`${card} p-3.5 transition ${open ? "ring-2 ring-[#0062ff]/40 border-l-[5px] border-[#0062ff]" : "cursor-pointer"}`}
                 onClick={() => !open && setActive(q.id)}
               >
                 <div className="flex items-start gap-3">
@@ -324,7 +324,7 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
                           onChange={(e) => setQ(q.id, { text: e.target.value })}
                           rows={2}
                           autoFocus={!q.text}
-                          className="flex-1 px-3 py-2.5 rounded-lg bg-[#f9fafb] border-b-2 border-[#e5e8eb] focus:border-[#3182f6] focus:outline-none text-[15px] font-semibold text-[#191f28] resize-none"
+                          className="flex-1 px-3 py-2.5 rounded-lg bg-[#f2f2ef] border-b-2 border-[#d1d1cc] focus:border-[#0062ff] focus:outline-none text-[15px] font-semibold text-[#191f28] resize-none"
                           placeholder="질문"
                         />
                         {builtin ? (
@@ -364,10 +364,10 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
                 </div>
 
                 {open && (
-                  <div className="mt-4 pt-3 border-t border-[#f2f4f6] flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+                  <div className="mt-4 pt-3 border-t border-[#e0e0db] flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
                     {q.type === "scale5" && (
                       <label className="flex items-center gap-1.5 text-[13px] text-[#4e5968] mr-auto">
-                        <input type="checkbox" checked={!!q.allowNA} onChange={(e) => setQ(q.id, { allowNA: e.target.checked })} className="w-4 h-4 accent-[#3182f6]" />
+                        <input type="checkbox" checked={!!q.allowNA} onChange={(e) => setQ(q.id, { allowNA: e.target.checked })} className="w-4 h-4 accent-[#0062ff]" />
                         &lsquo;경험 없음&rsquo; 선택지
                       </label>
                     )}
@@ -393,12 +393,12 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
                         role="switch"
                         aria-checked={q.required}
                         onClick={() => setQ(q.id, { required: !q.required })}
-                        className={`relative w-9 h-5 rounded-full transition ${q.required ? "bg-[#3182f6]" : "bg-[#d1d6db]"}`}
+                        className={`relative w-9 h-5 rounded-full transition ${q.required ? "bg-[#0062ff]" : "bg-[#d1d6db]"}`}
                       >
                         <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${q.required ? "left-[18px]" : "left-0.5"}`} />
                       </button>
                     </label>
-                    <button type="button" onClick={() => setActive(null)} className="text-[13px] font-semibold text-[#3182f6]">접기</button>
+                    <button type="button" onClick={() => setActive(null)} className="text-[13px] font-semibold text-[#0062ff]">접기</button>
                   </div>
                 )}
               </div>
@@ -420,7 +420,7 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
                   const before = order.slice(0, order.indexOf(d.id)).reverse().find((id) => questions.some((q) => q.id === id))
                   insertQ(before ? questions.findIndex((q) => q.id === before) + 1 : 0, d)
                 }}
-                className="px-2.5 py-1 rounded-full border border-[#e5e8eb] bg-white text-[12px] text-[#4e5968] hover:border-[#3182f6] hover:text-[#3182f6]"
+                className="px-2.5 py-1 rounded-full border border-[#d1d1cc] bg-white text-[12px] text-[#4e5968] hover:border-[#0062ff] hover:text-[#0062ff]"
               >
                 + {BUILTIN[d.id].label}
               </button>
@@ -431,27 +431,27 @@ export default function SurveyEditor({ clinicId, survey, link, onSaved }: {
 
       {/* 오른쪽 — 저장·링크 설정 */}
       <div className="space-y-3 lg:sticky lg:top-4">
-        <div className={`${card} p-5 space-y-3`}>
+        <div className={`${card} p-3.5 space-y-3`}>
           <Button onClick={() => save()} disabled={busy} className="w-full">{busy ? "저장 중…" : dirty ? "저장하기" : "저장됨"}</Button>
           {err && <p className="text-[13px] text-[#f04452]">{err}</p>}
-          <a href={link || "#"} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[#3182f6]">
+          <a href={link || "#"} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[#0062ff]">
             <ExternalLink className="w-3.5 h-3.5" />환자 화면 열기 (저장된 내용)
           </a>
           <p className="text-[12px] leading-relaxed text-[#8b95a1]">
             문구·선택지를 바꿔도 이미 받은 응답은 그대로 남습니다. 기본 문항의 점수는 문구를 바꿔도 같은 항목으로 집계됩니다.
           </p>
         </div>
-        <div className={`${card} p-5 space-y-4`}>
+        <div className={`${card} p-3.5 space-y-2.5`}>
           <div>
             <label className={labelCls}>설문 주소</label>
-            <div className="flex items-center rounded-[10px] border border-[#e5e8eb] focus-within:border-[#3182f6] overflow-hidden">
+            <div className="flex items-center rounded-[10px] border border-[#d1d1cc] focus-within:border-[#0062ff] overflow-hidden">
               <span className="pl-3 text-[13px] text-[#8b95a1] shrink-0">/</span>
               <input value={slug} onChange={(e) => { setSlug(e.target.value); setDirty(true) }} className="flex-1 min-w-0 py-2.5 pr-3 text-[14px] text-[#191f28] focus:outline-none" placeholder="하얀드림치과설문" />
             </div>
             <p className="mt-1 text-[12px] text-[#8b95a1]">한글·영문·숫자 2~30자. 바꾸면 예전 한글 주소는 열리지 않습니다.</p>
           </div>
           <label className="flex items-start gap-2 text-[13px] text-[#333d4b]">
-            <input type="checkbox" checked={isActive} onChange={(e) => { setIsActive(e.target.checked); setDirty(true) }} className="mt-0.5 w-4 h-4 accent-[#3182f6]" />
+            <input type="checkbox" checked={isActive} onChange={(e) => { setIsActive(e.target.checked); setDirty(true) }} className="mt-0.5 w-4 h-4 accent-[#0062ff]" />
             응답 받기 (끄면 &lsquo;진행 중인 설문이 아닙니다&rsquo;가 보입니다)
           </label>
           <button

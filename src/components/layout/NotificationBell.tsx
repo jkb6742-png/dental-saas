@@ -26,8 +26,8 @@ function Icon({ type }: { type: string }) {
   switch (type) {
     case "NAVER_BIZMONEY": return <Wallet className={`${cls} text-[#b45309]`} />
     case "NAVER_SYNC_FAIL": return <AlertTriangle className={`${cls} text-[#f04452]`} />
-    case "NAVER_REPORT": return <FileText className={`${cls} text-[#3182f6]`} />
-    case "REQUEST_NEW": return <Inbox className={`${cls} text-[#3182f6]`} />
+    case "NAVER_REPORT": return <FileText className={`${cls} text-[#0062ff]`} />
+    case "REQUEST_NEW": return <Inbox className={`${cls} text-[#0062ff]`} />
     case "REQUEST_STATUS": return <CheckCheck className={`${cls} text-[#05c072]`} />
     case "REQUEST_COMMENT": return <MessageSquare className={`${cls} text-[#6b7684]`} />
     case "SITE_LEAD_NEW": return <Inbox className={`${cls} text-[#05c072]`} />
@@ -87,7 +87,7 @@ export default function NotificationBell() {
     <div className="relative" ref={box}>
       <button
         onClick={() => { setOpen((v) => !v); if (!open) load() }}
-        className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[#f9fafb] text-[#6b7684] transition-colors"
+        className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-[#f2f2ef] text-[#6b7684] transition-colors"
         aria-label="알림"
       >
         <Bell className="w-4 h-4" />
@@ -97,8 +97,8 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-[380px] max-w-[calc(100vw-24px)] bg-white rounded-2xl shadow-[0_8px_30px_rgb(0_0_0/0.12)] border border-[#f2f4f6] z-50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-[#f2f4f6] flex items-center justify-between">
+        <div className="absolute right-0 mt-2 w-[380px] max-w-[calc(100vw-24px)] bg-white rounded-2xl shadow-[0_8px_30px_rgb(0_0_0/0.12)] border border-[#e0e0db] z-50 overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#e0e0db] flex items-center justify-between">
             <div className="text-[14px] font-bold text-[#191f28]">알림 {unread > 0 && <span className="text-[#f04452]">{unread}</span>}</div>
             {unread > 0 && <button onClick={markAll} className="text-[12px] text-[#6b7684] hover:text-[#191f28]">모두 읽음</button>}
           </div>
@@ -107,14 +107,14 @@ export default function NotificationBell() {
               <div className="px-4 py-10 text-center text-[13px] text-[#8b95a1]">알림이 없습니다</div>
             ) : (
               items.map((n) => (
-                <button key={n.id} onClick={() => openItem(n)} className={`w-full text-left px-4 py-3 flex items-start gap-3 border-b border-[#f7f8fa] last:border-0 hover:bg-[#f9fafb] ${n.readAt ? "" : "bg-[#f5f9ff]"}`}>
+                <button key={n.id} onClick={() => openItem(n)} className={`w-full text-left px-4 py-3 flex items-start gap-3 border-b border-[#f7f8fa] last:border-0 hover:bg-[#f2f2ef] ${n.readAt ? "" : "bg-[#f5f9ff]"}`}>
                   <div className="mt-0.5 w-7 h-7 rounded-lg bg-[#f2f4f6] flex items-center justify-center shrink-0"><Icon type={n.type} /></div>
                   <div className="min-w-0 flex-1">
                     <div className={`text-[13px] leading-snug ${n.readAt ? "text-[#4e5968]" : "text-[#191f28] font-semibold"}`}>{n.title}</div>
                     {n.body && <div className="text-[12px] text-[#8b95a1] mt-0.5 line-clamp-2">{n.body}</div>}
                     <div className="text-[11px] text-[#b0b8c1] mt-1">{timeAgo(n.createdAt)}</div>
                   </div>
-                  {!n.readAt && <span className="mt-2 w-2 h-2 rounded-full bg-[#3182f6] shrink-0" />}
+                  {!n.readAt && <span className="mt-2 w-2 h-2 rounded-full bg-[#0062ff] shrink-0" />}
                 </button>
               ))
             )}

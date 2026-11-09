@@ -4,6 +4,7 @@ import { Suspense } from "react"
 import { prisma } from "@/lib/db"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
+import { getRouteCompare } from "@/lib/dashboard/compare-rows"
 import RoutesPageClient from "./RoutesPageClient.client"
 
 export default async function RoutesPage({
@@ -27,6 +28,8 @@ export default async function RoutesPage({
 
   const year = sp.year ? parseInt(sp.year) : defaultYear
   const month = sp.month ? parseInt(sp.month) : defaultMonth
+
+  const compare = await getRouteCompare(clinicId, year)
 
   // 해당 년도 전체 데이터
   const yearlyData = await prisma.visitRoute.findMany({
@@ -66,9 +69,9 @@ export default async function RoutesPage({
 
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
-        <div className="space-y-8 p-6">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
+      <div className="">
+        <div className="space-y-3">
+          <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
             <h1 className="text-2xl font-bold text-slate-900 mb-2">내원경로별 분석</h1>
             <p className="text-slate-600">차트를 불러오는 중...</p>
           </div>
@@ -82,6 +85,7 @@ export default async function RoutesPage({
         yearlyData={yearlyData}
         monthlyData={monthlyData}
         availableData={availableData}
+        compare={compare}
       />
     </Suspense>
   )

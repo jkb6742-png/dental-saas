@@ -24,8 +24,9 @@ export default async function SiteLeadsPage({ params }: { params: Promise<{ clin
         lastSyncAt: src.lastSyncAt?.toISOString() ?? null,
         lastSyncStatus: src.lastSyncStatus,
         lastSyncError: actor.isMaster ? src.lastSyncError : null,
+        alertEmails: actor.isMaster ? src.alertEmails ?? "" : "",
       }
-    : { connected: false, siteUrl: "", lastSyncAt: null, lastSyncStatus: null, lastSyncError: null }
+    : { connected: false, siteUrl: "", lastSyncAt: null, lastSyncStatus: null, lastSyncError: null, alertEmails: "" }
 
   const leads: LeadItem[] = rows.map((r) => ({
     id: r.id,

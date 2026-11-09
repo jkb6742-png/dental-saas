@@ -102,7 +102,7 @@ export default function NaverReviewFeed({ clinicId, userRole }: { clinicId: stri
     setTimeout(() => setCopied(null), 1500)
   }
 
-  if (loading) return <div className="text-center py-8 text-[13px] text-[#8b95a1]">네이버 리뷰를 불러오는 중...</div>
+  if (loading) return <div className="text-center py-4 text-[13px] text-[#8b95a1]">네이버 리뷰를 불러오는 중...</div>
 
   if (!data?.config) {
     return (
@@ -113,7 +113,7 @@ export default function NaverReviewFeed({ clinicId, userRole }: { clinicId: stri
               value={placeInput}
               onChange={(e) => setPlaceInput(e.target.value)}
               placeholder="https://m.place.naver.com/hospital/13055956"
-              className="flex-1 px-3 py-2 border border-[#e5e8eb] rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-[#05c072]"
+              className="flex-1 px-3 py-2 border border-[#d1d1cc] rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-[#05c072]"
             />
             <button onClick={savePlace} disabled={syncing} className="px-4 py-2 bg-[#05c072] hover:bg-[#04a862] text-white rounded-lg text-[14px] font-semibold disabled:opacity-50">
               {syncing ? "연결 중..." : "연결하고 수집"}
@@ -159,13 +159,13 @@ export default function NaverReviewFeed({ clinicId, userRole }: { clinicId: stri
         </div>
       )}
 
-      <div className="flex items-center gap-1 mb-4 w-fit p-1 bg-[#f2f4f6] rounded-[10px]">
+      <div className="flex items-center gap-1 mb-2.5 w-fit p-1 bg-[#f2f4f6] rounded-[10px]">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setFilter(t.key)}
             className={`px-3.5 py-1.5 rounded-[8px] text-[13px] font-semibold transition-colors ${
-              filter === t.key ? "bg-white text-[#191f28] shadow-sm" : "text-[#8b95a1] hover:text-[#4e5968]"
+              filter === t.key ? "bg-white text-[#191f28]" : "text-[#8b95a1] hover:text-[#4e5968]"
             }`}
           >
             {t.label}
@@ -182,7 +182,7 @@ export default function NaverReviewFeed({ clinicId, userRole }: { clinicId: stri
             const s = r.keywords?.sentiment as keyof typeof SENTIMENT | undefined
             const replyUrl = config.placeId ? `https://new-m.smartplace.naver.com/bizes/place-id/${config.placeId}/reviews/${r.reviewId}` : null
             return (
-              <div key={r.id} className={`rounded-xl border p-4 ${s === "negative" ? "border-[#f9caca] bg-[#fffafa]" : "border-[#f2f4f6]"}`}>
+              <div key={r.id} className={`rounded-xl border p-4 ${s === "negative" ? "border-[#f9caca] bg-[#fffafa]" : "border-[#e0e0db]"}`}>
                 <div className="flex flex-wrap items-center gap-2 mb-2 text-[12px]">
                   <span className="text-[#4e5968] font-medium">{r.authorName || "익명"}</span>
                   <span className="text-[#adb5bd]">{fmtDate(r.reviewDate)}</span>
@@ -205,9 +205,9 @@ export default function NaverReviewFeed({ clinicId, userRole }: { clinicId: stri
                     <p className="mt-1 line-clamp-2">{r.reply}</p>
                   </div>
                 ) : r.replyDraft ? (
-                  <div className="mt-3 rounded-lg bg-[#f9fafb] p-3">
+                  <div className="mt-3 rounded-lg bg-[#f2f2ef] p-3">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[12px] font-semibold text-[#3182f6]">답글 초안</span>
+                      <span className="text-[12px] font-semibold text-[#0062ff]">답글 초안</span>
                       <div className="flex items-center gap-3">
                         <button onClick={() => copy(r.id, r.replyDraft!)} className="text-[12px] text-[#6b7684] hover:text-[#191f28] flex items-center gap-1">
                           {copied === r.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -236,7 +236,7 @@ export default function NaverReviewFeed({ clinicId, userRole }: { clinicId: stri
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "warn" | "bad" }) {
   const color = tone === "bad" ? "text-[#e5484d]" : tone === "warn" ? "text-[#f59f00]" : "text-[#191f28]"
   return (
-    <div className="rounded-xl bg-[#f9fafb] px-4 py-3">
+    <div className="rounded-xl bg-[#f2f2ef] px-4 py-3">
       <div className="text-[12px] text-[#8b95a1]">{label}</div>
       <div className={`text-[20px] font-bold mt-0.5 ${color}`}>{value}</div>
     </div>

@@ -7,8 +7,12 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
+  // 운영 빌드에서 디버그 로그 제거. 스케줄러 운영 기록은 console.info 로 남긴다.
+  compiler: {
+    removeConsole:
+      process.env.NODE_ENV === "production"
+        ? { exclude: ["error", "warn", "info"] }
+        : false,
   },
   experimental: {
     serverActions: {

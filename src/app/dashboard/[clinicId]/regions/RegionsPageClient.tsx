@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation"
 import SectionCard from "@/components/ui/SectionCard"
 import KpiCard from "@/components/ui/KpiCard"
 import YearMonthFilter from "@/components/ui/YearMonthFilter"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, LabelList, ComposedChart, Area, AreaChart, Tooltip } from "recharts"
+import MonthlyCompare, { type CompareRow } from "@/components/charts/MonthlyCompare"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, LabelList, ComposedChart, Area, AreaChart, Tooltip } from "@/components/charts/recharts"
 import { Users, TrendingUp, Calendar, MapPin, BarChart3, Grid3X3 } from "lucide-react"
 
 interface RegionData {
@@ -27,6 +28,7 @@ interface RegionsPageClientProps {
   yearlyData: RegionData[]
   monthlyData: RegionData[]
   availableData: Array<{ year: number; month: number }>
+  compare: { rows: CompareRow[]; items: string[] }
 }
 
 export default function RegionsPageClient({
@@ -35,7 +37,8 @@ export default function RegionsPageClient({
   initialMonth,
   yearlyData,
   monthlyData,
-  availableData
+  availableData,
+  compare
 }: RegionsPageClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -157,11 +160,11 @@ export default function RegionsPageClient({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 년도 헤더 */}
-      <div className="text-center border-b border-[#e5e8eb] pb-6">
-        <h1 className="text-[32px] font-bold text-[#191f28] mb-2">{selectedYear}년</h1>
-        <p className="text-[16px] text-[#6b7280]">지역별 환자 분석 리포트</p>
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-[16px] font-bold text-[#0a0a0a]">{selectedYear}년</h2>
+        <p className="text-[12px] text-[#6f6f6a]">지역별 환자 분석 리포트</p>
       </div>
 
       {/* 년도/월 필터 */}
@@ -174,7 +177,7 @@ export default function RegionsPageClient({
 
       {/* 월별 전체 요약 */}
       <SectionCard title={`${selectedYear}년 ${selectedMonth}월 지역별 현황`} description="전체 지역 요약">
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-3">
           <KpiCard
             label="총 환자"
             value={totalPatients.toLocaleString()}
@@ -207,19 +210,18 @@ export default function RegionsPageClient({
 
         {/* 지역별 환자 분포 차트 */}
         {monthlyChartData.length > 0 && (
-          <div className="space-y-6">
+          <div className="space-y-3">
             {/* 헤더와 토글 버튼 */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="bg-white rounded border border-[#b9b9b3] overflow-hidden p-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <MapPin className="w-6 h-6 text-emerald-600" />
                   <div>
                     <h3 className="text-xl font-bold text-slate-900">지역별 환자 분포</h3>
                     <p className="text-slate-600 text-sm mt-1">
                       지역별 총환자, 신환, 구환 분포를 확인하세요 (상위 10개 지역)
                     </p>
                   </div>
-                  <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                  <span className="bg-[#191f28] text-white text-xs px-3 py-1 rounded-full font-medium">
                     {selectedYear}년 {selectedMonth}월
                   </span>
                 </div>
@@ -230,7 +232,7 @@ export default function RegionsPageClient({
                     onClick={() => setChartViewMode('combined')}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
                       chartViewMode === 'combined'
-                        ? 'bg-white text-slate-900 shadow-sm'
+                        ? 'bg-white text-slate-900'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
@@ -241,7 +243,7 @@ export default function RegionsPageClient({
                     onClick={() => setChartViewMode('separated')}
                     className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
                       chartViewMode === 'separated'
-                        ? 'bg-white text-slate-900 shadow-sm'
+                        ? 'bg-white text-slate-900'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
@@ -254,8 +256,8 @@ export default function RegionsPageClient({
 
             {/* 합쳐서 보기 모드 */}
             {chartViewMode === 'combined' && (
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
-                <div className="flex items-start justify-between mb-6">
+              <div className="bg-white rounded border border-[#b9b9b3] overflow-hidden p-3">
+                <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="text-xl font-bold text-slate-900 mb-2">통합 환자 분포</h3>
                     <p className="text-sm text-slate-600">
@@ -264,27 +266,27 @@ export default function RegionsPageClient({
                   </div>
                 </div>
 
-                <div className="h-80 mb-4 w-full min-h-[320px] min-w-0">
-                  <ResponsiveContainer width="100%" height={320} minHeight={320}>
-                    <BarChart data={monthlyChartData} margin={{ top: 28, right: 20, left: 0, bottom: 60 }}>
+                <div className="h-[330px] w-full min-h-[330px] min-w-0">
+                  <ResponsiveContainer width="100%" height={330} minHeight={330}>
+                    <BarChart data={monthlyChartData} margin={{ top: 20, right: 12, left: 0, bottom: 4 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                       <XAxis
                         dataKey="name"
-                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        tick={{ fontSize: 11, fill: "#64748b" }}
                         axisLine={false}
                         tickLine={false}
-                        angle={-45}
+                        angle={-30}
                         textAnchor="end"
-                        height={90}
+                        height={72}
                         tickMargin={10}
                         padding={{ left: 12, right: 12 }}
                       />
                       <YAxis
-                        tick={{ fontSize: 12, fill: "#64748b" }}
+                        tick={{ fontSize: 11, fill: "#64748b" }}
                         axisLine={false}
                         tickLine={false}
                         tickFormatter={(value) => `${value}명`}
-                        width={56}
+                        width={46}
                         tickMargin={8}
                       />
                       <Tooltip
@@ -297,18 +299,15 @@ export default function RegionsPageClient({
                           return [`${value}명`, nameMap[name] || name]
                         }}
                         contentStyle={{
-                          borderRadius: 12,
-                          border: 'none',
-                          boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
-                          fontSize: 13,
-                          background: 'rgba(255, 255, 255, 0.95)',
-                          backdropFilter: 'blur(8px)'
+                          borderRadius: 4, border: '1px solid #d1d1cc',
+                          boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 13,
+                          background: 'rgba(255, 255, 255, 0.95)'
                         }}
                       />
                       <Legend
                         iconType="circle"
                         iconSize={8}
-                        wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+                        wrapperStyle={{ fontSize: 11, paddingTop: 0 }}
                         formatter={(value) => {
                           const nameMap: Record<string, string> = {
                             'totalPatients': '총환자',
@@ -318,13 +317,13 @@ export default function RegionsPageClient({
                           return nameMap[value] || value
                         }}
                       />
-                      <Bar dataKey="totalPatients" fill="#10b981" name="totalPatients" radius={[4, 4, 0, 0]}>
+                      <Bar isAnimationActive={false} dataKey="totalPatients" fill="#10b981" name="totalPatients" radius={[4, 4, 0, 0]}>
                         <LabelList dataKey="totalPatients" position="top" formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#10b981" }} />
                       </Bar>
-                      <Bar dataKey="newPatients" fill="#3b82f6" name="newPatients" radius={[4, 4, 0, 0]}>
-                        <LabelList dataKey="newPatients" position="top" formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#3b82f6" }} />
+                      <Bar isAnimationActive={false} dataKey="newPatients" fill="#0062ff" name="newPatients" radius={[4, 4, 0, 0]}>
+                        <LabelList dataKey="newPatients" position="top" formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#0062ff" }} />
                       </Bar>
-                      <Bar dataKey="returningPatients" fill="#f59e0b" name="returningPatients" radius={[4, 4, 0, 0]}>
+                      <Bar isAnimationActive={false} dataKey="returningPatients" fill="#f59e0b" name="returningPatients" radius={[4, 4, 0, 0]}>
                         <LabelList dataKey="returningPatients" position="top" formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#f59e0b" }} />
                       </Bar>
                     </BarChart>
@@ -335,17 +334,17 @@ export default function RegionsPageClient({
 
             {/* 분리해서 보기 모드 */}
             {chartViewMode === 'separated' && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="space-y-3">
                 {/* 총 환자 분포 */}
-                <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300">
-                  <div className="mb-4">
-                    <h4 className="text-lg font-bold text-slate-900 mb-1">총 환자</h4>
+                <div className="bg-white rounded border border-[#b9b9b3] overflow-hidden p-3">
+                  <div className="-mx-3 -mt-3 mb-2.5 px-3 py-2 bg-[#ecece9] border-b border-[#d1d1cc]">
+                    <h4 className="text-[16px] font-bold text-[#0a0a0a]">총 환자</h4>
                     <p className="text-xs text-slate-600">지역별 전체 환자 수 (상위 10개)</p>
                   </div>
 
-                  <div className="h-64 w-full min-h-[256px] min-w-0">
-                    <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                      <AreaChart data={monthlyChartData} margin={{ top: 22, right: 10, left: 0, bottom: 40 }}>
+                  <div className="h-[270px] w-full min-h-[270px] min-w-0">
+                    <ResponsiveContainer width="100%" height={270} minHeight={270}>
+                      <AreaChart data={monthlyChartData} margin={{ top: 16, right: 8, left: 0, bottom: 0 }}>
                         <defs>
                           <linearGradient id="gradient-total" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#10b981" stopOpacity={0.3}/>
@@ -358,9 +357,9 @@ export default function RegionsPageClient({
                           tick={{ fontSize: 10, fill: "#64748b" }}
                           axisLine={false}
                           tickLine={false}
-                          angle={-45}
+                          angle={-30}
                           textAnchor="end"
-                          height={70}
+                          height={68}
                           tickMargin={8}
                           padding={{ left: 10, right: 10 }}
                         />
@@ -368,7 +367,7 @@ export default function RegionsPageClient({
                           tick={{ fontSize: 10, fill: "#64748b" }}
                           axisLine={false}
                           tickLine={false}
-                          width={48}
+                          width={36}
                           tickMargin={6}
                         />
                         <Tooltip
@@ -376,11 +375,10 @@ export default function RegionsPageClient({
                           contentStyle={{
                             borderRadius: 8,
                             border: 'none',
-                            boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
-                            fontSize: 12
+                            boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 12
                           }}
                         />
-                        <Area
+                        <Area isAnimationActive={false}
                           type="monotone"
                           dataKey="totalPatients"
                           stroke="#10b981"
@@ -396,19 +394,19 @@ export default function RegionsPageClient({
                 </div>
 
                 {/* 신환 분포 */}
-                <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300">
-                  <div className="mb-4">
-                    <h4 className="text-lg font-bold text-slate-900 mb-1">신환</h4>
+                <div className="bg-white rounded border border-[#b9b9b3] overflow-hidden p-3">
+                  <div className="-mx-3 -mt-3 mb-2.5 px-3 py-2 bg-[#ecece9] border-b border-[#d1d1cc]">
+                    <h4 className="text-[16px] font-bold text-[#0a0a0a]">신환</h4>
                     <p className="text-xs text-slate-600">지역별 신규 환자 수 (상위 10개)</p>
                   </div>
 
-                  <div className="h-64 w-full min-h-[256px] min-w-0">
-                    <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                      <AreaChart data={monthlyChartData} margin={{ top: 22, right: 10, left: 0, bottom: 40 }}>
+                  <div className="h-[270px] w-full min-h-[270px] min-w-0">
+                    <ResponsiveContainer width="100%" height={270} minHeight={270}>
+                      <AreaChart data={monthlyChartData} margin={{ top: 16, right: 8, left: 0, bottom: 0 }}>
                         <defs>
                           <linearGradient id="gradient-new" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.05}/>
+                            <stop offset="0%" stopColor="#0062ff" stopOpacity={0.3}/>
+                            <stop offset="100%" stopColor="#0062ff" stopOpacity={0.05}/>
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
@@ -417,9 +415,9 @@ export default function RegionsPageClient({
                           tick={{ fontSize: 10, fill: "#64748b" }}
                           axisLine={false}
                           tickLine={false}
-                          angle={-45}
+                          angle={-30}
                           textAnchor="end"
-                          height={70}
+                          height={68}
                           tickMargin={8}
                           padding={{ left: 10, right: 10 }}
                         />
@@ -427,7 +425,7 @@ export default function RegionsPageClient({
                           tick={{ fontSize: 10, fill: "#64748b" }}
                           axisLine={false}
                           tickLine={false}
-                          width={48}
+                          width={36}
                           tickMargin={6}
                         />
                         <Tooltip
@@ -435,19 +433,18 @@ export default function RegionsPageClient({
                           contentStyle={{
                             borderRadius: 8,
                             border: 'none',
-                            boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
-                            fontSize: 12
+                            boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 12
                           }}
                         />
-                        <Area
+                        <Area isAnimationActive={false}
                           type="monotone"
                           dataKey="newPatients"
-                          stroke="#3b82f6"
+                          stroke="#0062ff"
                           strokeWidth={2}
                           fill="url(#gradient-new)"
-                          dot={{ fill: '#3b82f6', strokeWidth: 1, r: 3 }}
+                          dot={{ fill: '#0062ff', strokeWidth: 1, r: 3 }}
                         >
-                          <LabelList dataKey="newPatients" position="top" offset={8} formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#3b82f6" }} />
+                          <LabelList dataKey="newPatients" position="top" offset={8} formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#0062ff" }} />
                         </Area>
                       </AreaChart>
                     </ResponsiveContainer>
@@ -455,15 +452,15 @@ export default function RegionsPageClient({
                 </div>
 
                 {/* 구환 분포 */}
-                <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300">
-                  <div className="mb-4">
-                    <h4 className="text-lg font-bold text-slate-900 mb-1">구환</h4>
+                <div className="bg-white rounded border border-[#b9b9b3] overflow-hidden p-3">
+                  <div className="-mx-3 -mt-3 mb-2.5 px-3 py-2 bg-[#ecece9] border-b border-[#d1d1cc]">
+                    <h4 className="text-[16px] font-bold text-[#0a0a0a]">구환</h4>
                     <p className="text-xs text-slate-600">지역별 기존 환자 수 (상위 10개)</p>
                   </div>
 
-                  <div className="h-64 w-full min-h-[256px] min-w-0">
-                    <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                      <AreaChart data={monthlyChartData} margin={{ top: 22, right: 10, left: 0, bottom: 40 }}>
+                  <div className="h-[270px] w-full min-h-[270px] min-w-0">
+                    <ResponsiveContainer width="100%" height={270} minHeight={270}>
+                      <AreaChart data={monthlyChartData} margin={{ top: 16, right: 8, left: 0, bottom: 0 }}>
                         <defs>
                           <linearGradient id="gradient-returning" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3}/>
@@ -476,9 +473,9 @@ export default function RegionsPageClient({
                           tick={{ fontSize: 10, fill: "#64748b" }}
                           axisLine={false}
                           tickLine={false}
-                          angle={-45}
+                          angle={-30}
                           textAnchor="end"
-                          height={70}
+                          height={68}
                           tickMargin={8}
                           padding={{ left: 10, right: 10 }}
                         />
@@ -486,7 +483,7 @@ export default function RegionsPageClient({
                           tick={{ fontSize: 10, fill: "#64748b" }}
                           axisLine={false}
                           tickLine={false}
-                          width={48}
+                          width={36}
                           tickMargin={6}
                         />
                         <Tooltip
@@ -494,11 +491,10 @@ export default function RegionsPageClient({
                           contentStyle={{
                             borderRadius: 8,
                             border: 'none',
-                            boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
-                            fontSize: 12
+                            boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 12
                           }}
                         />
-                        <Area
+                        <Area isAnimationActive={false}
                           type="monotone"
                           dataKey="returningPatients"
                           stroke="#f59e0b"
@@ -518,23 +514,24 @@ export default function RegionsPageClient({
         )}
       </SectionCard>
 
+      <MonthlyCompare rows={compare.rows} items={compare.items} itemLabel="지역" year={selectedYear} month={selectedMonth} />
+
       {/* 지역별 상세 분석 */}
       {availableRegions.length > 0 && (
         <SectionCard title="지역별 상세 분석" description="개별 지역 심화 분석">
           {/* 지역 선택 */}
-          <div className="mb-8">
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <MapPin className="w-5 h-5 text-emerald-600" />
+          <div className="mb-3">
+            <div className="bg-white rounded border border-[#b9b9b3] overflow-hidden p-3">
+              <div className="flex items-center gap-3 mb-2.5">
                 <h3 className="text-lg font-semibold text-slate-900">분석할 지역 선택</h3>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <label className="text-sm font-medium text-slate-700">지역:</label>
                 <select
                   value={selectedRegion}
                   onChange={(e) => setSelectedRegion(e.target.value)}
-                  className="flex-1 max-w-xs px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm"
+                  className="flex-1 max-w-xs px-4 py-3 bg-white border border-[#d1d1cc] rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 >
                   {availableRegions.map((region) => (
                     <option key={region} value={region}>
@@ -544,7 +541,7 @@ export default function RegionsPageClient({
                 </select>
 
                 {selectedRegion && (
-                  <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1.5 rounded-full font-medium">
+                  <span className="bg-[#191f28] text-white text-xs px-3 py-1.5 rounded-full font-medium">
                     선택됨
                   </span>
                 )}
@@ -555,7 +552,7 @@ export default function RegionsPageClient({
           {selectedRegion && (
             <>
               {/* 선택된 지역 KPI */}
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 mb-3">
                 <KpiCard
                   label={`${selectedMonth}월 환자`}
                   value={(selectedRegionCurrentMonth?.totalPatients || 0).toLocaleString()}
@@ -582,11 +579,11 @@ export default function RegionsPageClient({
               </div>
 
               {/* 연간 요약 통계 */}
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 mb-8 border border-gray-200">
-                <h3 className="text-[16px] font-semibold text-[#191f28] mb-4">{selectedYear}년 연간 요약 - {selectedRegion}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-xl p-4 mb-3 border border-[#d1d1cc]">
+                <h3 className="text-[16px] font-semibold text-[#191f28] mb-2.5">{selectedYear}년 연간 요약 - {selectedRegion}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="text-center">
-                    <div className="text-[24px] font-bold text-[#3182f6] mb-1">
+                    <div className="text-[24px] font-bold text-[#0062ff] mb-1">
                       {calculateRegionStats(selectedRegion).totalPatients.toLocaleString()}명
                     </div>
                     <div className="text-[12px] text-[#6b7280]">연간 총 환자</div>
@@ -607,12 +604,11 @@ export default function RegionsPageClient({
               </div>
 
               {/* 선택된 지역 월별 추이 차트 */}
-              <div className="space-y-6">
+              <div className="space-y-3">
                 {/* 헤더와 토글 버튼 */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="bg-white rounded border border-[#b9b9b3] overflow-hidden p-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <TrendingUp className="w-6 h-6 text-emerald-600" />
                       <div>
                         <h3 className="text-xl font-bold text-slate-900">
                           {selectedRegion} 월별 추이 분석
@@ -621,7 +617,7 @@ export default function RegionsPageClient({
                           선택 지역의 월별 환자 수 변화 추이
                         </p>
                       </div>
-                      <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                      <span className="bg-[#191f28] text-white text-xs px-3 py-1 rounded-full font-medium">
                         {selectedYear}년 연간
                       </span>
                     </div>
@@ -632,7 +628,7 @@ export default function RegionsPageClient({
                         onClick={() => setDetailViewMode('combined')}
                         className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
                           detailViewMode === 'combined'
-                            ? 'bg-white text-slate-900 shadow-sm'
+                            ? 'bg-white text-slate-900'
                             : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
@@ -643,7 +639,7 @@ export default function RegionsPageClient({
                         onClick={() => setDetailViewMode('separated')}
                         className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
                           detailViewMode === 'separated'
-                            ? 'bg-white text-slate-900 shadow-sm'
+                            ? 'bg-white text-slate-900'
                             : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
@@ -656,8 +652,8 @@ export default function RegionsPageClient({
 
                 {/* 합쳐서 보기 모드 */}
                 {detailViewMode === 'combined' && (
-                  <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
-                    <div className="flex items-start justify-between mb-6">
+                  <div className="bg-white rounded border border-[#b9b9b3] overflow-hidden p-3">
+                    <div className="flex items-start justify-between mb-3">
                       <div>
                         <h3 className="text-xl font-bold text-slate-900 mb-2">
                           {selectedRegion} 통합 월별 추이
@@ -668,20 +664,20 @@ export default function RegionsPageClient({
                       </div>
                     </div>
 
-                    <div className="h-80 mb-4 w-full min-h-[320px] min-w-0">
-                      <ResponsiveContainer width="100%" height={320} minHeight={320}>
+                    <div className="h-[330px] w-full min-h-[330px] min-w-0">
+                      <ResponsiveContainer width="100%" height={330} minHeight={330}>
                         <LineChart data={selectedRegionData} margin={{ top: 22, right: 20, left: 0, bottom: 20 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                           <XAxis
                             dataKey="month"
-                            tick={{ fontSize: 12, fill: "#64748b" }}
+                            tick={{ fontSize: 11, fill: "#64748b" }}
                             axisLine={false}
                             tickLine={false}
                             tickMargin={10}
                             padding={{ left: 12, right: 12 }}
                           />
                           <YAxis
-                            tick={{ fontSize: 12, fill: "#64748b" }}
+                            tick={{ fontSize: 11, fill: "#64748b" }}
                             axisLine={false}
                             tickLine={false}
                             tickFormatter={(value) => `${value}명`}
@@ -698,12 +694,9 @@ export default function RegionsPageClient({
                               return [`${value}명`, nameMap[name] || name]
                             }}
                             contentStyle={{
-                              borderRadius: 12,
-                              border: 'none',
-                              boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
-                              fontSize: 13,
-                              background: 'rgba(255, 255, 255, 0.95)',
-                              backdropFilter: 'blur(8px)'
+                              borderRadius: 4, border: '1px solid #d1d1cc',
+                              boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 13,
+                              background: 'rgba(255, 255, 255, 0.95)'
                             }}
                           />
                           <Legend
@@ -716,31 +709,31 @@ export default function RegionsPageClient({
                               return nameMap[value] || value
                             }}
                           />
-                          <Line
+                          <Line isAnimationActive={false}
                             type="monotone"
                             dataKey="totalPatients"
                             stroke="#10b981"
-                            strokeWidth={3}
-                            dot={{ fill: '#10b981', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
-                            activeDot={{ r: 6, fill: '#10b981', stroke: '#ffffff', strokeWidth: 3 }}
+                            strokeWidth={2}
+                            dot={{ fill: '#10b981', strokeWidth: 1, stroke: '#ffffff', r: 3 }}
+                            activeDot={{ r: 5, fill: '#10b981', stroke: '#ffffff', strokeWidth: 2 }}
                           >
                             <LabelList dataKey="totalPatients" position="top" offset={8} formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#10b981" }} />
                           </Line>
-                          <Line
+                          <Line isAnimationActive={false}
                             type="monotone"
                             dataKey="newPatients"
-                            stroke="#3b82f6"
-                            strokeWidth={3}
-                            dot={{ fill: '#3b82f6', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
-                            activeDot={{ r: 6, fill: '#3b82f6', stroke: '#ffffff', strokeWidth: 3 }}
+                            stroke="#0062ff"
+                            strokeWidth={2}
+                            dot={{ fill: '#0062ff', strokeWidth: 1, stroke: '#ffffff', r: 3 }}
+                            activeDot={{ r: 5, fill: '#0062ff', stroke: '#ffffff', strokeWidth: 2 }}
                           />
-                          <Line
+                          <Line isAnimationActive={false}
                             type="monotone"
                             dataKey="returningPatients"
                             stroke="#f59e0b"
-                            strokeWidth={3}
-                            dot={{ fill: '#f59e0b', strokeWidth: 2, stroke: '#ffffff', r: 4 }}
-                            activeDot={{ r: 6, fill: '#f59e0b', stroke: '#ffffff', strokeWidth: 3 }}
+                            strokeWidth={2}
+                            dot={{ fill: '#f59e0b', strokeWidth: 1, stroke: '#ffffff', r: 3 }}
+                            activeDot={{ r: 5, fill: '#f59e0b', stroke: '#ffffff', strokeWidth: 2 }}
                           />
                         </LineChart>
                       </ResponsiveContainer>
@@ -750,17 +743,17 @@ export default function RegionsPageClient({
 
                 {/* 분리해서 보기 모드 */}
                 {detailViewMode === 'separated' && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="space-y-3">
                     {/* 총환자 추이 */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300">
-                      <div className="mb-4">
-                        <h4 className="text-lg font-bold text-slate-900 mb-1">총환자 추이</h4>
+                    <div className="bg-white rounded border border-[#b9b9b3] overflow-hidden p-3">
+                      <div className="-mx-3 -mt-3 mb-2.5 px-3 py-2 bg-[#ecece9] border-b border-[#d1d1cc]">
+                        <h4 className="text-[16px] font-bold text-[#0a0a0a]">총환자 추이</h4>
                         <p className="text-xs text-slate-600">월별 총 환자 수 변화</p>
                       </div>
 
-                      <div className="h-64 w-full min-h-[256px] min-w-0">
-                        <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                          <AreaChart data={selectedRegionData} margin={{ top: 22, right: 10, left: 0, bottom: 20 }}>
+                      <div className="h-[270px] w-full min-h-[270px] min-w-0">
+                        <ResponsiveContainer width="100%" height={270} minHeight={270}>
+                          <AreaChart data={selectedRegionData} margin={{ top: 16, right: 8, left: 0, bottom: 20 }}>
                             <defs>
                               <linearGradient id="gradient-detail-total" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="0%" stopColor="#10b981" stopOpacity={0.3}/>
@@ -788,11 +781,10 @@ export default function RegionsPageClient({
                               contentStyle={{
                                 borderRadius: 8,
                                 border: 'none',
-                                boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
-                                fontSize: 12
+                                boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 12
                               }}
                             />
-                            <Area
+                            <Area isAnimationActive={false}
                               type="monotone"
                               dataKey="totalPatients"
                               stroke="#10b981"
@@ -808,19 +800,19 @@ export default function RegionsPageClient({
                     </div>
 
                     {/* 신환 추이 */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300">
-                      <div className="mb-4">
-                        <h4 className="text-lg font-bold text-slate-900 mb-1">신환 추이</h4>
+                    <div className="bg-white rounded border border-[#b9b9b3] overflow-hidden p-3">
+                      <div className="-mx-3 -mt-3 mb-2.5 px-3 py-2 bg-[#ecece9] border-b border-[#d1d1cc]">
+                        <h4 className="text-[16px] font-bold text-[#0a0a0a]">신환 추이</h4>
                         <p className="text-xs text-slate-600">월별 신환 수 변화</p>
                       </div>
 
-                      <div className="h-64 w-full min-h-[256px] min-w-0">
-                        <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                          <AreaChart data={selectedRegionData} margin={{ top: 22, right: 10, left: 0, bottom: 20 }}>
+                      <div className="h-[270px] w-full min-h-[270px] min-w-0">
+                        <ResponsiveContainer width="100%" height={270} minHeight={270}>
+                          <AreaChart data={selectedRegionData} margin={{ top: 16, right: 8, left: 0, bottom: 20 }}>
                             <defs>
                               <linearGradient id="gradient-detail-new" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.05}/>
+                                <stop offset="0%" stopColor="#0062ff" stopOpacity={0.3}/>
+                                <stop offset="100%" stopColor="#0062ff" stopOpacity={0.05}/>
                               </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
@@ -844,19 +836,18 @@ export default function RegionsPageClient({
                               contentStyle={{
                                 borderRadius: 8,
                                 border: 'none',
-                                boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
-                                fontSize: 12
+                                boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 12
                               }}
                             />
-                            <Area
+                            <Area isAnimationActive={false}
                               type="monotone"
                               dataKey="newPatients"
-                              stroke="#3b82f6"
+                              stroke="#0062ff"
                               strokeWidth={2}
                               fill="url(#gradient-detail-new)"
-                              dot={{ fill: '#3b82f6', strokeWidth: 1, r: 3 }}
+                              dot={{ fill: '#0062ff', strokeWidth: 1, r: 3 }}
                             >
-                              <LabelList dataKey="newPatients" position="top" offset={8} formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#3b82f6" }} />
+                              <LabelList dataKey="newPatients" position="top" offset={8} formatter={(v: unknown) => (typeof v === 'number' && v > 0 ? v : '')} style={{ fontSize: 9, fontWeight: 700, fill: "#0062ff" }} />
                             </Area>
                           </AreaChart>
                         </ResponsiveContainer>
@@ -864,15 +855,15 @@ export default function RegionsPageClient({
                     </div>
 
                     {/* 구환 추이 */}
-                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-lg transition-all duration-300">
-                      <div className="mb-4">
-                        <h4 className="text-lg font-bold text-slate-900 mb-1">구환 추이</h4>
+                    <div className="bg-white rounded border border-[#b9b9b3] overflow-hidden p-3">
+                      <div className="-mx-3 -mt-3 mb-2.5 px-3 py-2 bg-[#ecece9] border-b border-[#d1d1cc]">
+                        <h4 className="text-[16px] font-bold text-[#0a0a0a]">구환 추이</h4>
                         <p className="text-xs text-slate-600">월별 구환 수 변화</p>
                       </div>
 
-                      <div className="h-64 w-full min-h-[256px] min-w-0">
-                        <ResponsiveContainer width="100%" height={256} minHeight={256}>
-                          <AreaChart data={selectedRegionData} margin={{ top: 22, right: 10, left: 0, bottom: 20 }}>
+                      <div className="h-[270px] w-full min-h-[270px] min-w-0">
+                        <ResponsiveContainer width="100%" height={270} minHeight={270}>
+                          <AreaChart data={selectedRegionData} margin={{ top: 16, right: 8, left: 0, bottom: 20 }}>
                             <defs>
                               <linearGradient id="gradient-detail-returning" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3}/>
@@ -900,11 +891,10 @@ export default function RegionsPageClient({
                               contentStyle={{
                                 borderRadius: 8,
                                 border: 'none',
-                                boxShadow: '0 4px 12px 0 rgb(0 0 0 / 0.15)',
-                                fontSize: 12
+                                boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 12
                               }}
                             />
-                            <Area
+                            <Area isAnimationActive={false}
                               type="monotone"
                               dataKey="returningPatients"
                               stroke="#f59e0b"

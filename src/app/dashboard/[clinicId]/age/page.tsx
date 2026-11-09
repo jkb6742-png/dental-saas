@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic"
 import { prisma } from "@/lib/db"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
+import { getAgeCompare } from "@/lib/dashboard/compare-rows"
 import AgePageClient from "./AgePageClient"
 
 export default async function AgePage({
@@ -26,6 +27,8 @@ export default async function AgePage({
 
   const year = sp.year ? parseInt(sp.year) : defaultYear
   const month = sp.month ? parseInt(sp.month) : defaultMonth
+
+  const compare = await getAgeCompare(clinicId, year)
 
   // 해당 년도 전체 데이터
   const yearlyData = await prisma.ageDist.findMany({
@@ -61,7 +64,8 @@ export default async function AgePage({
       initialMonth={month}
       yearlyData={yearlyData}
       monthlyData={monthlyData}
-      availableData={availableData}
+        availableData={availableData}
+        compare={compare}
     />
   )
 }

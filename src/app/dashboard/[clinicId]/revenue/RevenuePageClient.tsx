@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import SectionCard from "@/components/ui/SectionCard"
 import KpiCard from "@/components/ui/KpiCard"
 import YearMonthFilter from "@/components/ui/YearMonthFilter"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, ComposedChart, Area, AreaChart, Tooltip, LabelList } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, BarChart, Bar, ComposedChart, Area, AreaChart, Tooltip, LabelList } from "@/components/charts/recharts"
 
 const revLabel = (v: unknown) => {
   if (typeof v !== 'number' || v <= 0) return ''
@@ -212,6 +212,7 @@ export default function RevenuePageClient({
       currentRevenue,
       momGrowth,
       yoyGrowth,
+      hasLastYear: lastYearRevenue > 0,
       ytdGrowth,
       yearToDateRevenue,
       lastYearToDateRevenue,
@@ -480,11 +481,11 @@ export default function RevenuePageClient({
   const arpuAnalysis = null
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 년도 헤더 */}
-      <div className="text-center border-b border-[#e5e8eb] pb-6">
-        <h1 className="text-[32px] font-bold text-[#191f28] mb-2">{selectedYear}년</h1>
-        <p className="text-[16px] text-[#6b7280]">매출 성장성 및 예측 분석 리포트</p>
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-[16px] font-bold text-[#0a0a0a]">{selectedYear}년</h2>
+        <p className="text-[12px] text-[#6f6f6a]">매출 성장성 및 예측 분석 리포트</p>
       </div>
 
       {/* 년도/월 필터 */}
@@ -497,8 +498,8 @@ export default function RevenuePageClient({
 
       {/* 현금매출 입력 (마스터 전용) — 총매출에 합산 */}
       {userRole === "MASTER" && (
-        <div className="bg-white rounded-2xl border border-[#e5e8eb] p-5">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="bg-white rounded-2xl border border-[#d1d1cc] p-3.5">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h3 className="text-[15px] font-bold text-[#191f28]">
                 현금매출 입력{" "}
@@ -515,7 +516,7 @@ export default function RevenuePageClient({
                   min={0}
                   value={cashInput}
                   onChange={(e) => setCashInput(e.target.value)}
-                  className="w-48 pl-3 pr-8 py-2 text-[14px] text-right tabular-nums border border-[#e5e8eb] rounded-[8px] outline-none focus:border-[#3182f6]"
+                  className="w-48 pl-3 pr-8 py-2 text-[14px] text-right tabular-nums border border-[#d1d1cc] rounded-[8px] outline-none focus:border-[#0062ff]"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-[#8b95a1]">
                   원
@@ -524,7 +525,7 @@ export default function RevenuePageClient({
               <button
                 onClick={saveCash}
                 disabled={savingCash}
-                className="px-4 py-2 bg-[#3182f6] hover:bg-[#1b64da] disabled:opacity-50 text-white text-[13px] font-semibold rounded-[8px]"
+                className="px-4 py-2 bg-[#0062ff] hover:bg-[#0052d6] disabled:opacity-50 text-white text-[13px] font-semibold rounded-[8px]"
               >
                 {savingCash ? "저장 중..." : "저장"}
               </button>
@@ -536,7 +537,7 @@ export default function RevenuePageClient({
 
       {/* 핵심 성장 지표 */}
       <SectionCard title={`${selectedYear}년 ${selectedMonth}월 성장 지표`} description="매출 성장성 및 트렌드 분석">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mb-3">
           <KpiCard
             label="월 매출"
             value={formatAmount(growthAnalysis.currentRevenue)}
@@ -548,8 +549,8 @@ export default function RevenuePageClient({
           />
           <KpiCard
             label="전년 동월 성장률"
-            value={growthAnalysis.yoyGrowth.toFixed(1)}
-            unit="%"
+            value={growthAnalysis.hasLastYear ? growthAnalysis.yoyGrowth.toFixed(1) : "비교 불가"}
+            unit={growthAnalysis.hasLastYear ? "%" : undefined}
             icon={<TrendingUp className="w-4 h-4" />}
             color={growthAnalysis.yoyGrowth >= 0 ? "green" : "red"}
           />
@@ -571,11 +572,11 @@ export default function RevenuePageClient({
 
 
         {/* 분기별/연간 누적 매출 상세 분석 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
           {/* 분기별 누적 매출 상세 분석 */}
-          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-200">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
+          <div className="bg-white rounded-xl p-4 border border-[#d1d1cc]">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 bg-[#191f28] rounded-lg flex items-center justify-center">
                 <span className="text-white text-lg font-bold">Q{growthAnalysis.currentQuarter}</span>
               </div>
               <div>
@@ -584,10 +585,10 @@ export default function RevenuePageClient({
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               <div className="flex justify-between items-center">
                 <span className="text-[14px] text-slate-600">올해 {growthAnalysis.currentQuarter}분기</span>
-                <span className="text-[18px] font-bold text-purple-700">
+                <span className="text-[18px] font-bold text-[#191f28]">
                   {formatAmount(growthAnalysis.quarterToDateRevenue)}
                 </span>
               </div>
@@ -619,11 +620,8 @@ export default function RevenuePageClient({
               <div className="mt-4">
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
-                    className={`h-3 rounded-full transition-all duration-300 ${
-                      growthAnalysis.quarterGrowth >= 20 ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
-                      growthAnalysis.quarterGrowth >= 10 ? 'bg-gradient-to-r from-blue-500 to-indigo-500' :
-                      growthAnalysis.quarterGrowth >= 0 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-                      'bg-gradient-to-r from-red-500 to-pink-500'
+                    className={`h-3 rounded-full ${
+                      growthAnalysis.quarterGrowth >= 0 ? 'bg-[#0062ff]' : 'bg-[#e0383b]'
                     }`}
                     style={{
                       width: `${Math.min(100, Math.max(10, Math.abs(growthAnalysis.quarterGrowth) * 2))}%`
@@ -642,9 +640,9 @@ export default function RevenuePageClient({
           </div>
 
           {/* 연간 누적 매출 상세 분석 */}
-          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-200">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
+          <div className="bg-white rounded-xl p-4 border border-[#d1d1cc]">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 bg-[#191f28] rounded-lg flex items-center justify-center">
                 <span className="text-white text-lg font-bold">{selectedYear.toString().slice(-2)}</span>
               </div>
               <div>
@@ -653,7 +651,7 @@ export default function RevenuePageClient({
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               <div className="flex justify-between items-center">
                 <span className="text-[14px] text-slate-600">올해 누적 ({selectedYear}년)</span>
                 <span className="text-[18px] font-bold text-emerald-700">
@@ -688,11 +686,8 @@ export default function RevenuePageClient({
               <div className="mt-4">
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
-                    className={`h-3 rounded-full transition-all duration-300 ${
-                      growthAnalysis.ytdGrowth >= 20 ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
-                      growthAnalysis.ytdGrowth >= 10 ? 'bg-gradient-to-r from-blue-500 to-indigo-500' :
-                      growthAnalysis.ytdGrowth >= 0 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-                      'bg-gradient-to-r from-red-500 to-pink-500'
+                    className={`h-3 rounded-full ${
+                      growthAnalysis.ytdGrowth >= 0 ? 'bg-[#0062ff]' : 'bg-[#e0383b]'
                     }`}
                     style={{
                       width: `${Math.min(100, Math.max(10, Math.abs(growthAnalysis.ytdGrowth) * 2))}%`
@@ -713,8 +708,8 @@ export default function RevenuePageClient({
       </SectionCard>
 
       {/* 매출 추이 (전년도 대비 토글) */}
-      <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
-        <div className="flex items-start justify-between mb-4 gap-4 flex-wrap">
+      <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+        <div className="flex items-start justify-between mb-2.5 gap-3 flex-wrap">
           <div>
             <h3 className="text-[15px] font-bold text-[#191f28]">매출 추이</h3>
             <p className="text-[13px] text-[#8b95a1] mt-0.5">
@@ -725,36 +720,36 @@ export default function RevenuePageClient({
             onClick={() => setShowPrevYear((v) => !v)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[13px] font-semibold border transition-colors ${
               showPrevYear
-                ? "bg-[#eef1f4] text-[#4e5968] border-[#e5e8eb]"
-                : "bg-white text-[#8b95a1] border-[#e5e8eb] hover:bg-[#f9fafb]"
+                ? "bg-[#eef1f4] text-[#4e5968] border-[#d1d1cc]"
+                : "bg-white text-[#8b95a1] border-[#d1d1cc] hover:bg-[#f2f2ef]"
             }`}
           >
-            <span className={`w-2 h-2 rounded-full ${showPrevYear ? "bg-[#3182f6]" : "bg-[#d1d6db]"}`} />
+            <span className={`w-2 h-2 rounded-full ${showPrevYear ? "bg-[#0062ff]" : "bg-[#d1d6db]"}`} />
             전년도 대비 {showPrevYear ? "ON" : "OFF"}
           </button>
         </div>
 
-        <div className="h-64 w-full min-h-[256px] min-w-0">
+        <div className="h-[280px] w-full min-h-[280px] min-w-0">
           {chartsReady ? (
-            <ResponsiveContainer width="100%" height={256} minHeight={256}>
+            <ResponsiveContainer width="100%" height={280} minHeight={280}>
               <AreaChart data={yearlyTrendData} margin={{ top: 22, right: 20, left: 0, bottom: 5 }}>
                 <defs>
                   <linearGradient id="grad-current" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3182f6" stopOpacity={0.25} />
-                    <stop offset="100%" stopColor="#3182f6" stopOpacity={0.03} />
+                    <stop offset="0%" stopColor="#0062ff" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#0062ff" stopOpacity={0.03} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f2f4f6" vertical={false} />
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 12, fill: "#8b95a1" }}
+                  tick={{ fontSize: 11, fill: "#8b95a1" }}
                   axisLine={false}
                   tickLine={false}
                   tickMargin={10}
                   padding={{ left: 14, right: 14 }}
                 />
                 <YAxis
-                  tick={{ fontSize: 12, fill: "#8b95a1" }}
+                  tick={{ fontSize: 11, fill: "#8b95a1" }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(value) => `${(value / 100000000).toFixed(0)}억`}
@@ -763,13 +758,13 @@ export default function RevenuePageClient({
                 />
                 <Tooltip
                   formatter={(value: any, name: any) => [formatAmount(value), name]}
-                  contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 12px 0 rgb(0 0 0 / 0.10)", fontSize: 13 }}
+                  contentStyle={{ borderRadius: 4, border: '1px solid #d1d1cc', boxShadow: '0 4px 12px rgb(0 0 0 / 0.10)', fontSize: 13 }}
                 />
                 {showPrevYear && (
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
                 )}
                 {showPrevYear && (
-                  <Area
+                  <Area isAnimationActive={false}
                     type="monotone"
                     dataKey="전년도"
                     name={`${selectedYear - 1}년`}
@@ -780,22 +775,22 @@ export default function RevenuePageClient({
                     dot={{ fill: "#c1c8ce", r: 3 }}
                   />
                 )}
-                <Area
+                <Area isAnimationActive={false}
                   type="monotone"
                   dataKey="현재년도"
                   name={`${selectedYear}년`}
-                  stroke="#3182f6"
-                  strokeWidth={3}
+                  stroke="#0062ff"
+                  strokeWidth={2}
                   fill="url(#grad-current)"
-                  dot={{ fill: "#3182f6", strokeWidth: 2, stroke: "#ffffff", r: 4 }}
-                  activeDot={{ r: 6, fill: "#3182f6", stroke: "#ffffff", strokeWidth: 3 }}
+                  dot={{ fill: "#0062ff", strokeWidth: 1, stroke: '#ffffff', r: 3 }}
+                  activeDot={{ r: 6, fill: "#0062ff", stroke: "#ffffff", strokeWidth: 3 }}
                 >
-                  <LabelList dataKey="현재년도" position="top" offset={10} formatter={revLabel} style={{ fontSize: 10, fontWeight: 700, fill: "#3182f6" }} />
+                  <LabelList dataKey="현재년도" position="top" offset={10} formatter={revLabel} style={{ fontSize: 10, fontWeight: 700, fill: "#0062ff" }} />
                 </Area>
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[256px] flex items-center justify-center">
+            <div className="h-[280px] flex items-center justify-center">
               <div className="text-[#adb5bd] text-[13px]">차트를 로딩 중...</div>
             </div>
           )}
@@ -805,24 +800,24 @@ export default function RevenuePageClient({
       {/* 예측 분석 섹션 제거됨 (사용자 요청) */}
       {predictionAnalysis && (
         <SectionCard title="트렌드 분석 및 매출 예측" description="데이터 기반 매출 전망">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mb-3">
             {/* 예측 분석 KPI 카드들 제거됨 (사용자 요청) */}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {/* 트렌드 방향 분석 */}
-            <div className={`rounded-xl p-6 border-l-4 ${
-              trendAnalysis.trendDirection === 'rising' ? 'bg-green-50 border-green-500' :
+            <div className={`rounded-xl p-4 border-l-4 ${
+              trendAnalysis.trendDirection === 'rising' ? 'bg-green-50 border-[#d1d1cc]' :
               trendAnalysis.trendDirection === 'falling' ? 'bg-red-50 border-red-500' :
-              'bg-blue-50 border-blue-500'
+              'bg-blue-50 border-[#d1d1cc]'
             }`}>
-              <h4 className="text-[16px] font-semibold text-[#191f28] mb-4">매출 트렌드 분석</h4>
+              <h4 className="text-[16px] font-semibold text-[#191f28] mb-2.5">매출 트렌드 분석</h4>
               <div className="flex items-center justify-between">
                 <div>
                   <div className={`text-[14px] font-medium ${
                     trendAnalysis.trendDirection === 'rising' ? 'text-green-600' :
                     trendAnalysis.trendDirection === 'falling' ? 'text-red-600' :
-                    'text-blue-600'
+                    'text-[#0062ff]'
                   }`}>
                     {trendAnalysis.trendDirection === 'rising' ? '상승 추세' :
                      trendAnalysis.trendDirection === 'falling' ? '하락 추세' : '안정 추세'}
@@ -830,31 +825,27 @@ export default function RevenuePageClient({
                   <div className={`text-[20px] font-bold mt-2 ${
                     trendAnalysis.trendDirection === 'rising' ? 'text-green-700' :
                     trendAnalysis.trendDirection === 'falling' ? 'text-red-700' :
-                    'text-blue-700'
+                    'text-[#0062ff]'
                   }`}>
                     최근 6개월 분석
                   </div>
                   <div className={`text-[12px] mt-2 ${
                     trendAnalysis.trendDirection === 'rising' ? 'text-green-600' :
                     trendAnalysis.trendDirection === 'falling' ? 'text-red-600' :
-                    'text-blue-600'
+                    'text-[#0062ff]'
                   }`}>
                     변동성: {trendAnalysis.volatility.toFixed(1)}%
                   </div>
-                </div>
-                <div className="text-[48px]">
-                  {trendAnalysis.trendDirection === 'rising' ? '📈' :
-                   trendAnalysis.trendDirection === 'falling' ? '📉' : '➡️'}
                 </div>
               </div>
             </div>
 
             {/* 예측 정확도 및 인사이트 */}
-            <div className="space-y-4">
-              <h4 className="text-[16px] font-semibold text-[#191f28]">예측 모델 인사이트</h4>
+            <div className="space-y-2.5">
+              <h4 className="text-[16px] font-semibold text-[#191f28]">예측 신뢰도</h4>
 
               <div className={`p-4 rounded-xl ${
-                predictionAnalysis.confidence >= 80 ? 'bg-green-50 border border-green-200' :
+                predictionAnalysis.confidence >= 80 ? 'bg-green-50 border border-[#d1d1cc]' :
                 predictionAnalysis.confidence >= 60 ? 'bg-yellow-50 border border-yellow-200' :
                 'bg-red-50 border border-red-200'
               }`}>
@@ -880,18 +871,11 @@ export default function RevenuePageClient({
                 </div>
               </div>
 
-              <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                <div className="text-[14px] font-medium text-blue-800 mb-1">📊 계절성 팩터</div>
-                <div className="text-[12px] text-blue-700">
-                  계절성 분석 데이터가 준비 중입니다.
-                </div>
-              </div>
-
               {trendAnalysis.volatility > 30 && (
-                <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
-                  <div className="text-[14px] font-medium text-orange-800 mb-1">⚠️ 높은 변동성 감지</div>
+                <div className="bg-orange-50 rounded-xl p-4 border border-[#d1d1cc]">
+                  <div className="text-[14px] font-medium text-orange-800 mb-1">변동성 높음</div>
                   <div className="text-[12px] text-orange-700">
-                    매출 변동성이 높아 예측 정확도가 낮을 수 있습니다. 안정적인 운영 전략 수립이 필요합니다.
+                    최근 6개월 매출 변동성 {trendAnalysis.volatility.toFixed(1)}%
                   </div>
                 </div>
               )}
@@ -903,23 +887,23 @@ export default function RevenuePageClient({
       {/* ARPU 및 환자당 수익성 분석 - 제거됨 (사용자 요청) */}
       {arpuAnalysis && (
         <SectionCard title="환자당 수익성 분석 (ARPU)" description="환자 1인당 평균 매출 및 효율성 지표">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-blue-50 rounded-xl p-6 border-l-4 border-blue-500">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="bg-white rounded p-3 border border-[#d1d1cc]">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-[14px] text-blue-600 font-medium">전체 환자 ARPU</div>
-                  <div className="text-[24px] font-bold text-blue-700 mt-1">
+                  <div className="text-[14px] text-[#0062ff] font-medium">전체 환자 ARPU</div>
+                  <div className="text-[24px] font-bold text-[#0062ff] mt-1">
                     {formatAmount(arpuAnalysis.currentARPU)}
                   </div>
-                  <div className="text-[12px] text-blue-600 mt-1">
+                  <div className="text-[12px] text-[#0062ff] mt-1">
                     전월 대비 {arpuAnalysis.arpuGrowth >= 0 ? '+' : ''}{arpuAnalysis.arpuGrowth.toFixed(1)}%
                   </div>
                 </div>
-                <div className="text-[32px] text-blue-500">👥</div>
+                <div className="text-[32px] text-[#0062ff]">👥</div>
               </div>
             </div>
 
-            <div className="bg-green-50 rounded-xl p-6 border-l-4 border-green-500">
+            <div className="bg-white rounded p-3 border border-[#d1d1cc]">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[14px] text-green-600 font-medium">신환 ARPU</div>
@@ -932,19 +916,19 @@ export default function RevenuePageClient({
               </div>
             </div>
 
-            <div className="bg-purple-50 rounded-xl p-6 border-l-4 border-purple-500">
+            <div className="bg-white rounded p-3 border border-[#d1d1cc]">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-[14px] text-purple-600 font-medium">ARPU 효율성</div>
-                  <div className="text-[20px] font-bold text-purple-700 mt-1">
+                  <div className="text-[14px] text-[#191f28] font-medium">ARPU 효율성</div>
+                  <div className="text-[20px] font-bold text-[#191f28] mt-1">
                     {arpuAnalysis.currentARPU > arpuAnalysis.newPatientARPU * 0.8 ? '우수' :
                      arpuAnalysis.currentARPU > arpuAnalysis.newPatientARPU * 0.6 ? '보통' : '개선필요'}
                   </div>
-                  <div className="text-[12px] text-purple-600 mt-1">
+                  <div className="text-[12px] text-[#191f28] mt-1">
                     총 {arpuAnalysis.totalPatients}명 환자
                   </div>
                 </div>
-                <div className="text-[32px] text-purple-500">📊</div>
+                <div className="text-[32px] text-[#191f28]">📊</div>
               </div>
             </div>
           </div>
@@ -958,16 +942,16 @@ export default function RevenuePageClient({
       >
         {(!revenueGoals.monthlyGoal && !revenueGoals.yearlyGoal) ? (
           // 목표가 설정되지 않은 경우
-          <div className="text-center py-12 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-            <Target className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+          <div className="text-center py-12 bg-white rounded-xl border border-[#d1d1cc]">
+            <Target className="w-16 h-16 text-[#0062ff] mx-auto mb-2.5" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">목표를 설정하여 성과를 관리하세요</h3>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            <p className="text-gray-600 mb-3 max-w-md mx-auto">
               월별 및 연간 매출 목표를 설정하면 달성률을 실시간으로 추적하고 성장을 관리할 수 있습니다.
             </p>
             <div className="space-y-3">
               <a
                 href="/admin/goals"
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center px-4 py-3 bg-[#0062ff] text-white rounded-lg font-medium hover:bg-[#0052d6] transition-colors"
               >
                 <Target className="w-4 h-4 mr-2" />
                 목표 설정하기
@@ -980,7 +964,7 @@ export default function RevenuePageClient({
         ) : monthlyAnalysis ? (
           // 목표가 설정된 경우 기존 UI
           <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mb-3">
               <KpiCard
                 label="월 목표 달성률"
                 value={monthlyAnalysis.monthlyAchievementRate.toFixed(1)}
@@ -1011,15 +995,15 @@ export default function RevenuePageClient({
               />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {/* 월별 목표 달성 & 전년 대비 현황 */}
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-              <h4 className="text-[16px] font-semibold text-[#191f28] mb-6">월별 목표 달성 & 전년 대비</h4>
+            <div className="bg-white rounded-xl p-4 border border-[#d1d1cc]">
+              <h4 className="text-[16px] font-semibold text-[#191f28] mb-3">월별 목표 달성 & 전년 대비</h4>
 
-              <div className="space-y-4">
+              <div className="space-y-2.5">
                 <div className="flex justify-between items-center">
                   <span className="text-[14px] text-[#6b7280]">월 목표</span>
-                  <span className="text-[16px] font-bold text-blue-700">{formatAmount(monthlyAnalysis.monthlyRevenueGoal)}</span>
+                  <span className="text-[16px] font-bold text-[#0062ff]">{formatAmount(monthlyAnalysis.monthlyRevenueGoal)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[14px] text-[#6b7280]">현재 달성</span>
@@ -1040,9 +1024,9 @@ export default function RevenuePageClient({
 
                 <div className="w-full bg-gray-200 rounded-full h-4 mt-4">
                   <div
-                    className={`h-4 rounded-full transition-all duration-300 ${
+                    className={`h-4 rounded-full ${
                       monthlyAnalysis.monthlyAchievementRate >= 100 ? 'bg-green-500' :
-                      monthlyAnalysis.monthlyAchievementRate >= 80 ? 'bg-blue-500' :
+                      monthlyAnalysis.monthlyAchievementRate >= 80 ? 'bg-[#0062ff]' :
                       monthlyAnalysis.monthlyAchievementRate >= 60 ? 'bg-yellow-500' :
                       'bg-red-500'
                     }`}
@@ -1060,21 +1044,21 @@ export default function RevenuePageClient({
             </div>
 
             {/* 전년 대비 매출 현황 */}
-            <div className={`bg-gradient-to-r rounded-xl p-6 border ${
+            <div className={`bg-gradient-to-r rounded-xl p-4 border ${
               previousYearData.growthRate >= 0
-                ? 'from-blue-50 to-green-100 border-blue-200'
+                ? 'from-blue-50 to-green-100 border-[#d1d1cc]'
                 : 'from-red-50 to-orange-100 border-red-200'
             }`}>
-              <h4 className="text-[16px] font-semibold text-[#191f28] mb-6">전년 총매출 대비 현황</h4>
+              <h4 className="text-[16px] font-semibold text-[#191f28] mb-3">전년 총매출 대비 현황</h4>
 
-              <div className="space-y-4">
+              <div className="space-y-2.5">
                 <div className="flex justify-between items-center">
                   <span className="text-[14px] text-[#6b7280]">전년 누적매출 ({selectedYear - 1}년 1~{selectedMonth}월)</span>
                   <span className="text-[16px] font-bold text-gray-700">{formatAmount(previousYearData.previousYearTotal)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[14px] text-[#6b7280]">현재 누적매출 ({selectedYear}년 1~{selectedMonth}월)</span>
-                  <span className="text-[16px] font-bold text-blue-700">{formatAmount(previousYearData.currentYearTotal)}</span>
+                  <span className="text-[16px] font-bold text-[#0062ff]">{formatAmount(previousYearData.currentYearTotal)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[14px] text-[#6b7280]">증감액</span>
@@ -1095,9 +1079,9 @@ export default function RevenuePageClient({
 
                 <div className="w-full bg-gray-200 rounded-full h-4 mt-4">
                   <div
-                    className={`h-4 rounded-full transition-all duration-300 ${
+                    className={`h-4 rounded-full ${
                       previousYearData.growthRate >= 20 ? 'bg-green-500' :
-                      previousYearData.growthRate >= 10 ? 'bg-blue-500' :
+                      previousYearData.growthRate >= 10 ? 'bg-[#0062ff]' :
                       previousYearData.growthRate >= 0 ? 'bg-yellow-500' :
                       'bg-red-500'
                     }`}
@@ -1123,16 +1107,16 @@ export default function RevenuePageClient({
 
       {/* 데이터가 없는 경우 */}
       {monthlySummaries.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 bg-gray-50 rounded-xl border border-gray-200">
-          <DollarSign className="w-16 h-16 text-gray-400 mb-4" />
+        <div className="flex flex-col items-center justify-center py-16 bg-gray-50 rounded-xl border border-[#d1d1cc]">
+          <DollarSign className="w-16 h-16 text-gray-400 mb-2.5" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">매출 데이터가 없습니다</h3>
-          <p className="text-gray-600 text-center mb-6 max-w-md">
+          <p className="text-gray-600 text-center mb-3 max-w-md">
             매출 분석을 보려면 일별 매출 데이터(월간장부)나 기타 매출 관련 데이터를 업로드해주세요
           </p>
           <div className="flex space-x-3">
             <a
               href={`/dashboard/${clinicId}/upload`}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center px-4 py-2 bg-[#0062ff] text-white rounded-lg font-medium hover:bg-[#0052d6] transition-colors"
             >
               <Activity className="w-4 h-4 mr-2" />
               데이터 업로드하기

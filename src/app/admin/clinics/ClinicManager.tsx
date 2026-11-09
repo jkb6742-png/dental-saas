@@ -113,16 +113,16 @@ export default function ClinicManager({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5">
       <SectionCard title="새 치과 추가">
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           {/* Name Input */}
           <div>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="치과 이름 (예: 이생각치과)"
-              className="w-full px-4 py-2.5 rounded-xl border border-[#e5e8eb] text-[14px] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#ebf3fe]"
+              className="w-full px-4 py-2.5 rounded-xl border border-[#d1d1cc] text-[14px] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#e8f0ff]"
             />
           </div>
 
@@ -134,12 +134,12 @@ export default function ClinicManager({
                   type="checkbox"
                   checked={autoGenerate}
                   onChange={(e) => setAutoGenerate(e.target.checked)}
-                  className="w-4 h-4 text-[#3182f6] border-[#e5e8eb] rounded focus:ring-[#3182f6]"
+                  className="w-4 h-4 text-[#0062ff] border-[#d1d1cc] rounded focus:ring-[#0062ff]"
                 />
                 <span className="text-[14px] text-[#191f28]">코드 자동 생성</span>
               </label>
               {autoGenerate && previewCode && (
-                <div className="px-3 py-1 bg-[#ebf3fe] text-[#3182f6] text-[12px] rounded-lg font-medium">
+                <div className="px-3 py-1 bg-[#e8f0ff] text-[#0062ff] text-[12px] rounded-lg font-medium">
                   미리보기: {previewCode}
                 </div>
               )}
@@ -153,7 +153,7 @@ export default function ClinicManager({
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="코드 (예: isanggak)"
-                className="w-full px-4 py-2.5 rounded-xl border border-[#e5e8eb] text-[14px] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#ebf3fe]"
+                className="w-full px-4 py-2.5 rounded-xl border border-[#d1d1cc] text-[14px] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#e8f0ff]"
               />
               <p className="mt-1 text-[12px] text-[#8b95a1]">
                 한글, 영문, 숫자, 하이픈만 사용 가능합니다
@@ -178,7 +178,7 @@ export default function ClinicManager({
 
       <SectionCard title={`등록된 치과 (${clinics.length}개)`}>
         {clinics.length > 0 && (
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="mb-2.5 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div className="flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
               <div className="text-[12px] text-yellow-800">
@@ -195,14 +195,14 @@ export default function ClinicManager({
             {clinics.map((c) => (
               <div
                 key={c.id}
-                className="flex items-center justify-between p-4 rounded-xl bg-[#f9fafb] hover:bg-[#f2f4f6] transition-colors"
+                className="flex items-center justify-between p-4 rounded-xl bg-[#f2f2ef] hover:bg-[#f2f4f6] transition-colors"
               >
                 <div
                   className="flex items-center gap-3 flex-1 cursor-pointer"
                   onClick={() => router.push(`/dashboard/${c.id}`)}
                 >
-                  <div className="w-9 h-9 bg-[#ebf3fe] rounded-xl flex items-center justify-center">
-                    <Building2 className="w-4 h-4 text-[#3182f6]" />
+                  <div className="w-9 h-9 bg-[#e8f0ff] rounded-xl flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-[#0062ff]" />
                   </div>
                   <div>
                     <div className="text-[14px] font-semibold text-[#191f28]">{c.name}</div>
@@ -212,7 +212,7 @@ export default function ClinicManager({
 
                 <div className="flex items-center gap-2">
                   <span
-                    className="text-[13px] text-[#3182f6] font-medium cursor-pointer hover:text-[#1e40af]"
+                    className="text-[13px] text-[#0062ff] font-medium cursor-pointer hover:text-[#1e40af]"
                     onClick={() => router.push(`/dashboard/${c.id}`)}
                   >
                     대시보드 →

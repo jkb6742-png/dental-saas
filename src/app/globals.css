@@ -1,46 +1,90 @@
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
 @import "tailwindcss";
 
+/* bokbok DESIGN.md 라이트 톤 기준. 면과 1px 선으로 나누고, 그림자·그라데이션은 쓰지 않는다. */
 :root {
-  --toss-blue: #3182f6;
-  --toss-blue-hover: #1b64da;
-  --toss-blue-light: #ebf3fe;
-  --toss-green: #05c072;
-  --toss-green-light: #e5f9f0;
-  --toss-red: #f04452;
-  --toss-red-light: #fff0f1;
-  --toss-yellow: #f59e0b;
-  --toss-gray-50: #f9fafb;
-  --toss-gray-100: #f2f4f6;
-  --toss-gray-200: #e5e8eb;
-  --toss-gray-300: #d1d6db;
-  --toss-gray-400: #b0b8c1;
-  --toss-gray-500: #8b95a1;
-  --toss-gray-600: #6b7684;
-  --toss-gray-700: #4e5968;
-  --toss-gray-800: #333d4b;
-  --toss-gray-900: #191f28;
+  color-scheme: light;
+  --canvas: #f2f2ef;
+  --surface: #ffffff;
+  --surface-2: #f7f7f5;
+  --side: #e9e9e5;
+  --hover: #e9e9e5;
+  --line-sub: #e0e0db;
+  --line: #d1d1cc;
+  --line-strong: #b9b9b3;
+  --text: #0a0a0a;
+  --text-2: #555555;
+  --text-3: #6f6f6a;
+  --pri: #0062ff;
+  --pri-hover: #0052d6;
+  --pri-tint: #e8f0ff;
+  --ok: #0f9f55;
+  --warn: #b97300;
+  --bad: #e0383b;
+
+  /* 기존 이름: 다른 화면에서 참조한다 */
+  --toss-blue: var(--pri);
+  --toss-blue-hover: var(--pri-hover);
+  --toss-blue-light: var(--pri-tint);
+  --toss-green: var(--ok);
+  --toss-green-light: #e5f6ec;
+  --toss-red: var(--bad);
+  --toss-red-light: #fdecec;
+  --toss-yellow: var(--warn);
+  --toss-gray-50: var(--canvas);
+  --toss-gray-100: #ecece9;
+  --toss-gray-200: var(--line-sub);
+  --toss-gray-300: var(--line);
+  --toss-gray-400: #9b9b95;
+  --toss-gray-500: var(--text-3);
+  --toss-gray-600: var(--text-2);
+  --toss-gray-700: #3d3d3a;
+  --toss-gray-800: #222220;
+  --toss-gray-900: var(--text);
 }
 
 @theme inline {
-  --color-primary: var(--toss-blue);
-  --color-primary-hover: var(--toss-blue-hover);
-  --color-primary-light: var(--toss-blue-light);
-  --color-success: var(--toss-green);
+  --color-primary: var(--pri);
+  --color-primary-hover: var(--pri-hover);
+  --color-primary-light: var(--pri-tint);
+  --color-success: var(--ok);
   --color-success-light: var(--toss-green-light);
-  --color-danger: var(--toss-red);
+  --color-danger: var(--bad);
   --color-danger-light: var(--toss-red-light);
-  --color-surface: #ffffff;
-  --color-background: var(--toss-gray-50);
-  --color-border: var(--toss-gray-200);
-  --color-text-primary: var(--toss-gray-900);
-  --color-text-secondary: var(--toss-gray-600);
-  --color-text-tertiary: var(--toss-gray-400);
-  --font-sans: "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --radius-card: 16px;
-  --radius-button: 10px;
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
-  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.08);
+  --color-surface: var(--surface);
+  --color-background: var(--canvas);
+  --color-border: var(--line);
+  --color-text-primary: var(--text);
+  --color-text-secondary: var(--text-2);
+  --color-text-tertiary: var(--text-3);
+  --font-sans: "Pretendard Variable", Pretendard, "Malgun Gothic", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --radius-card: 4px;
+  --radius-button: 4px;
+  --shadow-card: none;
+  --shadow-card-hover: none;
+}
+
+/* Tailwind 기본값을 낮춰 화면 전체의 모서리·글자 크기를 한 곳에서 맞춘다 */
+@theme {
+  --radius-sm: 2px;
+  --radius: 3px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+  --radius-3xl: 6px;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --text-lg: 0.9375rem;
+  --text-lg--line-height: 1.4;
+  --text-xl: 1rem;
+  --text-xl--line-height: 1.4;
+  --text-2xl: 1.125rem;
+  --text-2xl--line-height: 1.35;
+  --text-3xl: 1.375rem;
+  --text-3xl--line-height: 1.25;
+  --text-4xl: 1.75rem;
+  --text-4xl--line-height: 1.2;
 }
 
 * {
@@ -50,30 +94,66 @@
 html,
 body {
   height: 100%;
-  font-family: "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background-color: var(--toss-gray-50);
-  color: var(--toss-gray-900);
+  background-color: var(--canvas);
+  color: var(--text);
+  letter-spacing: -0.005em;
 }
 
-/* Scrollbar */
+::selection {
+  background: var(--pri);
+  color: #ffffff;
+}
+
+:focus-visible {
+  outline: 1px solid var(--pri);
+  outline-offset: 1px;
+}
+
+input,
+textarea {
+  caret-color: var(--pri);
+}
+
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+  accent-color: var(--pri);
+}
+
+td,
+th {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 스크롤바 */
+html {
+  scrollbar-color: var(--line-strong) transparent;
+}
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--toss-gray-300);
-  border-radius: 2px;
+  background: var(--line);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
+  background-clip: padding-box;
 }
 
-/* Number formatting */
-.num-positive { color: var(--toss-green); }
-.num-negative { color: var(--toss-red); }
-.num-neutral  { color: var(--toss-gray-600); }
+/* 숫자 색 */
+.num-positive { color: var(--ok); }
+.num-negative { color: var(--bad); }
+.num-neutral  { color: var(--text-2); }

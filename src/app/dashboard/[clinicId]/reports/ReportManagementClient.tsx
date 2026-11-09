@@ -173,12 +173,12 @@ export default function ReportManagementClient({ clinicId, userRole, initialSect
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06)] overflow-hidden flex flex-col min-h-[calc(100vh-120px)]">
+    <div className="bg-white rounded-2xl overflow-hidden flex flex-col min-h-[calc(100vh-120px)] border border-[#d1d1cc]">
       {/* 상단 헤더 */}
-      <div className="px-6 py-4 flex items-center justify-between border-b border-[#f2f4f6]">
+      <div className="px-4 py-4 flex items-center justify-between border-b border-[#e0e0db]">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-[#ebf3fe] rounded-xl flex items-center justify-center">
-            <FileText className="w-5 h-5 text-[#3182f6]" />
+          <div className="w-9 h-9 bg-[#e8f0ff] rounded-xl flex items-center justify-center">
+            <FileText className="w-5 h-5 text-[#0062ff]" />
           </div>
           <div>
             <h2 className="text-[17px] font-semibold text-[#191f28]">보고서</h2>
@@ -191,11 +191,11 @@ export default function ReportManagementClient({ clinicId, userRole, initialSect
 
       <div className="flex flex-1 min-h-0">
         {/* ===== 왼쪽: 카테고리 사이드바 ===== */}
-        <aside className="w-[248px] shrink-0 border-r border-[#f2f4f6] flex flex-col bg-[#fbfcfd]">
+        <aside className="w-[248px] shrink-0 border-r border-[#e0e0db] flex flex-col bg-[#fbfcfd]">
           <div className="px-4 pt-4 pb-2 flex items-center justify-between">
             <span className="text-[12px] font-semibold text-[#8b95a1]">카테고리</span>
             {isMaster && (
-              <button onClick={addCategory} disabled={busy} className="flex items-center gap-1 text-[12px] font-semibold text-[#3182f6] hover:bg-[#ebf3fe] px-2 py-1 rounded-lg disabled:opacity-50">
+              <button onClick={addCategory} disabled={busy} className="flex items-center gap-1 text-[12px] font-semibold text-[#0062ff] hover:bg-[#e8f0ff] px-2 py-1 rounded-lg disabled:opacity-50">
                 <Plus className="w-3.5 h-3.5" /> 추가
               </button>
             )}
@@ -203,7 +203,7 @@ export default function ReportManagementClient({ clinicId, userRole, initialSect
 
           <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-0.5">
             {sectors.length === 0 && (
-              <div className="px-3 py-6 text-center text-[12px] text-[#b0b8c1]">카테고리 없음</div>
+              <div className="px-3 py-3 text-center text-[12px] text-[#b0b8c1]">카테고리 없음</div>
             )}
             {sectors.map((s, si) => {
               const active = selected?.id === s.id
@@ -217,20 +217,20 @@ export default function ReportManagementClient({ clinicId, userRole, initialSect
                         onChange={(e) => setEditingSectorName(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") saveSectorName(s.id); if (e.key === "Escape") setEditingSectorId(null) }}
                         autoFocus
-                        className="flex-1 min-w-0 px-2 py-1 border border-[#3182f6] rounded-lg text-[13px] font-medium outline-none"
+                        className="flex-1 min-w-0 px-2 py-1 border border-[#0062ff] rounded-lg text-[13px] font-medium outline-none"
                       />
-                      <button onClick={() => saveSectorName(s.id)} className="p-1 text-[#3182f6]"><Check className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => saveSectorName(s.id)} className="p-1 text-[#0062ff]"><Check className="w-3.5 h-3.5" /></button>
                       <button onClick={() => setEditingSectorId(null)} className="p-1 text-[#8b95a1]"><X className="w-3.5 h-3.5" /></button>
                     </div>
                   ) : (
                     <button
                       onClick={() => setSelectedId(s.id)}
-                      className={`w-full flex items-center gap-2.5 pl-3 pr-2 py-2 rounded-xl text-left transition-colors ${active ? "bg-[#ebf3fe]" : "hover:bg-[#f2f4f6]"}`}
+                      className={`w-full flex items-center gap-2.5 pl-3 pr-2 py-2 rounded-xl text-left transition-colors ${active ? "bg-[#e8f0ff]" : "hover:bg-[#f2f4f6]"}`}
                     >
-                      <Folder className={`w-4 h-4 shrink-0 ${active ? "text-[#3182f6]" : "text-[#b0b8c1]"}`} />
-                      <span className={`flex-1 min-w-0 truncate text-[13px] font-medium ${active ? "text-[#3182f6]" : "text-[#4e5968]"}`}>{s.name}</span>
+                      <Folder className={`w-4 h-4 shrink-0 ${active ? "text-[#0062ff]" : "text-[#b0b8c1]"}`} />
+                      <span className={`flex-1 min-w-0 truncate text-[13px] font-medium ${active ? "text-[#0062ff]" : "text-[#4e5968]"}`}>{s.name}</span>
                       {/* 건수 배지 (마스터는 hover 시 액션으로 대체) */}
-                      <span className={`shrink-0 text-[11px] px-1.5 py-0.5 rounded-md ${active ? "bg-white text-[#3182f6]" : "bg-[#f2f4f6] text-[#8b95a1]"} ${isMaster ? "group-hover:hidden" : ""}`}>{s.reports.length}</span>
+                      <span className={`shrink-0 text-[11px] px-1.5 py-0.5 rounded-md ${active ? "bg-white text-[#0062ff]" : "bg-[#f2f4f6] text-[#8b95a1]"} ${isMaster ? "group-hover:hidden" : ""}`}>{s.reports.length}</span>
                       {isMaster && (
                         <span className="hidden group-hover:flex items-center shrink-0">
                           <span onClick={(e) => { e.stopPropagation(); moveCategory(si, -1) }} className={`p-1 rounded ${si === 0 ? "opacity-30" : "hover:bg-white text-[#8b95a1]"}`} title="위로"><ChevronUp className="w-3.5 h-3.5" /></span>
@@ -258,7 +258,7 @@ export default function ReportManagementClient({ clinicId, userRole, initialSect
           ) : (
             <>
               {/* 카테고리 헤더 */}
-              <div className="px-6 py-4 flex items-center justify-between border-b border-[#f2f4f6]">
+              <div className="px-4 py-4 flex items-center justify-between border-b border-[#e0e0db]">
                 <div className="min-w-0">
                   <h3 className="text-[16px] font-semibold text-[#191f28] truncate">{selected.name}</h3>
                   <p className="text-[12px] text-[#8b95a1] mt-0.5">보고서 {selected.reports.length}건</p>
@@ -266,7 +266,7 @@ export default function ReportManagementClient({ clinicId, userRole, initialSect
                 {isMaster && (
                   <button
                     onClick={() => setUploadFor(selected)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#3182f6] text-white text-[14px] font-semibold hover:bg-[#2670e0] transition-colors shrink-0"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0062ff] text-white text-[14px] font-semibold hover:bg-[#2670e0] transition-colors shrink-0"
                   >
                     <Upload className="w-4 h-4" /> 보고서 업로드
                   </button>
@@ -284,7 +284,7 @@ export default function ReportManagementClient({ clinicId, userRole, initialSect
                 ) : (
                   <>
                     {/* 컬럼 헤더 */}
-                    <div className="px-6 py-2.5 flex items-center gap-4 text-[11px] font-semibold text-[#b0b8c1] border-b border-[#f2f4f6] sticky top-0 bg-white z-10">
+                    <div className="px-4 py-2.5 flex items-center gap-3 text-[11px] font-semibold text-[#b0b8c1] border-b border-[#e0e0db] sticky top-0 bg-white z-10">
                       <span className="w-6 text-center">#</span>
                       <span className="w-16">월</span>
                       <span className="flex-1">제목 / 비고</span>
@@ -331,8 +331,8 @@ export default function ReportManagementClient({ clinicId, userRole, initialSect
 // ============ 빈 상태 ============
 function EmptyPane({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center py-20 px-6 text-center">
-      <div className="w-14 h-14 bg-[#f2f4f6] rounded-2xl flex items-center justify-center mb-4">{icon}</div>
+    <div className="flex-1 flex flex-col items-center justify-center py-20 px-4 text-center">
+      <div className="w-14 h-14 bg-[#f2f4f6] rounded-2xl flex items-center justify-center mb-2.5">{icon}</div>
       <p className="text-[15px] font-semibold text-[#191f28]">{title}</p>
       <p className="text-[13px] text-[#8b95a1] mt-1 max-w-xs">{desc}</p>
     </div>
@@ -356,15 +356,15 @@ function ReportRow({
   const [memoDraft, setMemoDraft] = useState(report.memo || "")
 
   return (
-    <div className="px-6 py-3 flex items-center gap-4 hover:bg-[#f9fafb] transition-colors group">
+    <div className="px-4 py-3 flex items-center gap-3 hover:bg-[#f2f2ef] transition-colors group">
       <span className="w-6 text-center text-[13px] text-[#b0b8c1] shrink-0">{index + 1}</span>
       <span className="w-16 text-[13px] text-[#6b7684] shrink-0 truncate">{report.month || "-"}</span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded ${report.fileType === "pdf" ? "bg-[#fdeeee] text-[#e5484d]" : "bg-[#ebf3fe] text-[#3182f6]"}`}>
+          <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded ${report.fileType === "pdf" ? "bg-[#fdeeee] text-[#e5484d]" : "bg-[#e8f0ff] text-[#0062ff]"}`}>
             {report.fileType === "pdf" ? "PDF" : "HTML"}
           </span>
-          <button onClick={onPreview} className="min-w-0 text-left text-[14px] font-medium text-[#191f28] truncate hover:text-[#3182f6]">{report.title}</button>
+          <button onClick={onPreview} className="min-w-0 text-left text-[14px] font-medium text-[#191f28] truncate hover:text-[#0062ff]">{report.title}</button>
         </div>
         {editingMemo ? (
           <div className="flex items-center gap-1 mt-1">
@@ -374,9 +374,9 @@ function ReportRow({
               onKeyDown={(e) => { if (e.key === "Enter") { onSaveMemo(memoDraft); setEditingMemo(false) } if (e.key === "Escape") { setMemoDraft(report.memo || ""); setEditingMemo(false) } }}
               autoFocus
               placeholder="비고 입력"
-              className="px-2 py-0.5 border border-[#3182f6] rounded text-[12px] outline-none w-56"
+              className="px-2 py-0.5 border border-[#0062ff] rounded text-[12px] outline-none w-56"
             />
-            <button onClick={() => { onSaveMemo(memoDraft); setEditingMemo(false) }} className="p-0.5 text-[#3182f6]"><Check className="w-3.5 h-3.5" /></button>
+            <button onClick={() => { onSaveMemo(memoDraft); setEditingMemo(false) }} className="p-0.5 text-[#0062ff]"><Check className="w-3.5 h-3.5" /></button>
             <button onClick={() => { setMemoDraft(report.memo || ""); setEditingMemo(false) }} className="p-0.5 text-[#8b95a1]"><X className="w-3.5 h-3.5" /></button>
           </div>
         ) : (
@@ -392,7 +392,7 @@ function ReportRow({
         {new Date(report.createdAt).toLocaleDateString("ko-KR", { year: "2-digit", month: "2-digit", day: "2-digit" })}
       </span>
       <div className="w-32 flex items-center justify-end gap-0.5 shrink-0">
-        <button onClick={onPreview} className="p-1.5 text-[#8b95a1] hover:bg-[#ebf3fe] hover:text-[#3182f6] rounded-lg" title="미리보기"><Eye className="w-4 h-4" /></button>
+        <button onClick={onPreview} className="p-1.5 text-[#8b95a1] hover:bg-[#e8f0ff] hover:text-[#0062ff] rounded-lg" title="미리보기"><Eye className="w-4 h-4" /></button>
         <a href={`/api/report-management/reports/${report.id}?download=1`} className="p-1.5 text-[#8b95a1] hover:bg-[#f2f4f6] rounded-lg" title="HTML 다운로드"><Download className="w-4 h-4" /></a>
         {isMaster && (
           <>
@@ -410,8 +410,8 @@ function ReportRow({
 function PreviewModal({ report, onClose }: { report: ManagedReport; onClose: () => void }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#f2f4f6] shrink-0">
+      <div className="bg-white rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden border border-[#d1d1cc]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-4 border-b border-[#e0e0db] shrink-0">
           <div className="min-w-0">
             <h3 className="text-[16px] font-semibold text-[#191f28] truncate">{report.title}</h3>
             {report.month && <p className="text-[12px] text-[#8b95a1] mt-0.5">{report.month}</p>}
@@ -468,36 +468,36 @@ function UploadModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-5 border-b border-[#f2f4f6]">
+      <div className="bg-white rounded-2xl w-full max-w-md border border-[#d1d1cc]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#e0e0db]">
           <div>
             <h3 className="text-[17px] font-semibold text-[#191f28]">보고서 업로드</h3>
             <p className="text-[13px] text-[#8b95a1] mt-0.5">카테고리 · {sector.name}</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-[#8b95a1] hover:bg-[#f2f4f6] rounded-lg"><X className="w-5 h-5" /></button>
         </div>
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-4 py-3 space-y-2.5">
           <div>
             <label className="block text-[13px] font-medium text-[#4e5968] mb-1.5">제목 <span className="text-[#e5484d]">*</span></label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예: 2026년 6월 경영 보고서" className="w-full px-3 py-2.5 border border-[#e5e8eb] rounded-xl text-[14px] outline-none focus:border-[#3182f6]" />
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예: 2026년 6월 경영 보고서" className="w-full px-3 py-2.5 border border-[#d1d1cc] rounded-xl text-[14px] outline-none focus:border-[#0062ff]" />
           </div>
           <div>
             <label className="block text-[13px] font-medium text-[#4e5968] mb-1.5">해당 월 <span className="text-[#b0b8c1]">(선택)</span></label>
-            <input value={month} onChange={(e) => setMonth(e.target.value)} placeholder="예: 2026-06 또는 6월" className="w-full px-3 py-2.5 border border-[#e5e8eb] rounded-xl text-[14px] outline-none focus:border-[#3182f6]" />
+            <input value={month} onChange={(e) => setMonth(e.target.value)} placeholder="예: 2026-06 또는 6월" className="w-full px-3 py-2.5 border border-[#d1d1cc] rounded-xl text-[14px] outline-none focus:border-[#0062ff]" />
           </div>
           <div>
             <label className="block text-[13px] font-medium text-[#4e5968] mb-1.5">비고 <span className="text-[#b0b8c1]">(선택)</span></label>
-            <input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="메모" className="w-full px-3 py-2.5 border border-[#e5e8eb] rounded-xl text-[14px] outline-none focus:border-[#3182f6]" />
+            <input value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="메모" className="w-full px-3 py-2.5 border border-[#d1d1cc] rounded-xl text-[14px] outline-none focus:border-[#0062ff]" />
           </div>
           <div>
             <label className="block text-[13px] font-medium text-[#4e5968] mb-1.5">보고서 파일 <span className="text-[#e5484d]">*</span></label>
-            <input ref={fileRef} type="file" accept=".pdf,.html,.htm" className="w-full text-[13px] file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-[#ebf3fe] file:text-[#3182f6] file:text-[13px] file:font-semibold" />
+            <input ref={fileRef} type="file" accept=".pdf,.html,.htm" className="w-full text-[13px] file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-[#e8f0ff] file:text-[#0062ff] file:text-[13px] file:font-semibold" />
             <p className="text-[12px] text-[#b0b8c1] mt-1.5">PDF 또는 HTML (.pdf / .html / .htm), 최대 50MB</p>
           </div>
         </div>
-        <div className="px-6 py-4 border-t border-[#f2f4f6] flex justify-end gap-2">
+        <div className="px-4 py-4 border-t border-[#e0e0db] flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-[14px] font-medium text-[#4e5968] hover:bg-[#f2f4f6]">취소</button>
-          <button onClick={submit} disabled={uploading} className="px-5 py-2.5 rounded-xl bg-[#3182f6] text-white text-[14px] font-semibold hover:bg-[#2670e0] disabled:opacity-50">
+          <button onClick={submit} disabled={uploading} className="px-5 py-2.5 rounded-xl bg-[#0062ff] text-white text-[14px] font-semibold hover:bg-[#2670e0] disabled:opacity-50">
             {uploading ? "업로드 중..." : "업로드"}
           </button>
         </div>

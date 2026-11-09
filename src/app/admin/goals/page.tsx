@@ -213,11 +213,11 @@ export default function GoalsManagementPage() {
   }
 
   if (loading) {
-    return <div className="text-center py-8">데이터를 불러오는 중...</div>
+    return <div className="text-center py-4">데이터를 불러오는 중...</div>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -242,7 +242,7 @@ export default function GoalsManagementPage() {
           </div>
           {/* 제목 */}
           <div className="flex items-center space-x-3 border-l border-gray-300 pl-4">
-            <Target className="w-6 h-6 text-blue-600" />
+            <Target className="w-6 h-6 text-[#0062ff]" />
             <div>
               <h3 className="text-lg font-semibold">목표 관리</h3>
               <p className="text-sm text-gray-600">월별 매출 및 신환 목표 설정</p>
@@ -252,8 +252,8 @@ export default function GoalsManagementPage() {
       </div>
 
       {/* 치과 선택 */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-white p-4 rounded-lg border">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">치과 선택</label>
             <select
@@ -283,7 +283,7 @@ export default function GoalsManagementPage() {
                   onClick={() => setActiveYear(year)}
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeYear === year
-                      ? "bg-white text-gray-900 shadow-sm"
+                      ? "bg-white text-gray-900"
                       : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
@@ -302,11 +302,11 @@ export default function GoalsManagementPage() {
           </div>
 
           {/* 월별 목표 테이블 */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-white rounded-xl border border-[#d1d1cc] p-4">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200">
+                  <tr className="border-b border-[#d1d1cc]">
                     <th className="text-left py-3 px-2 font-medium text-gray-700">월</th>
                     <th className="text-center py-3 px-2 font-medium text-gray-700">매출 목표</th>
                     <th className="text-center py-3 px-2 font-medium text-gray-700">신환 목표</th>
@@ -326,7 +326,7 @@ export default function GoalsManagementPage() {
                           <div className="flex items-center space-x-2">
                             <span className="font-medium">{year}.{String(month).padStart(2, '0')}</span>
                             {isCurrentMonth && (
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">현재</span>
+                              <span className="text-xs bg-blue-100 text-[#0062ff] px-2 py-1 rounded">현재</span>
                             )}
                           </div>
                         </td>
@@ -369,8 +369,8 @@ export default function GoalsManagementPage() {
                             <div className="flex items-center justify-center space-x-1">
                               {data?.newPatientGoal ? (
                                 <>
-                                  <Users className="w-3 h-3 text-blue-500" />
-                                  <span className="font-medium text-blue-600">
+                                  <Users className="w-3 h-3 text-[#0062ff]" />
+                                  <span className="font-medium text-[#0062ff]">
                                     {data.newPatientGoal}명
                                   </span>
                                 </>
@@ -433,7 +433,7 @@ export default function GoalsManagementPage() {
             </div>
 
             {/* 요약 통계 */}
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="bg-green-50 rounded-lg p-3 text-center">
                 <div className="text-lg font-bold text-green-700">
                   {goals.filter(g => g.year === activeYear && g.revenueGoal).length}
@@ -441,10 +441,10 @@ export default function GoalsManagementPage() {
                 <div className="text-xs text-green-600">매출 목표 설정 월</div>
               </div>
               <div className="bg-blue-50 rounded-lg p-3 text-center">
-                <div className="text-lg font-bold text-blue-700">
+                <div className="text-lg font-bold text-[#0062ff]">
                   {goals.filter(g => g.year === activeYear && g.newPatientGoal).length}
                 </div>
-                <div className="text-xs text-blue-600">신환 목표 설정 월</div>
+                <div className="text-xs text-[#0062ff]">신환 목표 설정 월</div>
               </div>
               <div className="bg-yellow-50 rounded-lg p-3 text-center">
                 <div className="text-lg font-bold text-yellow-700">
@@ -453,10 +453,10 @@ export default function GoalsManagementPage() {
                 <div className="text-xs text-yellow-600">{activeYear}년 총 매출 목표</div>
               </div>
               <div className="bg-purple-50 rounded-lg p-3 text-center">
-                <div className="text-lg font-bold text-purple-700">
+                <div className="text-lg font-bold text-[#191f28]">
                   {goals.filter(g => g.year === activeYear && g.newPatientGoal).reduce((sum, g) => sum + (g.newPatientGoal || 0), 0)}명
                 </div>
-                <div className="text-xs text-purple-600">{activeYear}년 총 신환 목표</div>
+                <div className="text-xs text-[#191f28]">{activeYear}년 총 신환 목표</div>
               </div>
             </div>
           </div>

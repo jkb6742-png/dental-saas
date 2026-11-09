@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Check } from "lucide-react"
-import { AGE_RANGES, NA_LABEL, SCALE, fillClinicName, splitDoctorName, type Doctor, type QuestionDef } from "@/lib/pei-survey/questions"
+import { AGE_RANGES, NA_LABEL, RECOMMEND_WORDS, SCALE, fillClinicName, splitDoctorName, type Doctor, type QuestionDef } from "@/lib/pei-survey/questions"
 
 type Props = {
   token: string; title: string; slogan: string | null; logo: string | null; clinicName: string; intro: string | null
@@ -164,6 +164,12 @@ function DoctorCard({ doctor, selected, onClick }: { doctor: Doctor; selected: b
   )
 }
 
+// 슬로건은 한 줄 — 글자 수에 맞춰 카드 폭(최대 448px, 좌우 여백 72px)을 넘지 않는 크기로
+const sloganSize = (t: string) => {
+  const units = [...t].reduce((n, ch) => n + (/\s/.test(ch) ? 0.3 : /[가-힣]/.test(ch) ? 1 : 0.6), 0) + 1 // 따옴표 2개
+  return `min(19px, calc((min(100vw, 448px) - 72px) / ${units.toFixed(2)}))`
+}
+
 const fieldCls = "mt-4 w-full px-4 py-3 rounded-xl border border-[#e5e8eb] text-[15px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#3182f6] resize-none"
 
 const isAnswered = (v: Answer | undefined) =>
@@ -228,7 +234,7 @@ export default function SurveyForm({ token, title, slogan, logo, clinicName, int
     switch (q.type) {
       case "single":
         return (
-          <div className={`mt-4 ${(q.options ?? []).length === 2 ? "grid grid-cols-2 gap-2" : "space-y-2"}`}>
+          <div className={`mt-4 ${(q.options ?? []).length === 2 && (q.options ?? []).every((o) => o.length <= 6) ? "grid grid-cols-2 gap-2" : "space-y-2"}`}>
             {(q.options ?? []).map((o) => (
               <Choice key={o} selected={v === o} onClick={() => set(q.id, o)}>
                 {o}
@@ -259,6 +265,13 @@ export default function SurveyForm({ token, title, slogan, logo, clinicName, int
           </div>
         )
       case "scale10":
+        if (q.words) {
+          return (
+            <div className="mt-4 space-y-2">
+              {RECOMMEND_WORDS.map((w) => <Choice key={w.value} selected={v === w.value} onClick={() => set(q.id, w.value)}>{w.label}</Choice>)}
+            </div>
+          )
+        }
         return <RecommendSlider value={typeof v === "number" ? v : null} onChange={(n) => set(q.id, n)} />
       case "short":
         return (
@@ -325,7 +338,7 @@ export default function SurveyForm({ token, title, slogan, logo, clinicName, int
             <>
               {/* 슬로건용 명조체 — next/font 는 한글 서브셋을 못 받아 구글 폰트 CSS 를 직접 씀 */}
               <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600&display=swap" precedence="default" />
-              <p className="mt-5 text-[clamp(14px,4.2vw,19px)] font-semibold leading-snug tracking-tight text-[#3b4f9a] whitespace-nowrap" style={{ fontFamily: '"Noto Serif KR", serif' }}>
+              <p className="mt-5 font-semibold leading-snug tracking-tight text-[#3b4f9a] whitespace-nowrap" style={{ fontFamily: '"Noto Serif KR", serif', fontSize: sloganSize(slogan) }}>
                 &ldquo;{slogan}&rdquo;
               </p>
             </>

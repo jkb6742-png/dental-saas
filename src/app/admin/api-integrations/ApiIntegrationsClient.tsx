@@ -216,13 +216,13 @@ export default function ApiIntegrationsClient() {
   }
 
   if (loading) {
-    return <div className="p-6 text-center">로딩 중...</div>
+    return <div className="p-4 text-center">로딩 중...</div>
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4">
       {/* 헤더 */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-3">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">
             API 통합 목록 ({integrations.length}개)
@@ -234,7 +234,7 @@ export default function ApiIntegrationsClient() {
 
         <button
           onClick={() => setShowCreateForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-blue-700"
+          className="bg-[#0062ff] text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-[#0052d6]"
         >
           <Plus className="w-4 h-4" />
           새 API 추가
@@ -243,10 +243,10 @@ export default function ApiIntegrationsClient() {
 
       {/* 생성 폼 */}
       {showCreateForm && (
-        <div className="mb-6 p-4 border border-blue-200 bg-blue-50 rounded-lg">
-          <h3 className="text-md font-semibold text-blue-900 mb-4">새 API 통합 추가</h3>
+        <div className="mb-3 p-4 border border-[#d1d1cc] bg-blue-50 rounded-lg">
+          <h3 className="text-md font-semibold text-blue-900 mb-2.5">새 API 통합 추가</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Provider
@@ -303,7 +303,7 @@ export default function ApiIntegrationsClient() {
             </div>
           </div>
 
-          <div className="mt-4 flex items-center gap-4">
+          <div className="mt-4 flex items-center gap-3">
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -329,7 +329,7 @@ export default function ApiIntegrationsClient() {
             <button
               onClick={handleCreate}
               disabled={creating}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+              className="bg-[#0062ff] text-white px-4 py-2 rounded-md hover:bg-[#0052d6] disabled:opacity-50"
             >
               {creating ? '생성 중...' : '생성'}
             </button>
@@ -345,19 +345,19 @@ export default function ApiIntegrationsClient() {
 
       {/* API 통합 목록 */}
       {integrations.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          <Settings className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+        <div className="text-center py-4 text-gray-500">
+          <Settings className="w-12 h-12 mx-auto mb-2.5 text-gray-300" />
           <p className="text-lg">설정된 API 통합이 없습니다.</p>
           <p className="text-sm mt-1">새 API를 추가하여 파일 분석 시 GPT 도움을 받으세요.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           {integrations.map((integration) => (
             <div
               key={integration.id}
               className={`border rounded-lg p-4 ${
                 integration.isDefault ? 'border-yellow-300 bg-yellow-50' :
-                integration.isEnabled ? 'border-green-300 bg-green-50' :
+                integration.isEnabled ? 'border-[#d1d1cc] bg-green-50' :
                 'border-gray-300 bg-gray-50'
               }`}
             >
@@ -369,7 +369,7 @@ export default function ApiIntegrationsClient() {
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         integration.provider === 'OPENAI' ? 'bg-green-100 text-green-800' :
-                        integration.provider === 'ANTHROPIC' ? 'bg-purple-100 text-purple-800' :
+                        integration.provider === 'ANTHROPIC' ? 'bg-purple-100 text-[#191f28]' :
                         integration.provider === 'GOOGLE' ? 'bg-blue-100 text-blue-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
@@ -389,11 +389,11 @@ export default function ApiIntegrationsClient() {
                   </div>
 
                   <div className="mt-2 text-sm text-gray-600 space-y-1">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                       <span>API Key: {showApiKeys[integration.id] ? 'sk-...' : integration.maskedApiKey}</span>
                       <button
                         onClick={() => setShowApiKeys(prev => ({ ...prev, [integration.id]: !prev[integration.id] }))}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="text-[#0062ff] hover:text-blue-800"
                       >
                         {showApiKeys[integration.id] ? (
                           <EyeOff className="w-4 h-4" />
@@ -433,7 +433,7 @@ export default function ApiIntegrationsClient() {
                   <button
                     onClick={() => handleTest(integration.id)}
                     disabled={testing[integration.id] || !integration.isEnabled}
-                    className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 disabled:opacity-50"
+                    className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-100 text-[#0062ff] rounded hover:bg-blue-200 disabled:opacity-50"
                   >
                     <TestTube className="w-4 h-4" />
                     {testing[integration.id] ? '테스트 중...' : '연결 테스트'}
@@ -464,7 +464,7 @@ export default function ApiIntegrationsClient() {
       )}
 
       {/* 사용 안내 */}
-      <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+      <div className="mt-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
         <div className="flex items-start gap-2">
           <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-amber-800">

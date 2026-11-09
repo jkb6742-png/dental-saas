@@ -14,6 +14,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko" className="h-full">
+      <head>
+        {/* CSS @import 는 렌더링을 막으므로 link 로 불러온다 */}
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+        />
+      </head>
       <body className="h-full antialiased">
         <NextAuthSessionProvider>
           {children}

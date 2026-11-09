@@ -44,7 +44,7 @@ export default function ReviewsPageClient({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* 기간 선택 */}
       <YearMonthFilter
         initialYear={year}
@@ -54,7 +54,7 @@ export default function ReviewsPageClient({
       />
 
       {/* 요약 대시보드 */}
-      <Suspense fallback={<div className="text-center py-8">리뷰 데이터를 불러오는 중...</div>}>
+      <Suspense fallback={<div className="text-center py-4">리뷰 데이터를 불러오는 중...</div>}>
         <ReviewDashboard
           clinicId={clinicId}
           year={year}
@@ -66,7 +66,7 @@ export default function ReviewsPageClient({
       <NaverReviewFeed clinicId={clinicId} userRole={userRole} />
 
       {/* 월별 관리 */}
-      <Suspense fallback={<div className="text-center py-8">설정을 불러오는 중...</div>}>
+      <Suspense fallback={<div className="text-center py-4">설정을 불러오는 중...</div>}>
         <MonthlyReviewManager clinicId={clinicId} userRole={userRole} />
       </Suspense>
     </div>

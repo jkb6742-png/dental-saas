@@ -194,12 +194,12 @@ export default function InviteCodesManagementClient({
   }
 
   return (
-    <div className="min-h-screen bg-[#f9fafb] p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className=" p-4">
+      <div className="max-w-7xl mx-auto space-y-3">
         {/* 헤더 */}
-        <div className="flex items-center justify-between border-b border-[#e5e8eb] pb-6">
+        <div className="flex items-center justify-between border-b border-[#d1d1cc] pb-6">
           <div className="text-center flex-1">
-            <h1 className="text-[32px] font-bold text-[#191f28] mb-2">초대 코드 관리</h1>
+            <h1 className="text-[18px] font-bold text-[#191f28] mb-2">초대 코드 관리</h1>
             <p className="text-[16px] text-[#6b7280]">회원가입 초대 코드 생성 및 관리</p>
           </div>
           <Button
@@ -213,7 +213,7 @@ export default function InviteCodesManagementClient({
         </div>
 
         {/* 통계 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <KpiCard
             label="전체 코드"
             value={stats.total}
@@ -247,8 +247,8 @@ export default function InviteCodesManagementClient({
         {/* 코드 생성 폼 */}
         {showCreateForm && (
           <SectionCard title="새 초대 코드 생성" description="회원가입용 초대 코드를 생성합니다">
-            <form onSubmit={createInviteCode} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={createInviteCode} className="space-y-2.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[13px] font-medium text-[#4e5968] mb-2">
                     대상 치과
@@ -256,7 +256,7 @@ export default function InviteCodesManagementClient({
                   <select
                     value={newCode.clinicId}
                     onChange={(e) => setNewCode({ ...newCode, clinicId: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-[#e5e8eb] text-[14px] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#ebf3fe]"
+                    className="w-full px-4 py-3 rounded-xl border border-[#d1d1cc] text-[14px] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#e8f0ff]"
                     required
                   >
                     {clinics.map(clinic => (
@@ -282,7 +282,7 @@ export default function InviteCodesManagementClient({
                     onChange={(e) => setNewCode({ ...newCode, maxUses: parseInt(e.target.value) })}
                     min="1"
                     max="100"
-                    className="w-full px-4 py-3 rounded-xl border border-[#e5e8eb] text-[14px] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#ebf3fe]"
+                    className="w-full px-4 py-3 rounded-xl border border-[#d1d1cc] text-[14px] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#e8f0ff]"
                     required
                   />
                 </div>
@@ -294,7 +294,7 @@ export default function InviteCodesManagementClient({
                   <select
                     value={newCode.expiresInMonths}
                     onChange={(e) => setNewCode({ ...newCode, expiresInMonths: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 rounded-xl border border-[#e5e8eb] text-[14px] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#ebf3fe]"
+                    className="w-full px-4 py-3 rounded-xl border border-[#d1d1cc] text-[14px] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#e8f0ff]"
                     required
                   >
                     <option value={1}>1개월</option>
@@ -315,7 +315,7 @@ export default function InviteCodesManagementClient({
                     value={newCode.description}
                     onChange={(e) => setNewCode({ ...newCode, description: e.target.value })}
                     placeholder="예: 신규 파트너용"
-                    className="w-full px-4 py-3 rounded-xl border border-[#e5e8eb] text-[14px] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#ebf3fe]"
+                    className="w-full px-4 py-3 rounded-xl border border-[#d1d1cc] text-[14px] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#e8f0ff]"
                   />
                 </div>
               </div>
@@ -341,7 +341,7 @@ export default function InviteCodesManagementClient({
           <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="border-b border-[#f2f4f6]">
+                <tr className="border-b border-[#e0e0db]">
                   <th className="text-left py-3 px-3 text-[#8b95a1] font-medium">코드</th>
                   <th className="text-left py-3 px-3 text-[#8b95a1] font-medium">치과</th>
                   <th className="text-left py-3 px-3 text-[#8b95a1] font-medium">상태</th>
@@ -356,11 +356,11 @@ export default function InviteCodesManagementClient({
                   const status = getCodeStatus(code)
 
                   return (
-                    <tr key={code.id} className="border-b border-[#f9fafb] hover:bg-[#f9fafb]">
+                    <tr key={code.id} className="border-b border-[#f2f2ef] hover:bg-[#f2f2ef]">
                       {/* 코드 */}
                       <td className="py-4 px-3">
                         <div className="flex items-center gap-2">
-                          <code className="bg-[#f9fafb] px-2 py-1 rounded font-mono text-[16px] font-bold">
+                          <code className="bg-[#f2f2ef] px-2 py-1 rounded font-mono text-[16px] font-bold">
                             {code.code}
                           </code>
                           <button

@@ -1,3 +1,4 @@
+import { denyClinic } from "@/lib/requests/access"
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
 import CacheService, { CACHE_STRATEGIES } from '@/lib/cache'
@@ -112,6 +113,9 @@ export async function POST(request: NextRequest) {
     if (!clinicId) {
       return Response.json({ error: 'clinicId is required' }, { status: 400 })
     }
+
+    const denied = await denyClinic(clinicId)
+    if (denied) return denied
 
     // 실시간 통계는 짧은 캐시 적용
     const cacheKey = CacheService.createKey('region-summary', clinicId, year || 'current', month || 'current')

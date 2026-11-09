@@ -3,6 +3,10 @@ export const dynamic = "force-dynamic"
 import { prisma } from "@/lib/db"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
+import { getRegionGrowth } from "@/lib/dashboard/insights"
+import HomeCard from "@/components/dashboard/HomeCard"
+import { DataTable, Delta, num, won } from "@/components/dashboard/ui"
+import { getRegionCompare } from "@/lib/dashboard/compare-rows"
 import RegionsPageClient from "./RegionsPageClient"
 
 export default async function RegionsPage({
@@ -26,6 +30,8 @@ export default async function RegionsPage({
 
   const year = sp.year ? parseInt(sp.year) : defaultYear
   const month = sp.month ? parseInt(sp.month) : defaultMonth
+
+  const [compare, growth] = await Promise.all([getRegionCompare(clinicId, year), getRegionGrowth(clinicId, year, month)])
 
   // 해당 년도 전체 데이터
   const yearlyData = await prisma.regionDist.findMany({
@@ -64,13 +70,30 @@ export default async function RegionsPage({
   }
 
   return (
+    <div className="space-y-3">
     <RegionsPageClient
       clinicId={clinicId}
       initialYear={year}
       initialMonth={month}
       yearlyData={yearlyData}
       monthlyData={monthlyData}
-      availableData={availableData}
+        availableData={availableData}
+        compare={compare}
     />
+    {growth.length > 0 && (
+      <HomeCard title="지역별 신환 전년 대비" note={`신환 상위 12곳 · 1~${month}월 합계`}>
+        <DataTable
+          head={["지역", `${year}년 신환`, `${year - 1}년 신환`, "증감", "평균 진료비"]}
+          rows={growth.map((g) => [
+            g.region,
+            `${num(g.cur)}명`,
+            `${num(g.prev)}명`,
+            <Delta key={g.region} value={g.prev > 0 ? ((g.cur - g.prev) / g.prev) * 100 : null} />,
+            won(g.avgRevenue),
+          ])}
+        />
+      </HomeCard>
+    )}
+    </div>
   )
 }

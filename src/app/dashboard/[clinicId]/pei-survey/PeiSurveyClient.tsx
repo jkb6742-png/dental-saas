@@ -6,18 +6,17 @@ import QRCode from "qrcode"
 import { ClipboardList, Copy, Download, ExternalLink, QrCode, ChevronLeft, ChevronRight, Check, Table2 } from "lucide-react"
 import Button from "@/components/ui/Button"
 import Badge from "@/components/ui/Badge"
-import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { AGE_RANGES, BUILTIN, PEI_GRADES, peiGrade, isBuiltin, splitDoctorName } from "@/lib/pei-survey/questions"
+import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "@/components/charts/recharts"
+import { AGE_RANGES, PEI_GRADES, itemLabel, peiGrade, isBuiltin, splitDoctorName } from "@/lib/pei-survey/questions"
 import SurveyEditor from "./SurveyEditor"
 import type { SurveyDTO, SurveyStats } from "@/lib/pei-survey/service"
 
 type Props = { clinicId: string; initialSurvey: SurveyDTO; initialStats: SurveyStats; isMaster: boolean }
 
-const card = "bg-white rounded-2xl shadow-[0_1px_3px_0_rgb(0_0_0/0.06)]"
-const inputCls = "w-full px-3.5 py-2.5 rounded-[10px] border border-[#e5e8eb] bg-white text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#3182f6] focus:ring-2 focus:ring-[#3182f6]/15 transition"
+const card = "bg-white rounded-2xl border border-[#d1d1cc]"
+const inputCls = "w-full px-3.5 py-2.5 rounded-[10px] border border-[#d1d1cc] bg-white text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#0062ff]/15 transition"
 const labelCls = "block text-[13px] font-semibold text-[#4e5968] mb-1.5"
-const tabCls = (on: boolean) => `px-4 py-2 rounded-[10px] text-[14px] font-semibold transition ${on ? "bg-white text-[#191f28] shadow-sm" : "text-[#6b7684] hover:text-[#191f28]"}`
-const BUILTIN_LABEL = (id: string) => BUILTIN[id]?.label ?? id
+const tabCls = (on: boolean) => `px-4 py-2 rounded-[10px] text-[14px] font-semibold transition ${on ? "bg-white text-[#191f28]" : "text-[#6b7684] hover:text-[#191f28]"}`
 const fmt2 = (v: number | null | undefined) => (v == null ? "-" : v.toFixed(2))
 const toLoginIf401 = (res: Response) => {
   if (res.status === 401 && typeof window !== "undefined") {
@@ -81,7 +80,7 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
   const scoreQs = survey.questions.filter((q) => isBuiltin(q.id) && q.type === "scale5")
   const customQs = survey.questions.filter((q) => !isBuiltin(q.id))
   const itemRows = [
-    ...scoreQs.map((q) => ({ key: q.id, label: BUILTIN_LABEL(q.id), text: q.text })),
+    ...scoreQs.map((q) => ({ key: q.id, label: itemLabel(q.id, q.text), text: q.text })),
     ...(survey.questions.some((q) => q.id === "recommend") ? [{ key: "recommend", label: "지인 권유 의향", text: "주위에 추천하시겠습니까? (10점 척도 ÷ 2)" }] : []),
   ]
   const optionRows = (id: string, groups: { name: string; count: number; pei: number | null }[]) => {
@@ -102,7 +101,7 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
       {/* 헤더 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-[#e8f3ff] flex items-center justify-center"><ClipboardList className="w-5 h-5 text-[#3182f6]" /></div>
+          <div className="w-9 h-9 rounded-xl bg-[#e8f3ff] flex items-center justify-center"><ClipboardList className="w-5 h-5 text-[#0062ff]" /></div>
           <div>
             <h1 className="text-[20px] font-bold text-[#191f28]">PEI 설문</h1>
             <p className="text-[13px] text-[#8b95a1]">환자 만족도 조사 링크를 보내고 응답을 모아 봅니다</p>
@@ -117,7 +116,7 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
       </div>
 
       {msg && (
-        <div className={`px-4 py-3 rounded-xl text-[14px] ${msg.kind === "ok" ? "bg-[#e8f3ff] text-[#1b64da]" : "bg-[#fff0f1] text-[#d22030]"}`}>
+        <div className={`px-4 py-3 rounded-xl text-[14px] ${msg.kind === "ok" ? "bg-[#e8f3ff] text-[#0052d6]" : "bg-[#fff0f1] text-[#d22030]"}`}>
           {msg.text}
         </div>
       )}
@@ -131,8 +130,8 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
         />
       ) : (<>
       {/* 링크·QR */}
-      <div className={`${card} p-5 grid gap-5 md:grid-cols-[1fr_auto]`}>
-        <div className="min-w-0 space-y-4">
+      <div className={`${card} p-3.5 grid gap-5 md:grid-cols-[1fr_auto]`}>
+        <div className="min-w-0 space-y-2.5">
           <div className="flex items-center gap-2">
             <p className="text-[15px] font-bold text-[#191f28]">{survey.title}</p>
             {survey.isActive ? <Badge variant="green">응답 받는 중</Badge> : <Badge variant="gray">중지됨</Badge>}
@@ -154,7 +153,7 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
                 <button type="button" onClick={() => copy(shortLink, "short")} className="font-mono text-[#4e5968] underline underline-offset-2">
                   {shortLink.replace(/^https?:\/\//, "")}
                 </button>
-                {copied === "short" && <Check className="w-3.5 h-3.5 text-[#3182f6]" />}
+                {copied === "short" && <Check className="w-3.5 h-3.5 text-[#0062ff]" />}
               </p>
             )}
           </div>
@@ -169,9 +168,9 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
           </div>
         </div>
         <div className="flex flex-col items-center gap-2">
-          {qr ? <img src={qr} alt="설문 QR 코드" className="w-40 h-40 rounded-xl border border-[#e5e8eb]" /> : <div className="w-40 h-40 rounded-xl bg-[#f2f4f6] flex items-center justify-center"><QrCode className="w-8 h-8 text-[#b0b8c1]" /></div>}
+          {qr ? <img src={qr} alt="설문 QR 코드" className="w-40 h-40 rounded-xl border border-[#d1d1cc]" /> : <div className="w-40 h-40 rounded-xl bg-[#f2f4f6] flex items-center justify-center"><QrCode className="w-8 h-8 text-[#b0b8c1]" /></div>}
           {qr && (
-            <a href={qr} download={`PEI설문_QR_${survey.title}.png`} className="text-[13px] font-semibold text-[#3182f6] flex items-center gap-1">
+            <a href={qr} download={`PEI설문_QR_${survey.title}.png`} className="text-[13px] font-semibold text-[#0062ff] flex items-center gap-1">
               <Download className="w-3.5 h-3.5" />QR 저장
             </a>
           )}
@@ -193,23 +192,23 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
 
       {/* KPI */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <div className={`${card} p-5`}>
+        <div className={`${card} p-3.5`}>
           <p className="text-[13px] text-[#8b95a1]">응답 수</p>
           <p className="mt-1 text-[26px] font-bold text-[#191f28]">{stats.count.toLocaleString()}<span className="text-[15px] font-semibold text-[#8b95a1] ml-1">건</span></p>
         </div>
-        <div className={`${card} p-5`}>
+        <div className={`${card} p-3.5`}>
           <p className="text-[13px] text-[#8b95a1]">PEI 점수 (5점 만점)</p>
           <div className="mt-1 flex items-center gap-2">
             <p className="text-[26px] font-bold" style={{ color: peiGrade(stats.pei)?.color ?? "#191f28" }}>{fmt2(stats.pei)}</p>
             <GradeBadge v={stats.pei} />
           </div>
           {peiDelta != null && (
-            <p className={`mt-0.5 text-[13px] font-semibold ${peiDelta >= 0 ? "text-[#f04452]" : "text-[#3182f6]"}`}>
+            <p className={`mt-0.5 text-[13px] font-semibold ${peiDelta >= 0 ? "text-[#f04452]" : "text-[#0062ff]"}`}>
               전월 대비 {peiDelta >= 0 ? "▲" : "▼"} {Math.abs(peiDelta).toFixed(2)}
             </p>
           )}
         </div>
-        <div className={`${card} p-5 col-span-2 md:col-span-1`}>
+        <div className={`${card} p-3.5 col-span-2 md:col-span-1`}>
           <p className="text-[13px] text-[#8b95a1]">지인 권유 의향</p>
           <p className="mt-1 text-[26px] font-bold text-[#191f28]">{fmt2(stats.items.recommend)}</p>
         </div>
@@ -217,7 +216,7 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
 
       <div className="grid gap-5 lg:grid-cols-2 items-start">
         {/* 항목별 점수 */}
-        <div className={`${card} p-5`}>
+        <div className={`${card} p-3.5`}>
           <p className="text-[15px] font-bold text-[#191f28] mb-3">항목별 점수</p>
           <div className="divide-y divide-[#f2f4f6]">
             {itemRows.map((r) => {
@@ -226,7 +225,7 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
                 <div key={r.key} className="py-2 flex items-center gap-3" title={r.text}>
                   <p className="w-36 shrink-0 text-[14px] font-semibold text-[#333d4b] truncate">{r.label}</p>
                   <div className="flex-1 h-2 rounded-full bg-[#f2f4f6] overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${v ? (v / 5) * 100 : 0}%`, background: peiGrade(v)?.color ?? "#3182f6" }} />
+                    <div className="h-full rounded-full" style={{ width: `${v ? (v / 5) * 100 : 0}%`, background: peiGrade(v)?.color ?? "#0062ff" }} />
                   </div>
                   <p className="w-12 text-right text-[15px] font-bold" style={{ color: peiGrade(v)?.color ?? "#191f28" }}>{fmt2(v)}</p>
                   <span className="w-[68px] text-right"><GradeBadge v={v} /></span>
@@ -247,7 +246,7 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
 
         <div className="space-y-5">
           {/* 의료진별 — 응답 수 + PEI */}
-          <div className={`${card} p-5`}>
+          <div className={`${card} p-3.5`}>
             <p className="text-[15px] font-bold text-[#191f28] mb-3">의료진별</p>
             {stats.byDoctor.length === 0 ? (
               <p className="text-[14px] text-[#8b95a1]">응답 없음</p>
@@ -272,7 +271,7 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
           </div>
 
           {/* 받은 진료별 (중복 선택이라 합계가 응답 수보다 많을 수 있음) */}
-          <div className={`${card} p-5`}>
+          <div className={`${card} p-3.5`}>
             <p className="text-[15px] font-bold text-[#191f28] mb-3">받은 진료별</p>
             {stats.byTreatment.length === 0 ? (
               <p className="text-[14px] text-[#8b95a1]">응답 없음</p>
@@ -296,15 +295,15 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
       </div>
 
       {/* 응답자 구성 — 방문 구분·성별·연령대별 응답 수, 비율, PEI */}
-      <div className={`${card} p-5`}>
-        <p className="text-[15px] font-bold text-[#191f28] mb-4">응답자 구성</p>
+      <div className={`${card} p-3.5`}>
+        <p className="text-[15px] font-bold text-[#191f28] mb-2.5">응답자 구성</p>
         {stats.count === 0 ? (
           <p className="text-[14px] text-[#8b95a1]">응답 없음</p>
         ) : (
-          <div className={`grid gap-8 ${visitRows.length ? "md:grid-cols-[1fr_1fr_1.6fr]" : "md:grid-cols-[1fr_1.6fr]"}`}>
+          <div className={`grid gap-3 ${visitRows.length ? "md:grid-cols-[1fr_1fr_1.6fr]" : "md:grid-cols-[1fr_1.6fr]"}`}>
             {[
               ...(visitRows.length ? [{ title: "방문 구분", rows: visitRows, color: "#8b7cf6" }] : []),
-              { title: "성별", rows: genderRows, color: "#3182f6" },
+              { title: "성별", rows: genderRows, color: "#0062ff" },
               { title: "연령대", rows: ageRows, color: "#4cc3b4" },
             ].map((g) => (
               <div key={g.title}>
@@ -338,7 +337,7 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
 
       {/* 직접 더한 문항 — 선택형은 선택 수, 점수형은 평균, 글은 응답 수 (내용은 아래 응답 목록에서) */}
       {customQs.length > 0 && (
-        <div className={`${card} p-5`}>
+        <div className={`${card} p-3.5`}>
           <p className="text-[15px] font-bold text-[#191f28] mb-3">추가 문항</p>
           <div className="grid gap-5 md:grid-cols-2">
             {customQs.map((q) => {
@@ -378,21 +377,21 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
       )}
 
       {/* 추이 — 응답 수(막대) + PEI(선) */}
-      <div className={`${card} p-5`}>
+      <div className={`${card} p-3.5`}>
         <p className="text-[15px] font-bold text-[#191f28] mb-3">최근 12개월 추이</p>
         {trendData.length === 0 ? (
-          <p className="text-[14px] text-[#8b95a1] py-6 text-center">응답 없음</p>
+          <p className="text-[14px] text-[#8b95a1] py-3 text-center">응답 없음</p>
         ) : (
-          <div className="h-56">
+          <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={trendData} margin={{ top: 8, right: 8, bottom: 0, left: -12 }}>
                 <CartesianGrid stroke="#f2f4f6" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#8b95a1" }} axisLine={false} tickLine={false} />
-                <YAxis yAxisId="c" tick={{ fontSize: 12, fill: "#8b95a1" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <YAxis yAxisId="p" orientation="right" domain={[1, 5]} tick={{ fontSize: 12, fill: "#8b95a1" }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#8b95a1" }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="c" tick={{ fontSize: 11, fill: "#8b95a1" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <YAxis yAxisId="p" orientation="right" domain={[1, 5]} tick={{ fontSize: 11, fill: "#8b95a1" }} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(v: any, k: any) => (k === "pei" ? [v, "PEI"] : [`${v}건`, "응답"])} labelFormatter={(l) => String(l)} />
-                <Bar yAxisId="c" dataKey="count" fill="#c9e2ff" radius={[4, 4, 0, 0]} maxBarSize={28} />
-                <Line yAxisId="p" dataKey="pei" stroke="#3182f6" strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
+                <Line isAnimationActive={false} type="monotone" strokeWidth={2} dot={{ r: 3 }} yAxisId="c" dataKey="count" stroke="#c9e2ff" />
+                <Line isAnimationActive={false} yAxisId="p" dataKey="pei" stroke="#0062ff" strokeWidth={2} dot={{ r: 3 }} connectNulls />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -400,8 +399,8 @@ export default function PeiSurveyClient({ clinicId, initialSurvey, initialStats,
       </div>
 
       {/* 응답 원문은 월별 시트 화면에서 */}
-      <Link href={`/dashboard/${clinicId}/pei-survey/responses?year=${year}&month=${month}`} className={`${card} p-5 flex items-center gap-3 hover:bg-[#f9fafb] transition`}>
-        <div className="w-10 h-10 rounded-xl bg-[#e8f3ff] flex items-center justify-center shrink-0"><Table2 className="w-5 h-5 text-[#3182f6]" /></div>
+      <Link href={`/dashboard/${clinicId}/pei-survey/responses?year=${year}&month=${month}`} className={`${card} p-3.5 flex items-center gap-3 hover:bg-[#f2f2ef] transition`}>
+        <div className="w-10 h-10 rounded-xl bg-[#e8f3ff] flex items-center justify-center shrink-0"><Table2 className="w-5 h-5 text-[#0062ff]" /></div>
         <div className="mr-auto">
           <p className="text-[15px] font-bold text-[#191f28]">응답 시트</p>
           <p className="text-[13px] text-[#8b95a1]">{month}월 응답 {stats.count}건 · 월별 탭으로 응답 원문을 한 줄씩 봅니다</p>

@@ -1,6 +1,6 @@
 "use client"
 
-import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
+import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from "@/components/charts/recharts"
 import { ChartDataPoint, ChartType } from "@/types/regionTypes"
 
 interface RegionAreaChartProps {
@@ -21,7 +21,7 @@ const chartConfigs = {
   new: {
     dataKey: "newPatients",
     label: "신환",
-    color: "#3b82f6",
+    color: "#0062ff",
     gradientId: "gradient-new"
   },
   returning: {
@@ -42,15 +42,15 @@ export default function RegionAreaChart({
   const config = chartConfigs[type]
 
   return (
-    <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-8 hover:shadow-lg transition-all duration-300">
-      <div className="flex items-start justify-between mb-6">
+    <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+      <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
           <p className="text-sm text-slate-600">{description}</p>
         </div>
       </div>
 
-      <div className={`h-64 mb-4 w-full min-h-[${height}px] min-w-0`}>
+      <div className={`h-64 mb-2.5 w-full min-h-[${height}px] min-w-0`}>
         <ResponsiveContainer width="100%" height={height} minHeight={height}>
           <AreaChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
             <defs>

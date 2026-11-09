@@ -59,8 +59,8 @@ export default function MonthlyFilter({
   }
 
   return (
-    <div className="border-t border-slate-200 pt-4">
-      <div className="flex items-center gap-4 flex-wrap">
+    <div className="border-t border-[#d1d1cc] pt-4">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-slate-600" />
           <span className="text-sm font-medium text-slate-700">필터:</span>
@@ -69,7 +69,7 @@ export default function MonthlyFilter({
         <div className="flex items-center gap-3 flex-wrap">
           <select
             value={currentYear || ''}
-            className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"
+            className="px-3 py-2 border border-[#d1d1cc] rounded-lg text-sm bg-white"
             onChange={(e) => handleYearChange(e.target.value)}
           >
             <option value="">전체 연도</option>
@@ -80,7 +80,7 @@ export default function MonthlyFilter({
 
           <select
             value={currentMonth || ''}
-            className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white"
+            className="px-3 py-2 border border-[#d1d1cc] rounded-lg text-sm bg-white"
             onChange={(e) => handleMonthChange(e.target.value)}
           >
             <option value="">전체 월</option>

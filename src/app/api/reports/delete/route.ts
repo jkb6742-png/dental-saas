@@ -5,7 +5,7 @@ import { requireClinicAccess, logSecurityEvent } from "@/lib/security"
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { reportId, filePath } = await request.json()
+    const { reportId } = await request.json()
 
     if (!reportId) {
       return NextResponse.json({ error: "Report ID is required" }, { status: 400 })
@@ -35,16 +35,6 @@ export async function DELETE(request: NextRequest) {
       details: { reportId, year: report.year, month: report.month }
     })
 
-    // HTML 파일 삭제 (파일 시스템에서)
-    if (filePath) {
-      try {
-        const fs = require('fs').promises
-        await fs.unlink(filePath)
-      } catch (fileError) {
-        console.warn("HTML 파일 삭제 실패:", fileError)
-        // 파일 삭제 실패해도 DB에서는 삭제 진행
-      }
-    }
 
     // 데이터베이스에서 보고서 삭제
     await prisma.report.delete({

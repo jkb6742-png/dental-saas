@@ -151,9 +151,9 @@ export default function PeiHtmlManager({ clinicId, onUploadSuccess }: PeiHtmlMan
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
+      <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 text-[#3182f6] animate-spin" />
+          <Loader2 className="w-8 h-8 text-[#0062ff] animate-spin" />
           <span className="ml-3 text-[15px] text-[#8b95a1]">PEI 리포트 목록을 불러오는 중...</span>
         </div>
       </div>
@@ -162,13 +162,13 @@ export default function PeiHtmlManager({ clinicId, onUploadSuccess }: PeiHtmlMan
 
   if (error) {
     return (
-      <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
+      <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
         <div className="text-center py-12">
-          <AlertCircle className="w-12 h-12 text-[#ff6b6b] mx-auto mb-4" />
+          <AlertCircle className="w-12 h-12 text-[#ff6b6b] mx-auto mb-2.5" />
           <p className="text-[15px] font-semibold text-[#191f28]">{error}</p>
           <button
             onClick={fetchReports}
-            className="mt-3 text-[13px] text-[#3182f6] hover:underline"
+            className="mt-3 text-[13px] text-[#0062ff] hover:underline"
           >
             다시 시도
           </button>
@@ -179,10 +179,10 @@ export default function PeiHtmlManager({ clinicId, onUploadSuccess }: PeiHtmlMan
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-[#e5e8eb] p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-9 h-9 bg-[#ebf3fe] rounded-xl flex items-center justify-center">
-            <FileText className="w-4 h-4 text-[#3182f6]" />
+      <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-9 h-9 bg-[#e8f0ff] rounded-xl flex items-center justify-center">
+            <FileText className="w-4 h-4 text-[#0062ff]" />
           </div>
           <div>
             <h3 className="text-[16px] font-semibold text-[#191f28]">업로드된 PEI 리포트</h3>
@@ -191,7 +191,7 @@ export default function PeiHtmlManager({ clinicId, onUploadSuccess }: PeiHtmlMan
         </div>
 
         {/* 검색 및 필터 - 모바일 개선 */}
-        <div className="space-y-4 mb-6">
+        <div className="space-y-2.5 mb-3">
           {/* 검색 */}
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8b95a1]" />
@@ -200,7 +200,7 @@ export default function PeiHtmlManager({ clinicId, onUploadSuccess }: PeiHtmlMan
               placeholder="PEI 리포트 검색..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-[#e5e8eb] rounded-lg text-[14px] focus:outline-none focus:border-[#3182f6]"
+              className="w-full pl-10 pr-4 py-3 border border-[#d1d1cc] rounded-lg text-[14px] focus:outline-none focus:border-[#0062ff]"
             />
           </div>
 
@@ -211,7 +211,7 @@ export default function PeiHtmlManager({ clinicId, onUploadSuccess }: PeiHtmlMan
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value === '' ? '' : parseInt(e.target.value))}
-                className="flex-1 px-3 py-2.5 border border-[#e5e8eb] rounded-lg text-[14px] focus:outline-none focus:border-[#3182f6]"
+                className="flex-1 px-3 py-2.5 border border-[#d1d1cc] rounded-lg text-[14px] focus:outline-none focus:border-[#0062ff]"
               >
                 <option value="">모든 연도</option>
                 {availableYears.map(year => (
@@ -225,7 +225,7 @@ export default function PeiHtmlManager({ clinicId, onUploadSuccess }: PeiHtmlMan
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value === '' ? '' : parseInt(e.target.value))}
-                className="flex-1 px-3 py-2.5 border border-[#e5e8eb] rounded-lg text-[14px] focus:outline-none focus:border-[#3182f6]"
+                className="flex-1 px-3 py-2.5 border border-[#d1d1cc] rounded-lg text-[14px] focus:outline-none focus:border-[#0062ff]"
               >
                 <option value="">모든 월</option>
                 {Array.from({length: 12}, (_, i) => i + 1).map(month => (
@@ -243,7 +243,7 @@ export default function PeiHtmlManager({ clinicId, onUploadSuccess }: PeiHtmlMan
                 setSelectedYear('')
                 setSelectedMonth('')
               }}
-              className="text-[13px] text-[#8b95a1] hover:text-[#3182f6] flex items-center gap-1"
+              className="text-[13px] text-[#8b95a1] hover:text-[#0062ff] flex items-center gap-1"
             >
               <X className="w-3 h-3" />
               필터 초기화
@@ -254,7 +254,7 @@ export default function PeiHtmlManager({ clinicId, onUploadSuccess }: PeiHtmlMan
         {/* 보고서 목록 */}
         {filteredReports.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-14 h-14 bg-[#f2f4f6] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-14 h-14 bg-[#f2f4f6] rounded-2xl flex items-center justify-center mx-auto mb-2.5">
               <FileText className="w-6 h-6 text-[#b0b8c1]" />
             </div>
             {reports.length === 0 ? (
@@ -274,13 +274,13 @@ export default function PeiHtmlManager({ clinicId, onUploadSuccess }: PeiHtmlMan
             {filteredReports.map((report) => (
               <div
                 key={report.id}
-                className="p-4 rounded-xl bg-[#f9fafb] hover:bg-[#f2f4f6] transition-colors"
+                className="p-4 rounded-xl bg-[#f2f2ef] hover:bg-[#f2f4f6] transition-colors"
               >
                 {/* 모바일에서 세로 배치, 데스크탑에서 가로 배치 */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-[#dcf2ff] rounded-xl flex items-center justify-center flex-shrink-0">
-                      <FileText className="w-4 h-4 text-[#3182f6]" />
+                      <FileText className="w-4 h-4 text-[#0062ff]" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-[14px] font-semibold text-[#191f28] truncate">
@@ -298,7 +298,7 @@ export default function PeiHtmlManager({ clinicId, onUploadSuccess }: PeiHtmlMan
                     <button
                       onClick={() => handlePreview(report.id)}
                       disabled={previewLoading}
-                      className="flex items-center justify-center gap-1 px-3 py-2 text-[13px] text-[#3182f6] font-medium hover:underline bg-[#ebf3fe] rounded-lg disabled:opacity-50 flex-1 sm:flex-none min-h-[36px]"
+                      className="flex items-center justify-center gap-1 px-3 py-2 text-[13px] text-[#0062ff] font-medium hover:underline bg-[#e8f0ff] rounded-lg disabled:opacity-50 flex-1 sm:flex-none min-h-[36px]"
                     >
                       {previewLoading ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -329,9 +329,9 @@ export default function PeiHtmlManager({ clinicId, onUploadSuccess }: PeiHtmlMan
       {/* 미리보기 모달 - 모바일 개선 */}
       {previewReport && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-white rounded-xl sm:rounded-2xl w-full max-w-6xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-xl sm:rounded-2xl w-full max-w-6xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col border border-[#d1d1cc]">
             {/* 헤더 - 모바일에서 더 컴팩트하게 */}
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-[#e5e8eb] flex-shrink-0">
+            <div className="flex items-center justify-between p-4 sm:p-4 border-b border-[#d1d1cc] flex-shrink-0">
               <div className="min-w-0 flex-1">
                 <h2 className="text-[16px] sm:text-[18px] font-semibold text-[#191f28] truncate">
                   📊 {previewReport.year}년 {previewReport.month}월 PEI 리포트

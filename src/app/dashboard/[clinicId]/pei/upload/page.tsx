@@ -242,7 +242,7 @@ export default function PEIUploadPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#d1d1cc] mx-auto"></div>
           <p className="text-gray-600 mt-4">권한 확인 중...</p>
         </div>
       </div>
@@ -254,22 +254,22 @@ export default function PEIUploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-4">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-white rounded-lg p-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">
             PEI 보고서 업로드
           </h1>
 
           {/* 업로드 모드 선택 */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">업로드 방식 선택</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="mb-3">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2.5">업로드 방식 선택</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div
-                className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                   uploadMode === 'excel'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-[#d1d1cc] bg-blue-50'
+                    : 'border-[#d1d1cc] hover:border-gray-300'
                 }`}
                 onClick={() => setUploadMode('excel')}
               >
@@ -279,7 +279,7 @@ export default function PEIUploadPage() {
                     name="uploadMode"
                     checked={uploadMode === 'excel'}
                     onChange={() => setUploadMode('excel')}
-                    className="mr-3 text-blue-600"
+                    className="mr-3 text-[#0062ff]"
                   />
                   <h4 className="text-lg font-semibold text-gray-900">📊 엑셀 자동 생성</h4>
                   <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">추천</span>
@@ -290,10 +290,10 @@ export default function PEIUploadPage() {
               </div>
 
               <div
-                className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                   uploadMode === 'html'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-[#d1d1cc] bg-blue-50'
+                    : 'border-[#d1d1cc] hover:border-gray-300'
                 }`}
                 onClick={() => setUploadMode('html')}
               >
@@ -303,7 +303,7 @@ export default function PEIUploadPage() {
                     name="uploadMode"
                     checked={uploadMode === 'html'}
                     onChange={() => setUploadMode('html')}
-                    className="mr-3 text-blue-600"
+                    className="mr-3 text-[#0062ff]"
                   />
                   <h4 className="text-lg font-semibold text-gray-900">📄 HTML 업로드</h4>
                 </div>
@@ -315,13 +315,13 @@ export default function PEIUploadPage() {
           </div>
 
           {/* 드래그 앤 드롭 영역 */}
-          <div className="mb-8">
+          <div className="mb-3">
             <div
-              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer ${
+              className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all cursor-pointer ${
                 isDragging
-                  ? 'border-blue-500 bg-blue-50'
+                  ? 'border-[#d1d1cc] bg-blue-50'
                   : file
-                  ? 'border-green-500 bg-green-50'
+                  ? 'border-[#d1d1cc] bg-green-50'
                   : 'border-gray-300 hover:border-gray-400'
               }`}
               onDragEnter={handleDragIn}
@@ -344,17 +344,17 @@ export default function PEIUploadPage() {
 
               {isDragging ? (
                 <div className="py-12">
-                  <div className="text-6xl mb-4">📥</div>
-                  <p className="text-xl font-semibold text-blue-600">
+                  <div className="text-6xl mb-2.5">📥</div>
+                  <p className="text-xl font-semibold text-[#0062ff]">
                     파일을 여기에 드롭하세요!
                   </p>
-                  <p className="text-sm text-blue-500 mt-2">
+                  <p className="text-sm text-[#0062ff] mt-2">
                     {uploadMode === 'excel' ? 'Excel 파일 (.xlsx, .xls)' : 'HTML 파일 (.html)'}
                   </p>
                 </div>
               ) : file ? (
-                <div className="py-8">
-                  <div className="text-6xl mb-4">✅</div>
+                <div className="py-4">
+                  <div className="text-6xl mb-2.5">✅</div>
                   <p className="text-lg font-semibold text-green-700 mb-2">
                     {file.name}
                   </p>
@@ -367,7 +367,7 @@ export default function PEIUploadPage() {
                 </div>
               ) : (
                 <div className="py-12">
-                  <div className="text-6xl mb-4">
+                  <div className="text-6xl mb-2.5">
                     {uploadMode === 'excel' ? '📊' : '📄'}
                   </div>
                   <p className="text-xl font-semibold text-gray-700 mb-2">
@@ -388,9 +388,9 @@ export default function PEIUploadPage() {
           </div>
 
           {/* 폼 영역 */}
-          <form onSubmit={uploadMode === 'excel' ? handleExcelUpload : handleHtmlUpload} className="space-y-6">
+          <form onSubmit={uploadMode === 'excel' ? handleExcelUpload : handleHtmlUpload} className="space-y-3">
             {/* 기본 정보 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   연도 *
@@ -491,7 +491,7 @@ export default function PEIUploadPage() {
             {progress && (
               <div className="p-4 bg-blue-50 rounded-lg">
                 <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#d1d1cc]"></div>
                   <span className="text-blue-800 font-medium">{progress}</span>
                 </div>
               </div>
@@ -507,14 +507,14 @@ export default function PEIUploadPage() {
             )}
 
             {/* 버튼 */}
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <button
                 type="submit"
                 disabled={uploading || !file}
                 className={`flex-1 py-3 px-4 rounded-lg font-medium ${
                   uploading || !file
                     ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-[#0062ff] hover:bg-[#0052d6]'
                 } text-white transition-colors`}
               >
                 {uploading

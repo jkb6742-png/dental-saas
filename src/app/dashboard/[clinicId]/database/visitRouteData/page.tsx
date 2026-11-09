@@ -50,17 +50,17 @@ export default async function VisitRouteDataPage({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
-      <div className="space-y-6 p-6">
+    <div className="">
+      <div className="space-y-3 p-4">
         {/* 헤더 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-          <div className="flex items-center gap-4 mb-6">
+        <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+          <div className="flex items-center gap-3 mb-3">
             <Link href={`/dashboard/${clinicId}/database`}>
               <button className="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center transition-colors">
                 <ArrowLeft className="w-5 h-5 text-slate-600" />
               </button>
             </Link>
-            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-[#191f28] rounded-xl flex items-center justify-center">
               <MapPin className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
@@ -79,19 +79,19 @@ export default async function VisitRouteDataPage({
         </div>
 
         {/* 데이터 테이블 */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6">
-          <h3 className="text-xl font-bold text-slate-900 mb-6">내원경로별 집계</h3>
+        <div className="bg-white rounded-2xl border border-[#d1d1cc] p-4">
+          <h3 className="text-xl font-bold text-slate-900 mb-3">내원경로별 집계</h3>
 
           {visitRouteData.length === 0 ? (
             <div className="text-center py-12">
-              <div className="text-4xl mb-4">🛣️</div>
+              <div className="text-4xl mb-2.5">🛣️</div>
               <p className="text-slate-600">내원경로 데이터가 없습니다.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
+                  <tr className="border-b border-[#d1d1cc] bg-slate-50">
                     <th className="text-left p-4 font-semibold text-slate-700">내원경로</th>
                     <th className="text-center p-4 font-semibold text-slate-700">년/월</th>
                     <th className="text-right p-4 font-semibold text-slate-700">신환</th>

@@ -22,7 +22,7 @@ export default function PeiDashboard({ clinicId }: PeiDashboardProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* PEI HTML 리포트 업로드 */}
       <PeiHtmlUpload
         clinicId={clinicId}

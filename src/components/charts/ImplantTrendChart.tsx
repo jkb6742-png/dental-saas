@@ -9,7 +9,7 @@ export default function ImplantTrendChart({ data }: { data: DataPoint[] }) {
     <TrendChart
       data={data}
       series={[
-        { key: "수술횟수", name: "수술 횟수", type: "bar", color: "#3182f6", unit: "건" },
+        { key: "수술횟수", name: "수술 횟수", type: "line", color: "#0062ff", unit: "건" },
         { key: "사용개수", name: "사용 개수", type: "line", color: "#05c072", unit: "개" },
       ]}
     />

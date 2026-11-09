@@ -1,7 +1,7 @@
 type Variant = "blue" | "green" | "red" | "yellow" | "gray"
 
 const variants: Record<Variant, string> = {
-  blue: "bg-[#ebf3fe] text-[#3182f6]",
+  blue: "bg-[#e8f0ff] text-[#0062ff]",
   green: "bg-[#e5f9f0] text-[#05c072]",
   red: "bg-[#fff0f1] text-[#f04452]",
   yellow: "bg-amber-50 text-amber-600",
