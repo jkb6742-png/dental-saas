@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { denyClinic } from "@/lib/requests/access"
 import { auth } from '@/auth'
 import { revalidatePath } from 'next/cache'
 
@@ -15,6 +16,9 @@ export async function POST(request: NextRequest) {
     if (!clinicId) {
       return NextResponse.json({ error: '클리닉 ID가 필요합니다.' }, { status: 400 })
     }
+
+    const denied = await denyClinic(clinicId)
+    if (denied) return denied
 
     // 모든 대시보드 페이지 캐시 무효화
     const pathsToRevalidate = [

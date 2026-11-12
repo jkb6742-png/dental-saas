@@ -8,9 +8,35 @@ import { cache } from "react"
 const loadSessionUser = cache((id: string) =>
   prisma.user.findUnique({
     where: { id },
-    include: { agency: true, inviteCode: { select: { clinicId: true } } },
+    include: {
+      agency: true,
+      inviteCode: { select: { clinicId: true } },
+      employee: { select: { leftOn: true, clinicAccess: { select: { clinicId: true } } } },
+    },
   })
 )
+
+type AccessUser = {
+  role: string
+  clinicId: string | null
+  inviteCode?: { clinicId: string } | null
+  employee?: { leftOn: Date | null; clinicAccess: { clinicId: string }[] } | null
+}
+
+/**
+ * 접근 가능한 치과 목록. MASTER 는 null(전체).
+ * STAFF 는 배정된 치과(퇴사일이 지났으면 없음), 원장은 소속 치과 1곳.
+ */
+export function accessibleClinicIds(user: AccessUser): string[] | null {
+  if (user.role === "MASTER") return null
+  if (user.role === "STAFF") {
+    const emp = user.employee
+    if (!emp || (emp.leftOn && emp.leftOn.getTime() <= Date.now())) return []
+    return emp.clinicAccess.map((a) => a.clinicId)
+  }
+  const own = user.clinicId ?? user.inviteCode?.clinicId ?? null
+  return own ? [own] : []
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // 운영은 NAS 리버스 프록시 뒤에서 돌아 요청 호스트가 내부 주소와 다르다
@@ -30,7 +56,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
-          include: { agency: true, inviteCode: { select: { clinicId: true } } },
+          include: {
+            agency: true,
+            inviteCode: { select: { clinicId: true } },
+            employee: { select: { leftOn: true, clinicAccess: { select: { clinicId: true } } } },
+          },
         })
 
         if (!user) return null
@@ -79,6 +109,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           agencyName: user.agency.name,
           // 비마스터(로그인 계정)는 소속 치과에만 접근. MASTER는 null(전체).
           clinicId: user.clinicId ?? user.inviteCode?.clinicId ?? null,
+          clinicIds: accessibleClinicIds(user),
         }
       },
     }),
@@ -93,6 +124,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.agencySlug = (user as any).agencySlug
         token.agencyName = (user as any).agencyName
         token.clinicId = (user as any).clinicId ?? null
+        token.clinicIds = (user as any).clinicIds ?? null
       } else if (token.id) {
         // 기존 토큰이 있으면 최신 사용자 정보를 데이터베이스에서 가져오기
         try {
@@ -105,12 +137,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.agencySlug = latestUser.agency.slug
             token.agencyName = latestUser.agency.name
             token.clinicId = latestUser.clinicId ?? latestUser.inviteCode?.clinicId ?? null
+            // 담당 치과 배정·회수가 다음 요청부터 바로 반영되도록 매번 다시 읽는다
+            token.clinicIds = accessibleClinicIds(latestUser)
           } else {
             // 사용자가 삭제됐으면 기존 토큰을 믿지 않는다
             return null
           }
         } catch (error) {
           console.error("JWT 토큰 업데이트 오류:", error)
+          // 담당 치과를 확인하지 못하면 직원은 치과 접근을 막는다
+          if (token.role === "STAFF") token.clinicIds = []
         }
       }
       return token
@@ -124,6 +160,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         ;(session.user as any).agencySlug = token.agencySlug
         ;(session.user as any).agencyName = token.agencyName
         ;(session.user as any).clinicId = token.clinicId ?? null
+        ;(session.user as any).clinicIds = token.clinicIds ?? null
       }
       return session
     },

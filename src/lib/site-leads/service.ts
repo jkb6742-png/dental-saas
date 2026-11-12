@@ -14,6 +14,7 @@ type SiteLeadRow = {
   status: string; status_label: string | null; name: string | null; phone: string | null; category: string | null; subject: string | null
   source: string | null; path: string | null; src: string | null; src_label: string | null; med: string | null; med_label: string | null
   camp: string | null; note_count: number
+  content?: string | null // 상담 본문 (홈페이지 API 2026-11-12 이후)
 }
 
 export function normalizeSiteUrl(v: string) {
@@ -94,6 +95,8 @@ export async function syncSiteLeads(clinicId: string, opts: { full?: boolean; no
         status: r.status, statusLabel: r.status_label, name: r.name, phone: r.phone, category: r.category, subject: r.subject,
         channel: r.source, path: r.path, src: r.src, srcLabel: r.src_label, med: r.med, medLabel: r.med_label || null,
         campaign: r.camp || null, noteCount: r.note_count ?? 0,
+        // 상담 본문: 개인 건강정보가 담길 수 있어 암호화 저장. 옛 홈페이지 API(본문 없음)면 기존 값 유지
+        ...(r.content !== undefined ? { content: r.content ? protect(String(r.content).slice(0, 4000)) : null } : {}),
       }
       await prisma.siteLead.upsert({
         where: { sourceId_siteLeadId: { sourceId: src.id, siteLeadId: r.id } },

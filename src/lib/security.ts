@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import { auth } from "@/auth"
+import { auth, accessibleClinicIds } from "@/auth"
 import { NextRequest } from "next/server"
 
 /**
@@ -16,6 +16,7 @@ export async function validateClinicAccess(clinicId: string, userId?: string): P
         agencyId: true,
         clinicId: true,
         inviteCode: { select: { clinicId: true } },
+        employee: { select: { leftOn: true, clinicAccess: { select: { clinicId: true } } } },
       },
     })
 
@@ -30,9 +31,8 @@ export async function validateClinicAccess(clinicId: string, userId?: string): P
       return !!clinic
     }
 
-    // 비마스터(로그인 계정)는 소속 치과에만 접근 가능
-    const ownClinicId = user.clinicId ?? user.inviteCode?.clinicId ?? null
-    return ownClinicId === clinicId
+    // 직원은 배정 치과, 원장은 소속 치과에만 접근 가능
+    return (accessibleClinicIds(user) ?? []).includes(clinicId)
   } catch (error) {
     console.error("권한 검증 오류:", error)
     return false

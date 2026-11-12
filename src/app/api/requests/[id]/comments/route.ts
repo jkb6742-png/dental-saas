@@ -36,7 +36,7 @@ export async function POST(request: NextRequest, { params }: Ctx) {
         fileSize: file.size,
         mimeType: file.type || "application/octet-stream",
         filePath: saved.filePath,
-        kind: actor.isMaster ? "RESULT" : "REFERENCE",
+        kind: actor.isMaster || actor.isStaff ? "RESULT" : "REFERENCE",
         uploadedBy: actor.id,
       },
     })
@@ -46,8 +46,8 @@ export async function POST(request: NextRequest, { params }: Ctx) {
   {
     const clinicName = (await prisma.clinic.findUnique({ where: { id: row.clinicId }, select: { name: true } }))?.name ?? ""
     createNotifications({
-      type: "REQUEST_COMMENT", clinicId: row.clinicId, audience: actor.isMaster ? "clinic" : "masters", exclude: [actor.id],
-      title: `${actor.isMaster ? "THINKLAB" : clinicName} 댓글 · ${row.title.slice(0, 60)}`,
+      type: "REQUEST_COMMENT", clinicId: row.clinicId, audience: actor.isMaster || actor.isStaff ? "clinic" : "masters", exclude: [actor.id],
+      title: `${actor.isMaster || actor.isStaff ? "THINKLAB" : clinicName} 댓글 · ${row.title.slice(0, 60)}`,
       body: content ? content.slice(0, 200) : `파일 ${files.length}개를 올렸습니다.`,
       link: `/dashboard/${row.clinicId}/requests?open=${id}`,
     }).catch((e) => console.error("[requests] 알림 실패", e?.message))

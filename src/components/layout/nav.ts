@@ -16,7 +16,13 @@ import {
 } from "lucide-react"
 
 /** segment: /dashboard/<clinicId>/<segment>, href: 치과 밖 경로 */
-export type NavChild = { label: string; segment?: string; href?: string }
+export type NavChild = {
+  label: string
+  segment?: string
+  href?: string
+  /** 마스터 전용 묶음 안에서 직원(STAFF)에게도 보이는 항목 */
+  staff?: boolean
+}
 export type NavEntry = {
   label: string
   /** 왼쪽 1단에 쓰는 짧은 이름 */
@@ -26,6 +32,20 @@ export type NavEntry = {
   /** 있으면 2단에 세부 메뉴로 나온다 */
   children?: NavChild[]
   masterOnly?: boolean
+}
+
+/** 역할에 맞게 메뉴를 거른다. 직원은 마스터 전용 묶음에서 staff 표시 항목만 본다. */
+export function navForRole(role: string | undefined): NavEntry[][] {
+  if (role === "MASTER") return NAV_GROUPS
+  const isStaff = role === "STAFF"
+  return NAV_GROUPS.map((g) =>
+    g.flatMap((e) => {
+      if (!e.masterOnly) return [e]
+      if (!isStaff) return []
+      const children = (e.children ?? []).filter((c) => c.staff)
+      return children.length ? [{ ...e, label: "직원", short: "직원", children }] : []
+    })
+  ).filter((g) => g.length)
 }
 
 /** 1단 메뉴. 묶음 사이에 구분선이 들어간다. */
@@ -85,7 +105,15 @@ export const NAV_GROUPS: NavEntry[][] = [
         { segment: "pei-survey", label: "PEI 설문" },
       ],
     },
-    { label: "보고서", short: "보고서", icon: FileText, segment: "reports" },
+    {
+      label: "보고서·자료",
+      short: "보고서",
+      icon: FileText,
+      children: [
+        { segment: "reports", label: "보고서" },
+        { segment: "files", label: "자료실" },
+      ],
+    },
     { label: "실행계획", short: "실행계획", icon: Target, segment: "action-plans" },
     { label: "에이전시 요청", short: "요청", icon: Inbox, segment: "requests" },
   ],
@@ -96,10 +124,12 @@ export const NAV_GROUPS: NavEntry[][] = [
       icon: Settings,
       masterOnly: true,
       children: [
-        { segment: "excel-upload", label: "엑셀 업로드" },
-        { segment: "data-check", label: "데이터 점검" },
+        { href: "/work", label: "직원 업무", staff: true },
+        { segment: "excel-upload", label: "엑셀 업로드", staff: true },
+        { segment: "data-check", label: "데이터 점검", staff: true },
         { segment: "database", label: "데이터베이스 관리" },
         { href: "/admin/users", label: "사용자 관리" },
+        { href: "/work/staff", label: "직원 관리" },
         { href: "/admin/invite-codes", label: "초대 코드" },
         { href: "/admin/reset", label: "데이터 초기화" },
         { href: "/admin/clinics", label: "설정" },

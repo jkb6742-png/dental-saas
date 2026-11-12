@@ -3,9 +3,7 @@
 import { useState, useEffect, Suspense } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link"
-import Button from "@/components/ui/Button"
-import { Building2 } from "lucide-react"
+import AuthShell, { AuthLabel, authInput } from "../AuthShell"
 
 function LoginForm() {
   const router = useRouter()
@@ -41,7 +39,9 @@ function LoginForm() {
       setLoading(false)
 
       if (res?.ok) {
-        router.push("/dashboard")
+        // 로그인 전에 보던 주소(예: 휴대폰 재택 인증 QR)로 돌아간다. 같은 사이트 경로만 허용.
+        const next = searchParams.get("next")
+        router.push(next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard")
       } else if (res?.error) {
         // 계정 상태별 에러 처리
         switch (res.error) {
@@ -67,97 +67,70 @@ function LoginForm() {
   }
 
   return (
-    <div className=" flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-3">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-black rounded-2xl mb-2.5">
-            <span className="text-[24px] font-bold text-white">T</span>
-          </div>
-          <h1 className="text-[28px] font-bold text-[#191f28] mb-1">THINKLAB</h1>
-          <h2 className="text-[20px] font-medium text-[#4e5968] mb-2">dental insight</h2>
-          <p className="text-[14px] text-[#8b95a1]">치과 경영지표 분석 플랫폼</p>
+    <AuthShell
+      eyebrow="01 / Sign in"
+      title="로그인"
+      note="THINKLAB 직원과 고객 치과만 쓰는 화면입니다. 회원가입은 받지 않으며, 계정은 관리자가 만들어 드립니다."
+    >
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        <div>
+          <AuthLabel htmlFor="login-id" en="ID / Email" ko="아이디 또는 이메일" />
+          {/* 치과 계정은 이메일 대신 아이디(whitedream52 등)로도 만든다 — type="email" 이면 브라우저가 막는다 */}
+          <input
+            id="login-id"
+            type="text"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="아이디 또는 name@company.com"
+            required
+            className={authInput}
+          />
+        </div>
+        <div>
+          <AuthLabel htmlFor="login-pw" en="Password" ko="비밀번호" />
+          <input
+            id="login-pw"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className={authInput}
+          />
         </div>
 
-        <div className="bg-white rounded-2xl p-4">
-          <form onSubmit={handleSubmit} className="space-y-2.5">
-            <div>
-              <label className="block text-[13px] font-medium text-[#4e5968] mb-1.5">
-                아이디 또는 이메일
-              </label>
-              {/* 치과 계정은 이메일 대신 아이디(whitedream52 등)로도 만든다 — type="email" 이면 브라우저가 막는다 */}
-              <input
-                type="text"
-                autoComplete="username"
-                autoCapitalize="none"
-                spellCheck={false}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="아이디 또는 name@company.com"
-                required
-                className="w-full px-4 py-3 rounded-xl border border-[#d1d1cc] text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#e8f0ff] transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-[13px] font-medium text-[#4e5968] mb-1.5">
-                비밀번호
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-4 py-3 rounded-xl border border-[#d1d1cc] text-[14px] text-[#191f28] placeholder:text-[#b0b8c1] focus:outline-none focus:border-[#0062ff] focus:ring-2 focus:ring-[#e8f0ff] transition-all"
-              />
-            </div>
-
-            {successMessage && (
-              <p className="text-[13px] text-[#059669] bg-[#f0fdf4] px-3 py-2.5 rounded-xl border border-[#bbf7d0]">
-                {successMessage}
-              </p>
-            )}
-
-            {error && (
-              <p className="text-[13px] text-[#f04452] bg-[#fff0f1] px-3 py-2.5 rounded-xl">
-                {error}
-              </p>
-            )}
-
-            <Button type="submit" size="lg" loading={loading} className="w-full mt-2">
-              로그인
-            </Button>
-          </form>
-
-          <p className="text-center text-[13px] text-[#8b95a1] mt-5">
-            계정이 없으신가요?{" "}
-            <Link href="/signup" className="text-[#0062ff] font-semibold hover:underline">
-              회원가입
-            </Link>
+        {successMessage && <p className="text-[13px] text-[#1a7f37] bg-[#e7f6ec] px-3 py-2.5 rounded-[4px]">{successMessage}</p>}
+        {error && (
+          <p role="alert" className="text-[13px] text-[#d92d20] bg-[#fdebec] px-3 py-2.5 rounded-[4px]">
+            {error}
           </p>
-        </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading || !email || !password}
+          className="w-full h-[46px] rounded-[4px] bg-[#0062ff] text-white text-[14px] font-semibold hover:bg-[#0052d6] disabled:opacity-40 transition-colors"
+        >
+          {loading ? "로그인 중…" : "로그인"}
+        </button>
+      </form>
+
+      <div className="mt-6 pt-5 border-t border-[#e0e0db] text-[13px]">
+        <span className="text-[#888]">계정이 없으신가요?</span> <span className="font-semibold text-[#0a0a0a]">관리자에게 문의하세요.</span>
       </div>
-    </div>
+    </AuthShell>
   )
 }
 
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className=" flex items-center justify-center p-4">
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-3">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-black rounded-2xl mb-2.5">
-              <span className="text-[24px] font-bold text-white">T</span>
-            </div>
-            <h1 className="text-[28px] font-bold text-[#191f28] mb-1">THINKLAB</h1>
-            <h2 className="text-[20px] font-medium text-[#4e5968] mb-2">dental insight</h2>
-            <p className="text-[14px] text-[#8b95a1]">치과 경영지표 분석 플랫폼</p>
-          </div>
-          <div className="bg-white rounded-2xl p-4">
-            <div className="text-center text-[#8b95a1]">로딩 중...</div>
-          </div>
-        </div>
-      </div>
+      <AuthShell eyebrow="01 / Sign in" title="로그인">
+        <p className="text-[13px] text-[#888]">불러오는 중…</p>
+      </AuthShell>
     }>
       <LoginForm />
     </Suspense>

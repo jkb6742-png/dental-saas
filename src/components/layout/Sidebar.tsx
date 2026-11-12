@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { Fragment, useEffect, useRef, useState } from "react"
 import { ChevronRight } from "lucide-react"
-import { NAV_GROUPS, findEntry, type NavChild, type NavEntry } from "./nav"
+import { navForRole, findEntry, type NavChild, type NavEntry } from "./nav"
 
 type Props = {
   clinicId: string
@@ -17,7 +17,6 @@ const FLYOUT_CHROME = 46 // 제목 줄 + 위아래 여백
 export default function Sidebar({ clinicId, userRole }: Props) {
   const pathname = usePathname()
   const params = useSearchParams()
-  const isMaster = userRole === "MASTER"
   const home = `/dashboard/${clinicId}`
   const current = pathname.startsWith(`${home}/`) ? pathname.slice(home.length).split("/")[1] : ""
   const activeEntry = findEntry(current)
@@ -51,7 +50,7 @@ export default function Sidebar({ clinicId, userRole }: Props) {
   const query = year && month ? `?year=${year}&month=${month}` : ""
 
   const childHref = (c: NavChild) => c.href ?? `${home}/${c.segment}${query}`
-  const groups = NAV_GROUPS.map((g) => g.filter((e) => !e.masterOnly || isMaster)).filter((g) => g.length)
+  const groups = navForRole(userRole)
 
   const toggle = (entry: NavEntry, button: HTMLElement) => {
     if (open?.entry === entry) {

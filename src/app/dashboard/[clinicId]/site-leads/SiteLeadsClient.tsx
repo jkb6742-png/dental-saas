@@ -9,7 +9,7 @@ import Badge from "@/components/ui/Badge"
 export type SourceInfo = { connected: boolean; siteUrl: string; lastSyncAt: string | null; lastSyncStatus: string | null; lastSyncError: string | null; alertEmails: string }
 export type LeadItem = {
   id: string; siteLeadId: number; receivedAt: string; status: string; statusLabel: string | null
-  name: string | null; phone: string | null; category: string | null; subject: string | null; channel: string | null
+  name: string | null; phone: string | null; category: string | null; subject: string | null; content: string | null; channel: string | null
   srcLabel: string | null; medLabel: string | null; campaign: string | null; noteCount: number
 }
 type Props = { clinicId: string; isMaster: boolean; source: SourceInfo; leads: LeadItem[]; retentionDays: number }
@@ -65,7 +65,7 @@ export default function SiteLeadsClient({ clinicId, isMaster, source, leads, ret
     return leads.filter((l) => {
       if (statusSel.length ? !statusSel.includes(l.status) : !showSpam && l.status === "spam") return false
       if (!kw) return true
-      return [l.name, l.phone, l.subject, l.category].some((v) => v?.toLowerCase().includes(kw))
+      return [l.name, l.phone, l.subject, l.category, l.content].some((v) => v?.toLowerCase().includes(kw))
     })
   }, [leads, statusSel, q, showSpam])
 
@@ -150,7 +150,7 @@ export default function SiteLeadsClient({ clinicId, isMaster, source, leads, ret
               )}
               <div className="relative ml-auto w-full sm:w-64">
                 <Search className="w-4 h-4 text-[#b0b8c1] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input className={`${inputCls} pl-9 py-2`} value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름 · 연락처 · 제목" />
+                <input className={`${inputCls} pl-9 py-2`} value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름 · 연락처 · 제목 · 내용" />
               </div>
             </div>
 
@@ -184,6 +184,12 @@ export default function SiteLeadsClient({ clinicId, isMaster, source, leads, ret
                           <td className="px-2 py-3 text-[#191f28]">
                             <div className="text-[12px] text-[#8b95a1]">{[l.category, l.channel ? CHANNEL[l.channel] ?? l.channel : null].filter(Boolean).join(" · ") || "—"}</div>
                             <div className="line-clamp-1 max-w-[280px]">{l.subject || "(제목 없음)"}</div>
+                            {l.content && (
+                              <details className="mt-1 max-w-[360px]">
+                                <summary className="text-[12px] text-[#0062ff] cursor-pointer select-none">상담 내용</summary>
+                                <p className="mt-1 text-[13px] leading-relaxed text-[#333d4b] whitespace-pre-wrap break-words bg-[#f9fafb] rounded-[8px] px-3 py-2">{l.content}</p>
+                              </details>
+                            )}
                           </td>
                           <td className="px-2 py-3 text-[#4e5968]">
                             {l.srcLabel || "—"}{l.medLabel ? <span className="text-[#8b95a1]"> · {l.medLabel}</span> : null}
@@ -204,7 +210,7 @@ export default function SiteLeadsClient({ clinicId, isMaster, source, leads, ret
             )}
           </div>
           <p className="text-[12px] text-[#8b95a1]">
-            상태 변경·메모는 홈페이지 관리 화면(/dashboard)에서 하고, 여기에는 15분 안에 반영됩니다. 상담 본문은 가져오지 않습니다.
+            상태 변경·메모는 홈페이지 관리 화면(/dashboard)에서 하고, 여기에는 15분 안에 반영됩니다. 상담 내용은 암호화해 보관합니다.
             이름·연락처는 접수 후 {Math.round(retentionDays / 365)}년이 지나면 이 화면에서 자동 삭제됩니다.
           </p>
         </>

@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic"
 
-import { auth } from "@/auth"
+import { auth, accessibleClinicIds } from "@/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import Sidebar from "@/components/layout/Sidebar"
@@ -25,21 +25,21 @@ export default async function DashboardLayout({
   // 실시간 사용자 정보 조회 (세션 정보가 아닌 DB에서 직접)
   const currentUser = await prisma.user.findUnique({
     where: { id: (session.user as any).id },
-    select: { agencyId: true, clinicId: true, inviteCode: { select: { clinicId: true } } }
+    select: {
+      role: true,
+      agencyId: true,
+      clinicId: true,
+      inviteCode: { select: { clinicId: true } },
+      employee: { select: { leftOn: true, clinicAccess: { select: { clinicId: true } } } },
+    }
   })
+  if (!currentUser) redirect("/login")
 
-  // 비마스터는 소속 치과(clinicId)에만 접근. 그 외 clinicId는 차단.
-  const userClinicId = currentUser?.clinicId ?? currentUser?.inviteCode?.clinicId ?? null
-
+  // 비마스터: 직원은 배정 치과, 원장은 소속 치과에만 접근. 그 외 clinicId는 차단.
   if (!isMaster) {
-    if (!userClinicId) {
-      // 소속 치과가 없는 비마스터 계정은 데이터 접근 불가
-      redirect("/dashboard")
-    }
-    if (clinicId !== userClinicId) {
-      // 남의 치과 URL 직접 접근 시 자신의 치과로 되돌림
-      redirect(`/dashboard/${userClinicId}`)
-    }
+    const allowed = accessibleClinicIds(currentUser) ?? []
+    if (allowed.length === 0) redirect(currentUser.role === "STAFF" ? "/work" : "/dashboard")
+    if (!allowed.includes(clinicId)) redirect(`/dashboard/${allowed[0]}`)
   }
 
   // 마스터는 모든 치과 접근 가능, 비마스터는 위에서 자신의 치과로 이미 제한됨

@@ -3,6 +3,8 @@ import { NextResponse } from "next/server"
 
 // 개발 중 쓰던 계정·데이터 조작 주소. 운영에서 열려 있으면 안 되므로 누구에게도 열지 않는다.
 const BLOCKED = [
+  // 회원가입 막음(2026-11-12): 계정은 관리자가 만든다
+  "/api/signup",
   "/setup-master",
   "/test-account",
   "/test-clinic",
@@ -22,8 +24,8 @@ const BLOCKED = [
   "/api/ultra-simple",
 ]
 
-// 로그인 없이 쓰는 주소: 인증, 회원가입, 환자 설문, 자체 비밀값으로 보호되는 예약 호출
-const PUBLIC_API = ["/api/auth", "/api/public", "/api/signup", "/api/reviews/auto-sync"]
+// 로그인 없이 쓰는 주소: 인증, 회원가입, 환자 설문, 자체 비밀값으로 보호되는 예약 호출·bokbok 발행 알림(HMAC 서명)
+const PUBLIC_API = ["/api/auth", "/api/public", "/api/reviews/auto-sync", "/api/integrations/bokbok"]
 
 // 마스터 전용 (읽기 포함)
 const MASTER_ONLY = [
@@ -63,8 +65,12 @@ const VIEWER_WRITE_API = [
   "/api/goals",
 ]
 
+// 직원(STAFF)이 추가로 쓸 수 있는 주소. 치과 자료 업로드는 직원 누구나 가능(라우트에서 기록을 남긴다).
+const STAFF_PAGES = ["/work"]
+const STAFF_API = ["/api/work", "/api/excel-upload"]
+
 // 한 단계 주소 중 한글 설문 주소(/지음치과설문)가 아닌 것
-const RESERVED_ROOT = new Set(["dashboard", "admin", "api", "login", "signup", "reports", "pei-reports", "s"])
+const RESERVED_ROOT = new Set(["dashboard", "work", "admin", "api", "login", "signup", "reports", "pei-reports", "s", "check"])
 
 const under = (path: string, prefix: string) => path === prefix || path.startsWith(`${prefix}/`)
 
@@ -88,50 +94,73 @@ export default auth(async (req) => {
   const proto = req.headers.get("x-forwarded-proto") ?? nextUrl.protocol.replace(":", "")
   const to = (p: string) => new URL(p, `${proto}://${host}`)
 
-  const user = req.auth?.user as { role?: string; clinicId?: string | null; status?: string } | undefined
+  const user = req.auth?.user as
+    | { role?: string; clinicId?: string | null; clinicIds?: string[] | null; status?: string }
+    | undefined
   // 인증 설정 오류 때 req.auth 에는 사용자 대신 오류 메시지가 들어온다. 사용자 정보로만 판단한다.
   // 승인이 취소된 계정은 로그인하지 않은 것으로 다룬다.
   const isLoggedIn = !!user && user.status === "APPROVED"
   const isMaster = isLoggedIn && user?.role === "MASTER"
+  const isStaff = isLoggedIn && user?.role === "STAFF"
 
   if (BLOCKED.some((p) => under(path, p))) return denied(404, isApi, to("/login"))
 
   if (isApi && PUBLIC_API.some((p) => under(path, p))) return NextResponse.next()
 
   const isAuthPage = under(path, "/login") || under(path, "/signup")
-  if (path === "/") return NextResponse.redirect(to(isLoggedIn ? "/dashboard" : "/login"))
-  if (isAuthPage) return isLoggedIn ? NextResponse.redirect(to("/dashboard")) : NextResponse.next()
+  const home = isStaff ? "/work" : "/dashboard"
+  if (path === "/") return NextResponse.redirect(to(isLoggedIn ? home : "/login"))
+  if (isAuthPage) return isLoggedIn ? NextResponse.redirect(to(home)) : NextResponse.next()
 
   // 환자 설문: /s/<token>, /<치과명>설문
   const segments = path.split("/").filter(Boolean)
   const isSurvey = under(path, "/s") || (segments.length === 1 && !RESERVED_ROOT.has(segments[0]))
   if (isSurvey) return NextResponse.next()
 
-  if (!isLoggedIn) return denied(401, isApi, to("/login"))
+  if (!isLoggedIn) {
+    // 재택 인증 QR 은 휴대폰에서 로그인 후 같은 주소로 돌아와야 한다
+    if (!isApi && under(path, "/check")) return NextResponse.redirect(to(`/login?next=${encodeURIComponent(path)}`))
+    return denied(401, isApi, to("/login"))
+  }
   if (isMaster) return NextResponse.next()
 
-  // ---------- 이하 비마스터 ----------
-  const forbidden = () => denied(403, isApi, to("/dashboard"))
+  // ---------- 이하 비마스터(직원·원장) ----------
+  const forbidden = () => denied(403, isApi, to(home))
 
-  // 치과 안의 운영자 전용 화면: /dashboard/<clinicId>/data-check 등
-  const isOperatorPage = segments[0] === "dashboard" && ["excel-upload", "data-check", "database"].includes(segments[2] ?? "")
-  if (isOperatorPage || MASTER_ONLY.some((p) => under(path, p))) return forbidden()
+  // 접근 가능한 치과: 직원은 배정 치과, 원장은 소속 치과 1곳. 목록이 없으면 아무 치과도 못 본다.
+  const allowedClinics = new Set(user?.clinicIds ?? (user?.clinicId ? [user.clinicId] : []))
+  const canSeeClinic = (id: string) => allowedClinics.has(id)
+
+  const staffPath = STAFF_PAGES.some((p) => under(path, p)) || STAFF_API.some((p) => under(path, p))
+  if (staffPath && !isStaff) return forbidden()
+
+  // 치과 안의 운영자 화면: 자료 업로드·점검은 직원도, DB 관리는 마스터만
+  const opPage = segments[0] === "dashboard" ? segments[2] ?? "" : ""
+  const isOperatorPage = ["excel-upload", "data-check"].includes(opPage)
+  if (opPage === "database" || (isOperatorPage && !isStaff)) return forbidden()
+  if (MASTER_ONLY.some((p) => under(path, p)) && !(isStaff && STAFF_API.some((p) => under(path, p)))) return forbidden()
+
+  // 다른 치과 화면 차단: /dashboard/<clinicId>/... (레이아웃 검사와 이중 방어)
+  if (segments[0] === "dashboard" && segments[1] && !canSeeClinic(segments[1])) return forbidden()
 
   // 변경 요청은 허용 목록만. PEI 보고서는 POST 로 읽기 때문에 POST 만 예외로 둔다.
   if (isApi && !isRead) {
-    const allowed = VIEWER_WRITE_API.some((p) => under(path, p)) || (path === "/api/pei/reports" && method === "POST")
+    const allowed =
+      VIEWER_WRITE_API.some((p) => under(path, p)) ||
+      (isStaff && STAFF_API.some((p) => under(path, p))) ||
+      (path === "/api/pei/reports" && method === "POST")
     if (!allowed) return forbidden()
   }
 
   // 다른 치과 자료 요청 차단: 주소의 clinicId
   const queryClinic = nextUrl.searchParams.get("clinicId")
-  if (queryClinic && queryClinic !== user?.clinicId) return forbidden()
+  if (queryClinic && !canSeeClinic(queryClinic)) return forbidden()
 
   // 다른 치과 자료 요청 차단: JSON 본문의 clinicId (라우트 검사와 이중 방어)
   if (isApi && !isRead && (req.headers.get("content-type") ?? "").includes("application/json")) {
     const body = await req.clone().json().catch(() => null)
     const bodyClinic = body && typeof body === "object" ? (body as { clinicId?: unknown }).clinicId : undefined
-    if (typeof bodyClinic === "string" && bodyClinic !== user?.clinicId) return forbidden()
+    if (typeof bodyClinic === "string" && !canSeeClinic(bodyClinic)) return forbidden()
   }
 
   return NextResponse.next()
@@ -139,5 +168,5 @@ export default auth(async (req) => {
 
 export const config = {
   // 환자 설문이 쓰는 의료진 사진·로고는 로그인 없이 보인다
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|pei-doctors|pei-logos).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|pei-doctors|pei-logos|brand).*)"],
 }

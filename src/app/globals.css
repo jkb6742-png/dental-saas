@@ -157,3 +157,20 @@ html {
 .num-positive { color: var(--ok); }
 .num-negative { color: var(--bad); }
 .num-neutral  { color: var(--text-2); }
+
+/* 로그인 화면 왼쪽 브랜드 면: 크롬 링(bokbok 로그인과 같은 방식) */
+.tl-chrome{position:relative;width:var(--cz,360px);aspect-ratio:1;flex:none;pointer-events:none;overflow:hidden;border-radius:50%;
+  -webkit-mask:radial-gradient(closest-side,transparent 0 46%,#000 47% 98.6%,transparent 99.6%);
+          mask:radial-gradient(closest-side,transparent 0 46%,#000 47% 98.6%,transparent 99.6%)}
+.tl-chrome i{position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 0deg,#262626,#d6d6d6 11%,#5c5c5c 24%,#f2f2f2 37%,#383838 50%,#8d8d8d 58%,#a9bdf0 65%,#f6f6f6 72%,#454545 85%,#262626);
+  animation:tl-chrome-spin 48s linear infinite}
+.tl-chrome::before{content:"";position:absolute;inset:0;border-radius:50%;z-index:1;
+  background:radial-gradient(closest-side,rgba(0,0,0,.8) 46.5%,rgba(0,0,0,.18) 52%,rgba(255,255,255,.62) 57%,rgba(255,255,255,0) 61.5%,rgba(0,0,0,.32) 70%,rgba(0,0,0,0) 77%,rgba(255,255,255,.38) 85%,rgba(0,0,0,.2) 91%,rgba(0,0,0,.8) 99%)}
+.tl-chrome::after{content:"";position:absolute;inset:0;border-radius:50%;z-index:2;
+  background:radial-gradient(ellipse 20% 7% at 31% 15%,rgba(255,255,255,.95),rgba(255,255,255,0) 100%),radial-gradient(ellipse 7% 18% at 86% 60%,rgba(255,255,255,.6),rgba(255,255,255,0) 100%),radial-gradient(ellipse 12% 5% at 40% 77%,rgba(255,255,255,.35),rgba(255,255,255,0) 100%)}
+.tl-chrome-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+.tl-chrome-wrap::after{content:"";position:absolute;left:12%;right:12%;bottom:-8%;height:10%;border-radius:50%;background:radial-gradient(closest-side,rgba(0,98,255,.28),rgba(0,98,255,0));filter:blur(6px)}
+.tl-grid::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(#181818 1px,transparent 1px),linear-gradient(90deg,#181818 1px,transparent 1px);background-size:88px 88px;background-position:-1px -1px;opacity:.9;-webkit-mask:linear-gradient(180deg,#000,transparent 80%);mask:linear-gradient(180deg,#000,transparent 80%)}
+@keyframes tl-chrome-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.tl-chrome i{animation:none}}

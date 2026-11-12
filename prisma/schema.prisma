@@ -48,6 +48,33 @@ model User {
   serviceRequests        ServiceRequest[]           @relation("ServiceRequestCreator")
   serviceRequestComments ServiceRequestComment[]
   serviceRequestFiles    ServiceRequestAttachment[]
+  // THINKLAB 직원(STAFF·MASTER)만 Employee 행을 가진다
+  employee               Employee?
+  taskComments           TaskComment[]              @relation("TaskCommentAuthor")
+  taskActivities         TaskActivity[]             @relation("TaskActivityActor")
+  leaveDecisions         LeaveRequest[]             @relation("LeaveDecidedBy")
+  sharedFiles            SharedFile[]               @relation("FileUploadedBy")
+  sharedFileVersions     SharedFileVersion[]        @relation("FileVersionUploadedBy")
+  organizedEvents        CalendarEvent[]            @relation("EventOrganizer")
+  contractsCreated       ClinicContract[]           @relation("ContractCreator")
+  commitmentAdjustments  MonthlyCommitment[]        @relation("CommitmentAdjustedBy")
+  taskReviews            TaskReview[]               @relation("TaskReviewer")
+  salesOwned             SalesOpportunity[]         @relation("SalesOwner")
+  taxChecks              BillingCycle[]             @relation("BillingTaxCheckedBy")
+  paymentsRecorded       PaymentReceipt[]           @relation("PaymentRecordedBy")
+  contentsAuthored       PublishedContent[]         @relation("PublishedAuthor")
+  contentsReviewed       PublishedContent[]         @relation("PublishedReviewer")
+  contentsVerified       PublishedContent[]         @relation("PublishedVerifier")
+  clinicNotes            ClinicNote[]               @relation("ClinicNoteAuthor")
+  monthsClosed           ClinicMonthClose[]         @relation("MonthOperationsCloser")
+  monthsFinanceReviewed  ClinicMonthClose[]         @relation("MonthFinanceReviewer")
+  chatRoomsCreated       ChatRoom[]                 @relation("ChatRoomCreator")
+  chatMemberships        ChatMember[]
+  chatMessages           ChatMessage[]              @relation("ChatSender")
+  notificationPreference NotificationPreference?
+  pushSubscriptions      PushSubscription[]
+  requestsEntered        ServiceRequest[]           @relation("RequestEnteredBy")
+  eventParticipations    CalendarEventParticipant[]
   agency                 Agency                     @relation(fields: [agencyId], references: [id], onDelete: Cascade)
   inviteCode             InviteCode?                @relation(fields: [inviteCodeId], references: [id])
 }
@@ -104,6 +131,19 @@ model Clinic {
   naverAdReports        NaverAdReport[]
   siteLeadSource        SiteLeadSource?
   siteLeads             SiteLead[]
+  staffAccess           StaffClinicAccess[]
+  calendarEvents        CalendarEvent[]
+  contracts             ClinicContract[]
+  monthlyCommitments    MonthlyCommitment[]
+  salesOpportunities    SalesOpportunity[]
+  billingCycles         BillingCycle[]
+  publishedContents     PublishedContent[]
+  clinicNotes           ClinicNote[]
+  monthCloses           ClinicMonthClose[]
+  chatRooms             ChatRoom[]
+  tasks                 Task[]
+  sharedFiles           SharedFile[]
+  taskGroups            TaskGroup[]
 
   @@unique([agencyId, code])
 }
@@ -918,6 +958,7 @@ enum UserRole {
   ANALYST
   VIEWER
   MASTER
+  STAFF // THINKLAB 직원: StaffClinicAccess 로 배정된 치과만 접근
 }
 
 enum UserStatus {
@@ -1132,26 +1173,35 @@ enum ServiceRequestPriority {
 }
 
 model ServiceRequest {
-  id          String                     @id @default(cuid())
-  clinicId    String
-  category    ServiceRequestCategory
-  title       String
-  description String
-  details     Json? // 카테고리별 세부 입력값(용도·사이즈·문구·URL 등)
-  status      ServiceRequestStatus       @default(REQUESTED)
-  priority    ServiceRequestPriority     @default(MEDIUM)
-  dueDate     DateTime?
-  assignee    String? // 담당자 표시명(THINKLAB 내부)
-  resultNote  String? // 완료 시 결과 안내
-  completedAt DateTime?
-  createdBy   String
-  createdAt   DateTime                   @default(now())
-  updatedAt   DateTime                   @updatedAt
-  clinic      Clinic                     @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  user        User                       @relation("ServiceRequestCreator", fields: [createdBy], references: [id])
-  comments    ServiceRequestComment[]
-  attachments ServiceRequestAttachment[]
+  id              String                     @id @default(cuid())
+  clinicId        String
+  category        ServiceRequestCategory
+  title           String
+  description     String
+  details         Json? // 카테고리별 세부 입력값(용도·사이즈·문구·URL 등)
+  status          ServiceRequestStatus       @default(REQUESTED)
+  priority        ServiceRequestPriority     @default(MEDIUM)
+  dueDate         DateTime?
+  assignee        String? // 담당자 표시명(THINKLAB 내부)
+  resultNote      String? // 완료 시 결과 안내
+  completedAt     DateTime?
+  createdBy       String
+  // 카톡·전화로 받은 요청은 직원이 대신 등록(source, enteredByUserId)
+  source          RequestSource              @default(APP)
+  enteredByUserId String?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  enteredBy       User?                      @relation("RequestEnteredBy", fields: [enteredByUserId], references: [id])
+  clinic          Clinic                     @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  user            User                       @relation("ServiceRequestCreator", fields: [createdBy], references: [id])
+  comments        ServiceRequestComment[]
+  attachments     ServiceRequestAttachment[]
+  task            Task?
+  sharedFiles     SharedFile[]
+  clinicNotes     ClinicNote[]
+  chatMessages    ChatMessage[]              @relation("ChatMessageRequest")
 
+  @@unique([id, clinicId])
   @@index([clinicId, status])
   @@index([clinicId, createdAt])
   @@index([status, createdAt])
@@ -1191,30 +1241,30 @@ model ServiceRequestAttachment {
 // =============================================================================
 
 model NaverAdAccount {
-  id              String    @id @default(cuid())
-  clinicId        String    @unique
-  customerId      String // 네이버 검색광고 CUSTOMER_ID
-  apiKey          String // 액세스 라이선스
-  secretKey       String // 비밀키
-  isActive        Boolean   @default(true)
-  lastSyncAt      DateTime?
-  lastSyncStatus  String? // SUCCESS | FAILED
-  lastSyncError   String?
+  id                String    @id @default(cuid())
+  clinicId          String    @unique
+  customerId        String // 네이버 검색광고 CUSTOMER_ID
+  apiKey            String // 액세스 라이선스
+  secretKey         String // 비밀키
+  isActive          Boolean   @default(true)
+  lastSyncAt        DateTime?
+  lastSyncStatus    String? // SUCCESS | FAILED
+  lastSyncError     String?
   // 알림 설정
-  alertEnabled    Boolean   @default(false) // 비즈머니 부족 메일 알림
-  alertThreshold  Int       @default(100000) // 이 금액(원) 이하로 떨어지면 알림
-  alertDays       Int? // 설정 시 '최근 7일 일평균 × N일' 이하로 떨어지면 알림(금액 기준 대신)
-  alertThreshold2 Int? // 2차 기준(원). 금액 기준일 때만. 1차보다 작아야 함
-  alertEmails     String? // 수신 메일(쉼표 구분)
-  alertOnSyncFail Boolean   @default(true) // 동기화 실패도 메일로
-  lastAlertAt     DateTime? // 마지막 부족 알림 발송 시각
-  lastAlertLevel  Int       @default(0) // 0 없음 · 1 1차 발송됨 · 2 2차 발송됨. 잔액이 1차 기준 위로 올라오면 0으로 초기화
-  lastBizmoney    Int? // 마지막 조회 잔액(원)
-  lastBizmoneyAt  DateTime?
-  autoMonthlyReport Boolean @default(false) // 매월 1일 전월 보고서 자동 생성
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  clinic          Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  alertEnabled      Boolean   @default(false) // 비즈머니 부족 메일 알림
+  alertThreshold    Int       @default(100000) // 이 금액(원) 이하로 떨어지면 알림
+  alertDays         Int? // 설정 시 '최근 7일 일평균 × N일' 이하로 떨어지면 알림(금액 기준 대신)
+  alertThreshold2   Int? // 2차 기준(원). 금액 기준일 때만. 1차보다 작아야 함
+  alertEmails       String? // 수신 메일(쉼표 구분)
+  alertOnSyncFail   Boolean   @default(true) // 동기화 실패도 메일로
+  lastAlertAt       DateTime? // 마지막 부족 알림 발송 시각
+  lastAlertLevel    Int       @default(0) // 0 없음 · 1 1차 발송됨 · 2 2차 발송됨. 잔액이 1차 기준 위로 올라오면 0으로 초기화
+  lastBizmoney      Int? // 마지막 조회 잔액(원)
+  lastBizmoneyAt    DateTime?
+  autoMonthlyReport Boolean   @default(false) // 매월 1일 전월 보고서 자동 생성
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  clinic            Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 }
 
 // 캠페인별 일자별 성과 (impCnt·clkCnt·salesAmt 등)
@@ -1272,29 +1322,33 @@ model Notification {
   link      String?
   readAt    DateTime?
   createdAt DateTime  @default(now())
+  dedupKey  String?   @unique // 같은 이벤트 중복 알림 방지
+  groupKey  String? // 묶어서 보낼 단위(사용자·치과·종류)
+
+  deliveries NotificationDelivery[]
 
   @@index([userId, readAt, createdAt])
 }
 
 // PEI(환자경험지수) 자체 설문 — 구글폼 대체. 치과별 공개 링크(/s/<token>)로 응답을 받는다.
 model PeiSurvey {
-  id                String        @id @default(cuid())
-  clinicId          String        @unique
-  token             String        @unique
-  slug              String?       @unique // 한글 주소 /하얀드림치과설문 (기본값 = 치과명 공백 제거 + "설문")
-  title             String
-  intro             String?
-  slogan            String? // 제목 아래 한 줄 — "○○○, 하얀드림치과입니다"
-  logo              String? // 맨 위 치과 로고 URL (업로드)
-  doctors           Json // {name, photo}[] — name "이름 원장 (전공 전문의)" (예전 string[] 도 읽음)
-  treatments        Json          @default("[]") // string[] — 3번 받은 진료 선택지
-  questions         Json          @default("[]") // QuestionDef[] — 문항 구성(순서·문구·선택지·필수). 비어 있으면 기본 15문항
-  facilityQuestion  String
-  isActive          Boolean       @default(true)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  clinic            Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  responses         PeiResponse[]
+  id               String        @id @default(cuid())
+  clinicId         String        @unique
+  token            String        @unique
+  slug             String?       @unique // 한글 주소 /하얀드림치과설문 (기본값 = 치과명 공백 제거 + "설문")
+  title            String
+  intro            String?
+  slogan           String? // 제목 아래 한 줄 — "○○○, 하얀드림치과입니다"
+  logo             String? // 맨 위 치과 로고 URL (업로드)
+  doctors          Json // {name, photo}[] — name "이름 원장 (전공 전문의)" (예전 string[] 도 읽음)
+  treatments       Json          @default("[]") // string[] — 3번 받은 진료 선택지
+  questions        Json          @default("[]") // QuestionDef[] — 문항 구성(순서·문구·선택지·필수). 비어 있으면 기본 15문항
+  facilityQuestion String
+  isActive         Boolean       @default(true)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  clinic           Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  responses        PeiResponse[]
 }
 
 model PeiResponse {
@@ -1364,6 +1418,7 @@ model SiteLead {
   phone         String?
   category      String?
   subject       String?
+  content       String? // 상담 본문 (protect() 암호화 저장, 2026-11-12)
   channel       String? // quick_form · counsel_form · contact_form
   path          String?
   src           String?
@@ -1379,4 +1434,1077 @@ model SiteLead {
 
   @@unique([sourceId, siteLeadId])
   @@index([clinicId, receivedAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// THINKLAB 직원 전용 영역 (2026-11-10)
+// 원장(VIEWER)은 아래 표를 직접 볼 수 없다. 원장에게 보이는 것은
+// ServiceRequest 와 visibility=CLINIC 으로 공개한 SharedFile 뿐.
+// 관리자 변경 이력(근태 수정, 파일 공개, 권한 변경)은 SecurityLog 에 남긴다.
+// ─────────────────────────────────────────────────────────────
+
+// 직원 인사 정보. User.role 이 STAFF 또는 MASTER 인 계정만 가진다.
+model Employee {
+  userId                String    @id
+  hiredOn               DateTime  @db.Date // 입사일: 연차 발생 기준
+  leftOn                DateTime? @db.Date
+  weeklyContractMinutes Int       @default(2400) // 주 소정근로(분). 4주 평균 주 15시간 미만이면 연차 미적용
+  workWeekdays          Int[]     @default([1, 2, 3, 4, 5]) // 1=월 ... 7=일
+  // 직원관리(대표 입력). 개인정보 최소수집: 생년월일·계좌·주민번호·주소는 받지 않는다.
+  jobTitle              String?   @db.VarChar(40)
+  phone                 String?   @db.VarChar(20)
+  employmentType        String?   @db.VarChar(20) // 정규직·계약직·파트타임·프리랜서
+  workMode              WorkMode  @default(OFFICE) // OFFICE=사무실 IP에서만 출퇴근, REMOTE=재택(무작위 QR 인증)
+  workStart             String    @default("09:00") @db.VarChar(5)
+  workEnd               String    @default("18:00") @db.VarChar(5)
+  memo                  String?   @db.VarChar(500)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user          User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  clinicAccess  StaffClinicAccess[]
+  attendance    AttendanceRecord[]
+  leaveRequests LeaveRequest[]
+  leaveLedger   LeaveLedgerEntry[]
+  assignedTasks Task[]              @relation("TaskAssignee")
+  remoteChecks  RemoteCheck[]
+  salaries      EmployeeSalary[]
+  overtime      OvertimeRecord[]
+}
+
+// 연봉 이력(대표만 봄). 재계약·인상 때마다 한 줄씩 쌓는다.
+model EmployeeSalary {
+  id              String   @id @default(cuid())
+  employeeUserId  String
+  effectiveOn     DateTime @db.Date
+  annualSalary    Int // 원
+  reason          String?  @db.VarChar(100) // 입사 계약·재계약 5% 인상 등
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeUserId], references: [userId], onDelete: Cascade)
+
+  @@index([employeeUserId, effectiveOn])
+}
+
+enum WorkMode {
+  OFFICE
+  REMOTE
+}
+
+// 출퇴근 허용 네트워크(사무실 공인 IP 또는 CIDR). 대표가 근태 설정에서 관리.
+model AttendanceNetwork {
+  id              String   @id @default(cuid())
+  agencyId        String
+  name            String   @db.VarChar(40)
+  cidr            String   @db.VarChar(50) // 211.117.37.162 또는 211.117.37.0/24
+  enabled         Boolean  @default(true)
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([agencyId])
+}
+
+// 재택 인증 운영값(에이전시당 1행)
+model AttendanceSetting {
+  agencyId           String   @id
+  remoteChecksPerDay Int      @default(2)
+  qrSeconds          Int      @default(90)
+  graceMinutes       Int      @default(5)
+  updatedAt          DateTime @updatedAt
+}
+
+enum RemoteCheckStatus {
+  SCHEDULED // 시각만 정해짐(직원에게 미공개)
+  SHOWN // PC에 QR 표시됨
+  VERIFIED
+  MISSED // 유예 시간 안에 인증 안 함
+  CANCELLED // 퇴근·연차 등으로 취소
+  EXCUSED // 대표가 사유 인정
+}
+
+// 재택 무작위 QR 인증. 시각은 전부 서버 시각.
+model RemoteCheck {
+  id               String            @id @default(cuid())
+  employeeUserId   String
+  workDate         DateTime          @db.Date
+  scheduledAt      DateTime          @db.Timestamptz(3)
+  status           RemoteCheckStatus @default(SCHEDULED)
+  shownAt          DateTime?         @db.Timestamptz(3) // QR이 처음 뜬 시각
+  tokenHash        String?           @unique @db.VarChar(64) // 현재 QR 토큰(sha256). 재발급하면 바뀐다
+  tokenExpiresAt   DateTime?         @db.Timestamptz(3)
+  matchCode        String?           @db.VarChar(2) // PC에만 보이는 숫자. 휴대폰에서 골라야 인증
+  reissueCount     Int               @default(0)
+  deadlineAt       DateTime?         @db.Timestamptz(3) // 처음 표시 + 유예
+  verifiedAt       DateTime?         @db.Timestamptz(3)
+  verifiedIp       String?           @db.VarChar(64)
+  verifiedUa       String?           @db.VarChar(300)
+  wrongAttempts    Int               @default(0)
+  reason           String?           @db.VarChar(300) // 직원 사유
+  reviewedByUserId String?
+  reviewedAt       DateTime?         @db.Timestamptz(3)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  employee Employee @relation(fields: [employeeUserId], references: [userId], onDelete: Cascade)
+
+  @@index([employeeUserId, workDate])
+  @@index([status, scheduledAt])
+}
+
+// 직원 담당 치과. MASTER 는 배정 없이 전 치과 접근.
+model StaffClinicAccess {
+  employeeUserId String
+  clinicId       String
+  createdAt      DateTime @default(now())
+
+  employee Employee @relation(fields: [employeeUserId], references: [userId], onDelete: Cascade)
+  clinic   Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@id([employeeUserId, clinicId])
+  @@index([clinicId])
+}
+
+// 업무 그룹: 치과별(또는 사내) 카테고리 안에서 자유롭게 만든다. 예: 11월 블로그, 홈페이지 개편
+model TaskGroup {
+  id              String    @id @default(cuid())
+  clinicId        String? // null = THINKLAB 사내
+  name            String    @db.VarChar(60)
+  sortOrder       Int       @default(0)
+  archivedAt      DateTime?
+  createdByUserId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  clinic Clinic? @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  tasks  Task[]
+
+  @@index([clinicId, archivedAt, sortOrder])
+}
+
+enum TaskCategory {
+  BLOG
+  IMAGE
+  WEBSITE
+  REPORT
+  ADS
+  MEETING
+  OTHER
+}
+
+enum TaskStatus {
+  TODO
+  BLOCKED // 자료 대기(케이스 사진·원장 답변 등)
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+// 업무 타임라인. 원장 요청에서 생긴 업무는 serviceRequestId 로 1:1 연결.
+// 같은 치과의 요청만 연결되도록 (serviceRequestId, clinicId) 복합 외래키.
+model Task {
+  id                  String       @id @default(cuid())
+  clinicId            String? // null = THINKLAB 사내 업무
+  groupId             String? // 치과(또는 사내) 안의 업무 그룹
+  sortOrder           Int          @default(0)
+  title               String       @db.VarChar(200)
+  description         String?
+  category            TaskCategory
+  status              TaskStatus   @default(TODO)
+  priority            TaskPriority @default(NORMAL)
+  assigneeUserId      String?
+  serviceRequestId    String?      @unique
+  createdByUserId     String
+  // 월 계약 분량 연결(블로그 3/8 같은 순번)과 반복 생성 중복 방지
+  monthlyCommitmentId String?
+  quotaSlot           Int?
+  generationKey       String?      @unique
+  scheduledPublishAt  DateTime?    @db.Timestamptz(3) // 발행 예정(마감과 별개)
+  fulfilledAt         DateTime?    @db.Timestamptz(3) // 계약 실적으로 인정된 시각
+  externalWorkUrl     String?      @db.VarChar(1000) // bokbok 등 작업 링크
+  resultUrl           String?      @db.VarChar(1000) // 실제 게시물·결과 링크
+  reviewRequired      Boolean      @default(false) // 의료광고 검수 필요
+  blockedReason       String?      @db.VarChar(200) // 자료 대기 등
+  startOn             DateTime?    @db.Date
+  dueOn               DateTime?    @db.Date
+  completedAt         DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  clinic            Clinic?             @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+  group             TaskGroup?          @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  assignee          Employee?           @relation("TaskAssignee", fields: [assigneeUserId], references: [userId], onDelete: SetNull)
+  serviceRequest    ServiceRequest?     @relation(fields: [serviceRequestId, clinicId], references: [id, clinicId], onDelete: Restrict)
+  comments          TaskComment[]
+  activities        TaskActivity[]
+  files             SharedFile[]
+  calendarEvent     CalendarEvent?
+  monthlyCommitment MonthlyCommitment?  @relation(fields: [monthlyCommitmentId, clinicId], references: [id, clinicId], onDelete: SetNull)
+  reviews           TaskReview[]
+  publishedContent  PublishedContent?
+  clinicNotes       ClinicNote[]
+  chatMessages      ChatMessage[]       @relation("ChatMessageTask")
+  checklist         TaskChecklistItem[]
+
+  @@unique([id, clinicId])
+  @@unique([serviceRequestId, clinicId])
+  @@index([clinicId, status, dueOn])
+  @@index([assigneeUserId, status, dueOn])
+  @@index([monthlyCommitmentId])
+  @@index([createdAt])
+  @@index([groupId, sortOrder])
+}
+
+// 직원 내부 댓글(원장 비공개). 원장과의 대화는 ServiceRequestComment.
+model TaskComment {
+  id           String    @id @default(cuid())
+  taskId       String
+  authorUserId String
+  body         String
+  createdAt    DateTime  @default(now())
+  deletedAt    DateTime?
+
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User @relation("TaskCommentAuthor", fields: [authorUserId], references: [id])
+
+  @@index([taskId, createdAt])
+}
+
+enum TaskActivityType {
+  CREATED
+  STATUS_CHANGED
+  ASSIGNEE_CHANGED
+  DUE_DATE_CHANGED
+  CONTENT_CHANGED
+  REOPENED
+}
+
+// 분석용 변경 이력: 상태별 체류 시간, 재배정, 마감 연기 횟수.
+model TaskActivity {
+  id          String           @id @default(cuid())
+  taskId      String
+  actorUserId String?
+  type        TaskActivityType
+  oldValue    String?          @db.VarChar(300)
+  newValue    String?          @db.VarChar(300)
+  createdAt   DateTime         @default(now())
+
+  task  Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actor User? @relation("TaskActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([taskId, createdAt])
+  @@index([type, createdAt])
+}
+
+enum FileVisibility {
+  INTERNAL // 직원만
+  CLINIC // 해당 치과 원장에게 공개
+}
+
+// 공유 파일(논리 문서). 실제 바이너리는 SharedFileVersion.
+// clinicId 없음 = 회사 공통 내부 자료(공개 불가, DB CHECK 로 강제).
+model SharedFile {
+  id               String         @id @default(cuid())
+  clinicId         String?
+  taskId           String?
+  serviceRequestId String?
+  imageFolderId    String? // 이미지 폴더함의 직접 만든 폴더(NAS 실제 폴더)
+  visibility       FileVisibility @default(INTERNAL)
+  title            String         @db.VarChar(200)
+  uploadedByUserId String
+  currentVersion   Int            @default(1)
+  publishedAt      DateTime?
+  deletedAt        DateTime? // 즉시 접근 차단, 30일 뒤 물리 삭제
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  clinic         Clinic?             @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+  task           Task?               @relation(fields: [taskId, clinicId], references: [id, clinicId], onDelete: Restrict)
+  serviceRequest ServiceRequest?     @relation(fields: [serviceRequestId, clinicId], references: [id, clinicId], onDelete: Restrict)
+  uploadedBy     User                @relation("FileUploadedBy", fields: [uploadedByUserId], references: [id])
+  versions       SharedFileVersion[]
+
+  @@index([clinicId, visibility, deletedAt])
+  @@index([taskId])
+  @@index([serviceRequestId])
+}
+
+model SharedFileVersion {
+  id               String   @id @default(cuid())
+  fileId           String
+  versionNo        Int
+  storageKey       String   @unique // uploads/files/<예측 불가 키>
+  originalName     String   @db.VarChar(255)
+  mimeType         String   @db.VarChar(120)
+  byteSize         BigInt
+  sha256           String   @db.VarChar(64)
+  uploadedByUserId String
+  createdAt        DateTime @default(now())
+
+  file       SharedFile        @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  uploadedBy User              @relation("FileVersionUploadedBy", fields: [uploadedByUserId], references: [id])
+  reviews    TaskReview[]
+  chatFiles  ChatMessageFile[]
+
+  @@unique([fileId, versionNo])
+}
+
+enum AttendanceClass {
+  WORKED
+  PAID_LEAVE
+  BUSINESS_TRIP
+  ABSENT
+  EXCLUDED // 휴직 등 소정근로일에서 제외
+}
+
+enum AttendanceSource {
+  SELF
+  MANAGER
+}
+
+// 출퇴근: 직원, 날짜당 1행. 시각은 서버 시각으로 저장, 관리자 수정은 SecurityLog.
+model AttendanceRecord {
+  id             String           @id @default(cuid())
+  employeeUserId String
+  workDate       DateTime         @db.Date
+  clockInAt      DateTime?        @db.Timestamptz(3)
+  clockOutAt     DateTime?        @db.Timestamptz(3)
+  breakMinutes   Int              @default(0)
+  class          AttendanceClass?
+  source         AttendanceSource @default(SELF)
+  note           String?          @db.VarChar(200)
+  workMode       WorkMode? // 그날 출근 방식
+  clockInIp      String?          @db.VarChar(64)
+  clockOutIp     String?          @db.VarChar(64)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  employee Employee @relation(fields: [employeeUserId], references: [userId], onDelete: Restrict)
+
+  @@unique([employeeUserId, workDate])
+  @@index([workDate])
+}
+
+enum LeaveUnit {
+  FULL
+  HALF_AM
+  HALF_PM
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+// 연차 신청. 승인 시에만 LeaveLedgerEntry(USE) 생성, 승인 대기는 차감하지 않음.
+model LeaveRequest {
+  id              String             @id @default(cuid())
+  employeeUserId  String
+  startOn         DateTime           @db.Date
+  endOn           DateTime           @db.Date
+  unit            LeaveUnit          @default(FULL)
+  requestedDays   Decimal            @db.Decimal(5, 2)
+  status          LeaveRequestStatus @default(PENDING)
+  decidedByUserId String?
+  decidedAt       DateTime?
+  decisionNote    String?            @db.VarChar(300)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  employee      Employee           @relation(fields: [employeeUserId], references: [userId], onDelete: Restrict)
+  decidedBy     User?              @relation("LeaveDecidedBy", fields: [decidedByUserId], references: [id])
+  ledgerEntries LeaveLedgerEntry[]
+
+  @@index([employeeUserId, startOn, endOn])
+  @@index([status, createdAt])
+}
+
+enum LeaveLedgerType {
+  GRANT // 발생
+  USE // 사용(음수)
+  EXPIRE // 소멸(음수)
+  ADJUST // 수동 조정
+  REVERSAL // 승인 취소 등 반대 거래
+}
+
+// 연차 원장부. 기록은 고치지 않고 거래를 더한다. 잔여 = deltaDays 합.
+// 최초 1년 월별 발생분과 1년 후 15일은 GRANT 행이 달라 소멸일(expiresOn)을 따로 관리.
+model LeaveLedgerEntry {
+  id              String          @id @default(cuid())
+  employeeUserId  String
+  type            LeaveLedgerType
+  deltaDays       Decimal         @db.Decimal(5, 2)
+  effectiveOn     DateTime        @db.Date
+  expiresOn       DateTime?       @db.Date // GRANT 의 사용 기한
+  grantEntryId    String? // USE, EXPIRE 가 차감한 발생분
+  leaveRequestId  String?
+  reversesEntryId String?         @unique
+  sourceKey       String          @unique // 자동 발생 중복 방지 (예: grant:<userId>:2026-02-10)
+  note            String?         @db.VarChar(200)
+  createdByUserId String?
+  createdAt       DateTime        @default(now())
+
+  employee      Employee           @relation(fields: [employeeUserId], references: [userId], onDelete: Restrict)
+  grantEntry    LeaveLedgerEntry?  @relation("GrantAllocation", fields: [grantEntryId], references: [id])
+  allocations   LeaveLedgerEntry[] @relation("GrantAllocation")
+  reversesEntry LeaveLedgerEntry?  @relation("LeaveReversal", fields: [reversesEntryId], references: [id])
+  reversedBy    LeaveLedgerEntry?  @relation("LeaveReversal")
+  leaveRequest  LeaveRequest?      @relation(fields: [leaveRequestId], references: [id])
+
+  @@index([employeeUserId, effectiveOn])
+  @@index([grantEntryId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// 통합 달력 (2026-11-10). 업무 마감(Task.dueOn)·승인 연차(LeaveRequest)는
+// 원본 표에서 모아 보여주고, 미팅·외부 일정만 여기에 저장한다.
+// visibility=CLINIC 이고 CONFIRMED 인 일정만 원장에게 publicTitle 로 보인다.
+// ─────────────────────────────────────────────────────────────
+
+enum CalendarEventType {
+  CLINIC_MEETING // 치과 정기 미팅
+  SALES_MEETING // 신규 치과 영업 미팅
+  INTERNAL_MEETING // 사내 회의
+  EXTERNAL // 촬영·방문·행사
+  OTHER
+}
+
+enum CalendarEventStatus {
+  TENTATIVE
+  CONFIRMED
+  CANCELLED
+}
+
+enum CalendarVisibility {
+  PRIVATE // 만든 사람·참석자만
+  INTERNAL // 직원 전체(치과 일정이면 그 치과 담당 직원)
+  CLINIC // 해당 치과 원장에게도 공개
+}
+
+model CalendarEvent {
+  id              String              @id @default(cuid())
+  clinicId        String?
+  taskId          String?             @unique
+  type            CalendarEventType
+  status          CalendarEventStatus @default(CONFIRMED)
+  visibility      CalendarVisibility  @default(INTERNAL)
+  title           String              @db.VarChar(200)
+  publicTitle     String?             @db.VarChar(200) // 원장 공개용 제목
+  allDay          Boolean             @default(false)
+  startAt         DateTime            @db.Timestamptz(3)
+  endAt           DateTime            @db.Timestamptz(3)
+  location        String?             @db.VarChar(200)
+  internalNotes   String?
+  organizerUserId String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  clinic       Clinic?                    @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+  task         Task?                      @relation(fields: [taskId, clinicId], references: [id, clinicId], onDelete: Restrict)
+  organizer    User                       @relation("EventOrganizer", fields: [organizerUserId], references: [id])
+  participants CalendarEventParticipant[]
+  notes        ClinicNote[]
+
+  @@unique([id, clinicId])
+  @@unique([taskId, clinicId])
+  @@index([clinicId, startAt])
+  @@index([startAt, status])
+}
+
+model CalendarEventParticipant {
+  eventId String
+  userId  String
+
+  event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, userId])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// THINKLAB 운영 V4 (2026-11-10): 계약·월 분량·검수·발행 기록·업체 메모·
+// 청구·입금·월 마감·영업·메신저·알림 발송. GPT 자문 최종안 기준.
+// 금액·영업·청구는 MASTER 전용. 원장(VIEWER)은 어느 표도 직접 못 본다.
+// ─────────────────────────────────────────────────────────────
+
+enum DeliverableKind {
+  BLOG_POST
+  WEBSITE_COLUMN
+  IMAGE_ASSET
+  MANAGEMENT_REPORT
+  PEI_REPORT
+  BLOG_REPORT
+  ADS_REPORT
+  CLINIC_MEETING
+  SEARCH_AD_OPERATION
+  WEBSITE_MAINTENANCE
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  ENDED
+  TERMINATED
+}
+
+enum VatTreatment {
+  UNCONFIRMED
+  INCLUDED // 금액에 VAT 포함
+  EXCLUDED // 금액 별도 VAT
+}
+
+// 치과 계약. 조건이 바뀌면 덮어쓰지 않고 새 계약 행을 만든다.
+model ClinicContract {
+  id                    String         @id @default(cuid())
+  clinicId              String
+  originOpportunityId   String?
+  planName              String         @db.VarChar(100)
+  monthlyFeeKrw         Int
+  vatTreatment          VatTreatment   @default(UNCONFIRMED)
+  startsOn              DateTime       @db.Date
+  endsOn                DateTime?      @db.Date
+  status                ContractStatus @default(DRAFT)
+  billDayOfMonth        Int? // 청구일(1~31, 말일 넘으면 말일)
+  paymentDueDay         Int? // 입금 예정일
+  paymentDueMonthOffset Int            @default(0) // 1 = 다음 달
+  signedContractUrl     String?        @db.VarChar(1000)
+  creatorUserId         String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  clinic            Clinic            @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+  originOpportunity SalesOpportunity? @relation(fields: [originOpportunityId], references: [id], onDelete: SetNull)
+  creator           User?             @relation("ContractCreator", fields: [creatorUserId], references: [id])
+  lines             ContractLine[]
+  billingCycles     BillingCycle[]
+
+  @@unique([id, clinicId])
+  @@index([clinicId, status, startsOn])
+}
+
+// 계약의 서비스별 월 약정 (예: 블로그 8편)
+model ContractLine {
+  id            String          @id @default(cuid())
+  clinicId      String
+  contractId    String
+  kind          DeliverableKind
+  monthlyTarget Int
+  defaultDueDay Int?
+  createdAt     DateTime        @default(now())
+
+  contract    ClinicContract      @relation(fields: [contractId, clinicId], references: [id, clinicId], onDelete: Cascade)
+  commitments MonthlyCommitment[]
+
+  @@unique([id, clinicId])
+  @@unique([contractId, kind])
+  @@index([clinicId, kind])
+}
+
+// 월별 확정 목표. 계약이 바뀌어도 지난달 목표는 그대로 남는다.
+model MonthlyCommitment {
+  id               String          @id @default(cuid())
+  clinicId         String
+  contractLineId   String?
+  monthStart       DateTime        @db.Date
+  kind             DeliverableKind
+  targetCount      Int
+  adjustmentReason String?         @db.VarChar(300)
+  adjustedByUserId String?
+  adjustedAt       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  clinic       Clinic        @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+  contractLine ContractLine? @relation(fields: [contractLineId, clinicId], references: [id, clinicId], onDelete: SetNull)
+  adjustedBy   User?         @relation("CommitmentAdjustedBy", fields: [adjustedByUserId], references: [id])
+  tasks        Task[]
+
+  @@unique([id, clinicId])
+  @@unique([clinicId, monthStart, kind])
+  @@index([monthStart, kind])
+}
+
+enum ReviewDecision {
+  APPROVED
+  CHANGES_REQUIRED
+}
+
+// 의료광고 검수 기록. 검수한 파일 버전을 남겨 발행본과 대조한다.
+model TaskReview {
+  id                      String         @id @default(cuid())
+  taskId                  String
+  artifactVersionId       String?
+  reviewerUserId          String
+  decision                ReviewDecision
+  claimsChecked           Boolean        @default(false) // 과장·보장 표현
+  riskDisclosureChecked   Boolean        @default(false) // 부작용·주의사항
+  anonymizationChecked    Boolean        @default(false) // 환자 익명화
+  casePhotoConsentChecked Boolean? // 케이스 사진 동의(해당 시)
+  note                    String?        @db.VarChar(1000)
+  reviewedAt              DateTime       @default(now())
+
+  task            Task               @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  artifactVersion SharedFileVersion? @relation(fields: [artifactVersionId], references: [id])
+  reviewer        User               @relation("TaskReviewer", fields: [reviewerUserId], references: [id])
+
+  @@index([taskId, reviewedAt])
+}
+
+enum SalesStage {
+  NEW
+  CONTACTED
+  MEETING
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+// 영업 기회(신규 치과). 계약 전에는 Clinic 을 만들지 않는다.
+model SalesOpportunity {
+  id                    String     @id @default(cuid())
+  clinicId              String?
+  clinicName            String     @db.VarChar(160)
+  stage                 SalesStage @default(NEW)
+  contactPerson         String?    @db.VarChar(100)
+  contactChannel        String?    @db.VarChar(40)
+  contactValue          String?    @db.VarChar(200)
+  region                String?    @db.VarChar(100)
+  proposalUrl           String?    @db.VarChar(1000)
+  expectedMonthlyFeeKrw Int?
+  nextActionOn          DateTime?  @db.Date
+  nextAction            String?    @db.VarChar(200)
+  ownerUserId           String?
+  lostReason            String?    @db.VarChar(300)
+  wonAt                 DateTime?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  clinic    Clinic?          @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  owner     User?            @relation("SalesOwner", fields: [ownerUserId], references: [id])
+  contracts ClinicContract[]
+
+  @@index([stage, nextActionOn])
+  @@index([clinicId])
+}
+
+// 월별 청구. 계약 금액이 바뀌어도 지난 청구액은 그대로.
+model BillingCycle {
+  id                 String    @id @default(cuid())
+  clinicId           String
+  contractId         String
+  serviceMonth       DateTime  @db.Date
+  plannedBillOn      DateTime  @db.Date
+  dueOn              DateTime  @db.Date
+  amountDueKrw       Int
+  billedAt           DateTime? @db.Timestamptz(3)
+  taxInvoiceIssuedAt DateTime? @db.Timestamptz(3)
+  taxInvoiceNumber   String?   @db.VarChar(60)
+  taxCheckedByUserId String?
+  voidedAt           DateTime? @db.Timestamptz(3)
+  memo               String?   @db.VarChar(300)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  clinic       Clinic           @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+  contract     ClinicContract   @relation(fields: [contractId, clinicId], references: [id, clinicId], onDelete: Restrict)
+  taxCheckedBy User?            @relation("BillingTaxCheckedBy", fields: [taxCheckedByUserId], references: [id])
+  receipts     PaymentReceipt[]
+
+  @@unique([id, clinicId])
+  @@unique([contractId, serviceMonth])
+  @@index([clinicId, serviceMonth])
+  @@index([dueOn, voidedAt])
+}
+
+// 실제 입금(부분 입금은 여러 행)
+model PaymentReceipt {
+  id               String   @id @default(cuid())
+  clinicId         String
+  billingCycleId   String
+  receivedOn       DateTime @db.Date
+  amountKrw        Int
+  memo             String?  @db.VarChar(300)
+  recordedByUserId String
+  createdAt        DateTime @default(now())
+
+  billingCycle BillingCycle @relation(fields: [billingCycleId, clinicId], references: [id, clinicId], onDelete: Restrict)
+  recordedBy   User         @relation("PaymentRecordedBy", fields: [recordedByUserId], references: [id])
+
+  @@index([clinicId, receivedOn])
+  @@index([billingCycleId])
+}
+
+enum ContentKind {
+  BLOG
+  COLUMN
+}
+
+enum ContentSource {
+  MANUAL
+  BOKBOK
+  WEBSITE
+}
+
+enum PublishVerification {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+// 블로그·홈페이지 칼럼 발행 기록. serviceMonth = 계약상 이행 대상월(지연 납품이면 발행월과 다름).
+// 같은 치과에서 같은 URL 은 한 번만(urlSha256).
+model PublishedContent {
+  id                 String              @id @default(cuid())
+  clinicId           String
+  taskId             String?             @unique
+  kind               ContentKind
+  source             ContentSource       @default(MANUAL)
+  externalPostId     String?             @db.VarChar(120)
+  title              String              @db.VarChar(300)
+  url                String
+  urlSha256          String              @db.VarChar(64)
+  publishedAt        DateTime            @db.Timestamptz(3)
+  serviceMonth       DateTime            @db.Date
+  primaryKeyword     String?             @db.VarChar(100)
+  keywords           String[]            @default([])
+  authorUserId       String?
+  authorNameSnapshot String?             @db.VarChar(60)
+  reviewerUserId     String?
+  verification       PublishVerification @default(PENDING)
+  verifiedByUserId   String?
+  verifiedAt         DateTime?
+  unpublishedAt      DateTime?
+  lastSourceEventId  String?             @db.VarChar(120)
+  receivedAt         DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  clinic     Clinic @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+  task       Task?  @relation(fields: [taskId, clinicId], references: [id, clinicId], onDelete: SetNull)
+  author     User?  @relation("PublishedAuthor", fields: [authorUserId], references: [id])
+  reviewer   User?  @relation("PublishedReviewer", fields: [reviewerUserId], references: [id])
+  verifiedBy User?  @relation("PublishedVerifier", fields: [verifiedByUserId], references: [id])
+
+  @@unique([clinicId, urlSha256])
+  @@unique([taskId, clinicId])
+  @@unique([source, clinicId, externalPostId])
+  @@index([clinicId, kind, serviceMonth])
+  @@index([clinicId, publishedAt])
+}
+
+enum ClinicNoteKind {
+  CALL
+  MEETING
+  REQUEST
+  SPECIAL
+  OTHER
+}
+
+// 업체 메모(직원 내부). 환자 식별정보 금지.
+model ClinicNote {
+  id               String         @id @default(cuid())
+  clinicId         String
+  kind             ClinicNoteKind
+  occurredAt       DateTime       @default(now())
+  title            String?        @db.VarChar(200)
+  body             String
+  authorUserId     String
+  taskId           String?
+  serviceRequestId String?
+  calendarEventId  String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  deletedAt        DateTime?
+
+  clinic         Clinic          @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+  author         User            @relation("ClinicNoteAuthor", fields: [authorUserId], references: [id])
+  task           Task?           @relation(fields: [taskId, clinicId], references: [id, clinicId], onDelete: SetNull)
+  serviceRequest ServiceRequest? @relation(fields: [serviceRequestId, clinicId], references: [id, clinicId], onDelete: SetNull)
+  event          CalendarEvent?  @relation(fields: [calendarEventId, clinicId], references: [id, clinicId], onDelete: SetNull)
+
+  @@index([clinicId, occurredAt])
+}
+
+// 치과·월 마감. 운영 마감과 재무 점검을 따로 기록.
+model ClinicMonthClose {
+  id                   String    @id @default(cuid())
+  clinicId             String
+  monthStart           DateTime  @db.Date
+  operationsClosedAt   DateTime?
+  operationsClosedById String?
+  exceptionNote        String?   @db.VarChar(1000) // 부족분이 있는데 마감할 때 사유
+  financeReviewedAt    DateTime?
+  financeReviewedById  String?
+  reopenedAt           DateTime?
+  note                 String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  clinic             Clinic @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+  operationsClosedBy User?  @relation("MonthOperationsCloser", fields: [operationsClosedById], references: [id])
+  financeReviewedBy  User?  @relation("MonthFinanceReviewer", fields: [financeReviewedById], references: [id])
+
+  @@unique([clinicId, monthStart])
+}
+
+enum ChatRoomType {
+  DIRECT
+  GROUP
+  CLINIC
+}
+
+// 사내 메신저(직원 전용). 치과 채널은 치과당 1개.
+model ChatRoom {
+  id              String       @id @default(cuid())
+  type            ChatRoomType
+  clinicId        String?
+  title           String?      @db.VarChar(100)
+  directKey       String?      @unique // 1:1 = 두 사용자 id 정렬 결합
+  createdByUserId String
+  createdAt       DateTime     @default(now())
+  lastMessageAt   DateTime?
+  archivedAt      DateTime?
+
+  clinic    Clinic?       @relation(fields: [clinicId], references: [id], onDelete: Restrict)
+  createdBy User          @relation("ChatRoomCreator", fields: [createdByUserId], references: [id])
+  members   ChatMember[]
+  messages  ChatMessage[]
+
+  @@unique([type, clinicId])
+  @@index([lastMessageAt])
+}
+
+model ChatMember {
+  roomId            String
+  userId            String
+  lastReadMessageId BigInt?
+  joinedAt          DateTime  @default(now())
+  leftAt            DateTime?
+  mutedUntil        DateTime?
+
+  room ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, userId])
+  @@index([userId, leftAt])
+}
+
+model ChatMessage {
+  id               BigInt    @id @default(autoincrement())
+  roomId           String
+  senderUserId     String
+  clientNonce      String?   @db.VarChar(64)
+  body             String?
+  taskId           String?
+  serviceRequestId String?
+  createdAt        DateTime  @default(now())
+  editedAt         DateTime?
+  deletedAt        DateTime?
+
+  room           ChatRoom          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender         User              @relation("ChatSender", fields: [senderUserId], references: [id])
+  task           Task?             @relation("ChatMessageTask", fields: [taskId], references: [id], onDelete: SetNull)
+  serviceRequest ServiceRequest?   @relation("ChatMessageRequest", fields: [serviceRequestId], references: [id], onDelete: SetNull)
+  files          ChatMessageFile[]
+
+  @@unique([senderUserId, clientNonce])
+  @@index([roomId, id])
+}
+
+model ChatMessageFile {
+  messageId     BigInt
+  fileVersionId String
+
+  message     ChatMessage       @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  fileVersion SharedFileVersion @relation(fields: [fileVersionId], references: [id])
+
+  @@id([messageId, fileVersionId])
+}
+
+enum NotificationChannel {
+  EMAIL
+  WEB_PUSH
+}
+
+enum DeliveryState {
+  QUEUED
+  PROCESSING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+// 사용자별 알림 설정. 조용한 시간은 분 단위(1200 = 20:00, 540 = 09:00, KST)
+model NotificationPreference {
+  userId             String   @id
+  emailEnabled       Boolean  @default(true)
+  pushEnabled        Boolean  @default(false)
+  dailyDigestEnabled Boolean  @default(true)
+  quietStartMinute   Int      @default(1200)
+  quietEndMinute     Int      @default(540)
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PushSubscription {
+  id                 String    @id @default(cuid())
+  userId             String
+  endpointHash       String    @unique
+  endpointCiphertext String
+  p256dhCiphertext   String
+  authCiphertext     String
+  createdAt          DateTime  @default(now())
+  lastUsedAt         DateTime?
+  revokedAt          DateTime?
+
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
+
+  @@index([userId, revokedAt])
+}
+
+// 이메일·푸시 발송 큐 겸 이력. 실패해도 앱 내 알림은 남는다.
+model NotificationDelivery {
+  id                 String              @id @default(cuid())
+  notificationId     String
+  channel            NotificationChannel
+  pushSubscriptionId String?
+  dedupKey           String              @unique
+  state              DeliveryState       @default(QUEUED)
+  attemptCount       Int                 @default(0)
+  nextAttemptAt      DateTime            @default(now())
+  sentAt             DateTime?
+  lastErrorCode      String?             @db.VarChar(120)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  notification     Notification      @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  pushSubscription PushSubscription? @relation(fields: [pushSubscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([state, nextAttemptAt])
+}
+
+enum RequestSource {
+  APP
+  KAKAO
+  PHONE
+  EMAIL
+  MEETING
+  OTHER
+}
+
+// 업무 체크리스트(하위 단계): 원고 → 내부 확인 → 원장 검수 → 발행 등
+model TaskChecklistItem {
+  id           String    @id @default(cuid())
+  taskId       String
+  title        String    @db.VarChar(200)
+  sortOrder    Int       @default(0)
+  doneAt       DateTime? @db.Timestamptz(3)
+  doneByUserId String?
+  createdAt    DateTime  @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, sortOrder])
+}
+
+// 즐겨찾기·고정(사이드바): 치과·업무 보드·업무. 사람별 최대 몇 개는 앱에서 제한.
+model WorkPin {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String   @db.VarChar(20) // CLINIC | BOARD | TASK
+  refId     String   @db.VarChar(40) // clinicId("internal" 포함) 또는 taskId
+  label     String   @db.VarChar(100)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, kind, refId])
+  @@index([userId, sortOrder])
+}
+
+// 빠른 메모(상단 바 + 메모): 나만 보는 메모, 업무로 바꿀 수 있음
+model WorkMemo {
+  id              String    @id @default(cuid())
+  userId          String
+  body            String    @db.VarChar(2000)
+  clinicId        String?
+  convertedTaskId String?
+  archivedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId, archivedAt, createdAt])
+}
+
+// 추가근무(연장·휴일) 기록: 직원이 등록, 대표가 승인. 실근무 기록은 승인 여부와 상관없이 보존.
+model OvertimeRecord {
+  id              String    @id @default(cuid())
+  employeeUserId  String
+  workDate        DateTime  @db.Date
+  startAt         DateTime  @db.Timestamptz(3)
+  endAt           DateTime  @db.Timestamptz(3)
+  minutes         Int
+  reason          String    @db.VarChar(300)
+  status          String    @default("PENDING") @db.VarChar(12) // PENDING | APPROVED | REJECTED
+  decidedByUserId String?
+  decidedAt       DateTime? @db.Timestamptz(3)
+  decisionNote    String?   @db.VarChar(200)
+  source          String    @default("SELF") @db.VarChar(12) // SELF | MANAGER | IMPORT
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  employee Employee @relation(fields: [employeeUserId], references: [userId], onDelete: Cascade)
+
+  @@index([employeeUserId, workDate])
+  @@index([status, workDate])
+}
+
+// 계정 관리: 사내(clinicId null)·치과별 서비스 계정. 비밀번호는 APP_ENCRYPTION_KEY 로 암호화해 저장하고,
+// 볼 때마다 기록(SecurityLog ACCOUNT_REVEALED)을 남긴다. visibility MASTER = 대표만, STAFF = 담당 직원도.
+model ServiceAccount {
+  id                String    @id @default(cuid())
+  agencyId          String
+  clinicId          String?
+  category          String    @db.VarChar(40) // 네이버, 인스타그램, 홈페이지 관리자, gmail …
+  label             String?   @db.VarChar(80) // 용도·계정 이름(예: 블로그 본계정)
+  loginId           String?   @db.VarChar(200)
+  passwordEnc       String?   @db.Text
+  url               String?   @db.VarChar(500)
+  memo              String?   @db.VarChar(500)
+  visibility        String    @default("STAFF") @db.VarChar(10)
+  passwordChangedAt DateTime?
+  createdByUserId   String?
+  updatedByUserId   String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([agencyId, clinicId])
+}
+
+// 이미지 폴더함에서 직접 만든 폴더. NAS 공유\업무자료\<치과 또는 THINKLAB 사내>\<path> 에 실제 폴더로 만든다.
+model ImageFolder {
+  id              String   @id @default(cuid())
+  agencyId        String
+  clinicId        String? // null = 사내
+  parentId        String?
+  name            String   @db.VarChar(80)
+  path            String   @db.VarChar(500) // NAS_ROOT 기준 상대 경로(예: 지음치과/11월 블로그 사진)
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([agencyId, path])
+  @@index([agencyId, clinicId, parentId])
 }

@@ -22,7 +22,7 @@ export default async function RequestsPage({ params }: { params: Promise<{ clini
     <RequestsClient
       clinicId={clinicId}
       initialRequests={rows.map(serializeRequest)}
-      isMaster={actor.isMaster}
+      isMaster={actor.isMaster || actor.isStaff}
       userId={actor.id}
     />
   )

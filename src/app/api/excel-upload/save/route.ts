@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { denyClinic, logDataUpload } from "@/lib/requests/access"
 import { auth } from '@/auth'
 import { prisma } from '@/lib/db'
 
@@ -74,6 +75,13 @@ export async function POST(request: NextRequest) {
     if (!clinicId || !structuredData) {
       return NextResponse.json({ error: '필수 데이터가 누락되었습니다.' }, { status: 400 })
     }
+
+    const denied = await denyClinic(clinicId)
+    if (denied) return denied
+    await logDataUpload(clinicId, "DATA_UPLOAD_SAVE", {
+      fileName,
+      receptionRecords: structuredData.receptionRecords?.length ?? 0,
+    })
 
     console.log(`🚀 처리 시작: ${fileName}, 레코드 수: ${structuredData.receptionRecords?.length || 0}`)
 

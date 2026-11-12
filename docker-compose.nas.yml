@@ -35,6 +35,8 @@ services:
       - DEFAULT_PAGE_SIZE=20
       - ENABLE_FILE_CACHE=true
       - COMPRESSION_ENABLED=true
+      # 업무 파일 → NAS 공유 폴더(공유\업무자료\<치과>\<그룹>\<업무>)
+      - NAS_FILES_ROOT=/app/nas-files
 
     ports:
       - "5000:3000"
@@ -44,6 +46,7 @@ services:
       - /volume1/docker/dental-saas/cache:/app/cache
       - /volume1/docker/dental-saas/uploads:/app/uploads
       - /volume1/docker/dental-saas/logs:/app/logs
+      - /volume1/공유/업무자료:/app/nas-files
 
     depends_on:
       dental-db:

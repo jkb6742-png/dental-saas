@@ -6,5 +6,7 @@ export async function register() {
     startNaverAdsScheduler()
     const { startSiteLeadsScheduler } = await import("@/lib/site-leads/scheduler")
     startSiteLeadsScheduler()
+    const { startWorkScheduler } = await import("@/lib/work/jobs")
+    startWorkScheduler()
   }
 }

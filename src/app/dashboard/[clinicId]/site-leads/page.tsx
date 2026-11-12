@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/db"
 import { getActor, canAccessClinic } from "@/lib/requests/access"
-import { RETENTION_DAYS } from "@/lib/site-leads/service"
+import { RETENTION_DAYS, reveal } from "@/lib/site-leads/service"
 import SiteLeadsClient, { type LeadItem, type SourceInfo } from "./SiteLeadsClient"
 
 export default async function SiteLeadsPage({ params }: { params: Promise<{ clinicId: string }> }) {
@@ -38,6 +38,7 @@ export default async function SiteLeadsPage({ params }: { params: Promise<{ clin
     phone: r.phone,
     category: r.category,
     subject: r.subject,
+    content: r.content ? reveal(r.content) : null,
     channel: r.channel,
     srcLabel: r.srcLabel,
     medLabel: r.medLabel,

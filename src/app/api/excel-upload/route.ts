@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { denyClinic, logDataUpload } from "@/lib/requests/access"
 import { auth } from '@/auth'
 import * as XLSX from 'xlsx'
 import OpenAI from 'openai'
@@ -339,6 +340,11 @@ export async function POST(request: NextRequest) {
     if (!clinicId) {
       return NextResponse.json({ error: '클리닉 ID가 없습니다.' }, { status: 400 })
     }
+
+    // 담당 치과 확인(본문이 multipart 라 프록시가 clinicId 를 볼 수 없다)
+    const denied = await denyClinic(clinicId)
+    if (denied) return denied
+    await logDataUpload(clinicId, "DATA_UPLOAD_PARSE", { fileName: file.name, size: file.size })
 
     // 파일 확장자 확인
     const fileExtension = file.name.split('.').pop()?.toLowerCase()

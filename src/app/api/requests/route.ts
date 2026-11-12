@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { ensureTaskForRequest } from "@/lib/work/tasks"
 import { prisma } from "@/lib/db"
 import { getActor, canAccessClinic } from "@/lib/requests/access"
 import { CATEGORY_MAP, type RequestCategory, type RequestPriority } from "@/lib/requests/categories"
@@ -84,6 +85,8 @@ export async function POST(request: NextRequest) {
       createdBy: actor.id,
     },
   })
+  // 요청 1건 = 업무 1건 (직원 업무 타임라인에 바로 뜬다)
+  await ensureTaskForRequest(created.id).catch((e) => console.error("[requests] 업무 생성 실패", e?.message))
 
   for (const file of files) {
     const saved = await saveRequestFile(clinicId, created.id, file)
@@ -104,7 +107,7 @@ export async function POST(request: NextRequest) {
   const full = await prisma.serviceRequest.findUniqueOrThrow({ where: { id: created.id }, include: requestInclude })
   const clinicName = (await prisma.clinic.findUnique({ where: { id: clinicId }, select: { name: true } }))?.name ?? ""
   await createNotifications({
-    type: "REQUEST_NEW", clinicId, audience: actor.isMaster ? "clinic" : "masters", exclude: [actor.id],
+    type: "REQUEST_NEW", clinicId, audience: actor.isMaster || actor.isStaff ? "clinic" : "masters", exclude: [actor.id],
     title: `${clinicName} 새 요청 · ${CATEGORY_MAP[category]?.short ?? category}`,
     body: `${title.slice(0, 80)}${priority === "HIGH" ? " (긴급)" : ""}${dueDateRaw ? ` · 희망 ${dueDateRaw}` : ""}`,
     link: `/dashboard/${clinicId}/requests?open=${created.id}`,

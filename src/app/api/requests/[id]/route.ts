@@ -4,6 +4,7 @@ import { createNotifications } from "@/lib/notifications"
 import { getActor, canAccessClinic } from "@/lib/requests/access"
 import { STATUS_META, type RequestStatus } from "@/lib/requests/categories"
 import { fetchOne, serializeRequest } from "@/lib/requests/serialize"
+import { updateTask } from "@/lib/work/tasks"
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -16,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   return NextResponse.json(serializeRequest(row))
 }
 
-// PATCH — 마스터: 상태·담당자·희망일·결과 메모 / 치과 계정: 접수 상태에서 내용 수정·취소
+// PATCH — THINKLAB(마스터·담당 직원): 상태·담당자·희망일·결과 메모 / 치과 계정: 접수 상태에서 내용 수정·취소
 export async function PATCH(request: NextRequest, { params }: Ctx) {
   const actor = await getActor()
   if (!actor) return NextResponse.json({ error: "인증이 필요합니다" }, { status: 401 })
@@ -28,7 +29,8 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
   const data: Record<string, unknown> = {}
   const validPriority = (p: unknown) => ["HIGH", "MEDIUM", "LOW"].includes(String(p))
 
-  if (actor.isMaster) {
+  const internal = actor.isMaster || actor.isStaff
+  if (internal) {
     if (body.status) {
       if (!STATUS_META[body.status as RequestStatus]) return NextResponse.json({ error: "상태 값 오류" }, { status: 400 })
       data.status = body.status
@@ -56,15 +58,20 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
 
   if (Object.keys(data).length === 0) return NextResponse.json({ error: "변경할 내용이 없습니다" }, { status: 400 })
   await prisma.serviceRequest.update({ where: { id }, data: data as any })
+  // 연결된 업무도 완료·취소를 따라간다(되돌리기는 업무 화면에서)
+  if (data.status === "DONE" || data.status === "CANCELED") {
+    const task = await prisma.task.findUnique({ where: { serviceRequestId: id }, select: { id: true } })
+    if (task) await updateTask(task.id, { status: data.status === "DONE" ? "DONE" : "CANCELLED" }, actor.id).catch(() => {})
+  }
   const full = await fetchOne(id)
   // 상태가 바뀌면 상대편에 알림 (마스터 변경 → 치과 / 치과 취소 → 마스터)
   if (data.status && data.status !== row.status) {
     const clinicName = (await prisma.clinic.findUnique({ where: { id: row.clinicId }, select: { name: true } }))?.name ?? ""
     const label = STATUS_META[data.status as RequestStatus]?.label ?? String(data.status)
     createNotifications({
-      type: "REQUEST_STATUS", clinicId: row.clinicId, audience: actor.isMaster ? "clinic" : "masters", exclude: [actor.id],
-      title: `${actor.isMaster ? "" : clinicName + " "}요청 ${label} · ${row.title.slice(0, 60)}`,
-      body: data.status === "DONE" && data.resultNote ? String(data.resultNote).slice(0, 200) : actor.isMaster ? `THINKLAB 이 상태를 '${label}'(으)로 변경했습니다.` : `치과에서 요청을 취소했습니다.`,
+      type: "REQUEST_STATUS", clinicId: row.clinicId, audience: internal ? "clinic" : "masters", exclude: [actor.id],
+      title: `${internal ? "" : clinicName + " "}요청 ${label} · ${row.title.slice(0, 60)}`,
+      body: data.status === "DONE" && data.resultNote ? String(data.resultNote).slice(0, 200) : internal ? `THINKLAB 이 상태를 '${label}'(으)로 변경했습니다.` : `치과에서 요청을 취소했습니다.`,
       link: `/dashboard/${row.clinicId}/requests?open=${id}`,
     }).catch((e) => console.error("[requests] 알림 실패", e?.message))
   }

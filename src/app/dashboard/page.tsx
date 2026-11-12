@@ -12,6 +12,9 @@ export default async function DashboardRedirect() {
   const userRole = (session.user as any).role
   const isMaster = userRole === 'MASTER'
 
+  // 직원은 직원 화면에서 시작한다
+  if (userRole === "STAFF") redirect("/work")
+
   if (isMaster) {
     // 마스터는 자신의 에이전시에 속한 치과만 관리
     const agencyId = (session.user as any).agencyId
